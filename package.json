@@ -1,0 +1,13 @@
+{
+  "name": "rats-wallet",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/donmaks27/rats-wallet.git"
+  },
+  "author": "donmaks27",
+  "license": "MIT",
+  "dependencies": {
+    "form-data": "^4.0.0",
+    "sqlite3": "^5.1.6"
+  }
+}
