@@ -92,6 +92,22 @@ function commandHandler_start(message) {
                         chatID: message.chat.id,
                         text: `You have an active invite${inviteData.expire_date.valueOf() == 0 ? '' : ` (expires in ${dateFormat.duration_to_string(inviteData.expire_date.valueOf() - Date.now())})`}\nPlease, enter you name`
                     });
+                } else if (message.from.id == bot.getOwnerUserID()) {
+                    log.warning(`[START] owner not registered and don't have invite, I should create one`);
+                    db.invite_create({
+                        id: message.from.id,
+                        inviting_user_id: message.from.id,
+                        invite_date: new Date(),
+                        expire_date: new Date(0)
+                    }, (error) => {
+                        if (error) {
+                            log.error(`[START] failed to create invite for the owner (${error})`);
+                            bot.sendMessage({ chatID: message.from.id, text: `Oops, something went wrong` });
+                        } else {
+                            log.info(`[START] created invite for the owner, starting over...`);
+                            commandHandler_start(message);
+                        }
+                    });
                 } else {
                     log.warning(`[START] can't find invite for user ${message.from.id} (${error})`);
                     bot.sendMessage({ chatID: message.chat.id, text: ERROR_MESSAGE_NOT_REGISTERED });
