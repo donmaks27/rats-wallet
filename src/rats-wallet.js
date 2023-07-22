@@ -138,7 +138,7 @@ function commandHandler_invite(message) {
                         text: `Choose user...`,
                         request_user: {
                             request_id: REQUEST_ID_INVITE_USER,
-                            user_is_bot: true
+                            user_is_bot: false
                         }
                     }]]
                 }
