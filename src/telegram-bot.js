@@ -14,6 +14,7 @@ function log_debug(msg) {
 const botInfo = JSON.parse(fs.readFileSync('data/botInfo.json').toString());
 
 module.exports.getOwnerUserID = () => botInfo.ownerUserID;
+module.exports.getServerAddress = () => botInfo.server;
 
 module.exports.getMe = command_getMe;
 module.exports.sendMessage = command_sendMessage;

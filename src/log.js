@@ -19,7 +19,7 @@ module.exports.info = log_info;
  * @param {boolean} [logToScreen]
  */
 function log_error(msg, logToScreen) {
-    log_msg('[ERR ] ' + msg, typeof logToScreen !== 'undefined' ? logToScreen : true);
+    log_msg('[ERR]  ' + msg, typeof logToScreen !== 'undefined' ? logToScreen : true);
 }
 /**
  * @param {string} msg 
