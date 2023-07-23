@@ -10,11 +10,12 @@ function log_debug(msg) {
     log.info('[BOT] ' + msg);
 }
 
-/** @type {{ id: number, token: string, ownerUserID: number, server: { ip: string, port: number } }} */
+/** @type {{ id: number, token: string, ownerUserID: number, server: { ip: string, port: number, hostname?: string }, secretToken: string }} */
 const botInfo = JSON.parse(fs.readFileSync('data/botInfo.json').toString());
 
 module.exports.getOwnerUserID = () => botInfo.ownerUserID;
 module.exports.getServerAddress = () => botInfo.server;
+module.exports.getSecretToken = () => botInfo.secretToken;
 
 module.exports.getMe = command_getMe;
 module.exports.sendMessage = command_sendMessage;
@@ -309,7 +310,7 @@ function command_deleteMyCommands(callback) {
 }
 
 /**
- * @param {string | { ip: string, port: number }} url 
+ * @param {string | { ip: string, port: number, hostname?: string }} url 
  * @param {string} certFilePath 
  * @param {string | null} secret 
  * @param {boolean} dropUpdates 
@@ -322,7 +323,7 @@ function command_setWebhook(url, certFilePath, secret, dropUpdates, callback) {
     if (typeof url === 'string') {
         params.url = url;
     } else {
-        params.url = `https://${url.ip}:${url.port}`;
+        params.url = `https://${url.hostname ? url.hostname : url.ip}:${url.port}`;
         params.ip_address = url.ip;
     }
     if (secret) {

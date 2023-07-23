@@ -5,7 +5,7 @@ var db = require('./database');
 var bot = require('./telegram-bot');
 var dateFormat = require('./date-format');
 
-module.exports.onBotStart = onBotStart;
+module.exports.setupBotCommands = setupBotCommands;
 module.exports.onBotUpdate = onBotUpdate;
 
 const logPrefix = '[WALLET]';
@@ -34,7 +34,7 @@ const bot_commands = {
 /**
  * @param {(error?: string) => any} callback 
  */
-function onBotStart(callback) {
+function setupBotCommands(callback) {
     /** @type {{ [command: string]: string }} */
     var commands = {};
     for (var command in bot_commands) {
