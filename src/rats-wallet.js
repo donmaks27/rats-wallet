@@ -19,6 +19,10 @@ const ERROR_MESSAGE_NOT_REGISTERED = `I can't find you in the database. Ask some
 
 const REQUEST_ID_INVITE_USER = 1;
 
+const QUERY_MENU_BUTTON_SETTINGS = `MenuButtonSettings`;
+const QUERY_MENU_BUTTON_MAIN_MENU = `MenuButtonMainMenu`;
+const QUERY_MENU_BUTTON_CHANGE_NAME = `MenuButtonChangeName`;
+
 /** @type {{ [command: string]: { description: string, handler: (message: bot.message_data) => any } }} */
 const bot_commands = {
     start: {
@@ -28,7 +32,11 @@ const bot_commands = {
     invite: {
         description: 'Invite another user',
         handler: commandHandler_invite
-    }
+    },
+    /*cancel: {
+        description: 'Cancel current operation',
+        handler: commandHandler_cancel
+    }*/
 };
 
 /**
@@ -58,6 +66,8 @@ function onBotUpdate(updateData) {
     log.info(JSON.stringify(updateData));
     if (updateData.message && (updateData.message.chat.type == 'private')) {
         handleUserMessage(updateData.message);
+    } else if (updateData.callback_query && updateData.callback_query.message && (updateData.callback_query.message.chat.type == 'private')) {
+        handleMenuButton(updateData.callback_query);
     }
 }
 /**
@@ -82,7 +92,7 @@ function commandHandler_start(message) {
     db.user_get(message.from.id, (userData, error) => {
         if (userData) {
             log.info(`[START] user ${message.from.id} found ("${userData.name}"), sending welcome message`);
-            showWelcomeMessage(message.from, userData);
+            sendMenuMessage(message.from, getMenuMessageData_MainMenu(userData));
         } else {
             log.warning(`[START] can't find user ${message.from.id} (${error}), searching for invites...`);
             findUserInvite(message.from.id, (inviteData, error) => {
@@ -155,6 +165,12 @@ function commandHandler_invite(message) {
 /**
  * @param {bot.message_data} message 
  */
+function commandHandler_cancel(message) {
+    
+}
+/**
+ * @param {bot.message_data} message 
+ */
 function defaultUserMessageHandler(message) {
     if (message.user_shared) {
         log.info(`[DEFAULT] handling shared user reference...`);
@@ -187,6 +203,40 @@ function defaultUserMessageHandler(message) {
             }
         });
     }
+}
+
+/**
+ * @param {bot.callback_query_data} callbackQuery 
+ */
+function handleMenuButton(callbackQuery) {
+    bot.answerCallbackQuery({ queryID: callbackQuery.id });
+
+    log.info(`[MENU BUTTON] searching for user ${callbackQuery.from.id}...`);
+    db.user_get(callbackQuery.from.id, (userData, error) => {
+        if (error || !userData) {
+            log.warning(`[MENU BUTTON] can't find data for user ${callbackQuery.from.id} in database`);
+            bot.answerCallbackQuery({ queryID: callbackQuery.id });
+        } else {
+            log.info(`[MENU BUTTON] found data for user ${callbackQuery.from.id}, handling callback query...`);
+            switch (callbackQuery.data) {
+            case QUERY_MENU_BUTTON_SETTINGS:
+                log.info(`[MENU BUTTON] opening Settings`);
+                bot.answerCallbackQuery({ queryID: callbackQuery.id });
+                changeMenuMessage(callbackQuery.message, getMenuMessageData_Settings(userData));
+                break;
+            case QUERY_MENU_BUTTON_MAIN_MENU:
+                log.info(`[MENU BUTTON] opening Main menu`);
+                bot.answerCallbackQuery({ queryID: callbackQuery.id });
+                changeMenuMessage(callbackQuery.message, getMenuMessageData_MainMenu(userData));
+                break;
+            
+            default: 
+                log.warning(`[MENU BUTTON] unknown callback query data "${callbackQuery.data}"`);
+                bot.answerCallbackQuery({ queryID: callbackQuery.id });
+                break;
+            }
+        }
+    });
 }
 
 /**
@@ -276,8 +326,7 @@ function onUserSentInvite(invitingUserMessage, result) {
     bot.deleteMessage({ chatID: invitingUserMessage.chat.id, messageID: invitingUserMessage.message_id });
     bot.sendMessage({
         chatID: invitingUserMessage.chat.id,
-        text: result,
-        removeKeyboard: true
+        text: result
     });
 }
 /**
@@ -298,27 +347,104 @@ function onInvitedUserEnterName(message) {
             } else {
                 log.info(`[onInvitedUserEnterName] user ${message.from.id} created: ` + JSON.stringify(userData));
                 db.invite_delete(userData.id);
-                showWelcomeMessage(message.from, userData);
+                sendMenuMessage(message.from, getMenuMessageData_MainMenu(userData));
             }
         });
     }
 }
 
 /**
- * @param {bot.user_data} user 
- * @param {db.user_data} userData 
+ * @typedef {{ text: string, parseMode?: bot.message_parse_mode, keyboard: bot.keyboard_button_inline_data[][] }} menu_message_data
  */
-function showWelcomeMessage(user, userData) {
-    log.info(`[showWelcomeMessage] sending welcome message...`);
+
+/**
+ * @param {bot.user_data} user 
+ * @param {menu_message_data} menuData 
+ * @param {(message: bot.message_data | null, error?: string) => any} [callback] 
+ */
+function sendMenuMessage(user, menuData, callback) {
+    log.info(`[MENU] sending menu message...`);
     bot.sendMessage({
         chatID: user.id,
-        text: `Welcome, ${userData.name}!`,
-        removeKeyboard: true
-    }, (message, error) => {
-        if (error) {
-            log.error(`[showWelcomeMessage] failed to send welcome message: ` + error);
-        } else {
-            log.info(`[showWelcomeMessage] user ${user.id} received welcome message`);
+        text: menuData.text,
+        inlineKeyboard: {
+            inline_keyboard: menuData.keyboard
         }
-    });
+    }, callback ? (message, error) => {
+        if (error) {
+            log.error(`[MENU] failed to send menu message (${error})`);
+            callback(null, `failed to send menu message: ` + error);
+        } else {
+            log.info(`[MENU] menu message created`);
+            callback(message);
+        }
+    } : undefined);
+}
+/**
+ * @param {bot.message_data} menuMessage 
+ * @param {menu_message_data} menuData 
+ * @param {(message: bot.message_data | null, error?: string) => any} [callback] 
+ */
+function changeMenuMessage(menuMessage, menuData, callback) {
+    log.info(`[MENU] changing menu message...`);
+    bot.editMessage({
+        message: {
+            chatID: menuMessage.chat.id,
+            id: menuMessage.message_id
+        },
+        text: menuData.text,
+        parseMode: menuData.parseMode,
+        inlineKeyboard: {
+            inline_keyboard: menuData.keyboard
+        }
+    }, callback ? (message, error) => {
+        if (error) {
+            log.error(`[MENU] failed to change menu message (${error})`);
+            callback(null, `failed to change menu message: ` + error);
+        } else {
+            log.info(`[MENU] menu message changed`);
+            callback(message);
+        }
+    } : undefined);
+}
+
+/**
+ * @param {db.user_data} userData 
+ * @returns {menu_message_data}
+ */
+function getMenuMessageData_MainMenu(userData) {
+    return {
+        text: `Welcome, ${userData.name}!\nChoose an action:`,
+        keyboard: [
+            [
+                {
+                    text: 'Settings',
+                    callback_data: QUERY_MENU_BUTTON_SETTINGS
+                }
+            ]
+        ]
+    };
+}
+/**
+ * @param {db.user_data} userData 
+ * @returns {menu_message_data}
+ */
+function getMenuMessageData_Settings(userData) {
+    return {
+        text: `Welcome, ${userData.name}!\nChoose an action:`,
+        keyboard: [
+            [
+                {
+                    text: 'Change name',
+                    callback_data: QUERY_MENU_BUTTON_CHANGE_NAME
+                }
+            ],
+            [
+                {
+                    text: '<< Back to Main',
+                    callback_data: QUERY_MENU_BUTTON_MAIN_MENU
+                }
+            ]
+        ]
+    };
 }

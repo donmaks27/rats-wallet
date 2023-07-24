@@ -42,13 +42,15 @@ module.exports.deleteMyCommands = command_deleteMyCommands;
  * @typedef {{ type: 'mention'|'hashtag'|'cashtag'|'bot_command'|'url'|'email'|'phone_number'|'bold'|'italic'|'underline'|'strikethrough'|'spoiler'|
  *      'code'|'pre'|'text_link'|'text_mention'|'custom_emoji', offset: number, length: number, url?: string, user?: user_data, language?: string,
  *      custom_emoji_id?: string }} message_entity_data
+ * @typedef {'MarkdownV2' | 'HTML' | 'Markdown'} message_parse_mode
  * 
- * @typedef {{ inline_keyboard: { text: string, callback_data?: string }[][] }} keyboard_markup_inline_data
+ * @typedef {{ inline_keyboard: keyboard_button_inline_data[][] }} keyboard_markup_inline_data
+ * @typedef {{ text: string, callback_data?: string }} keyboard_button_inline_data
  * @typedef {{ keyboard: keyboard_button_reply_data[][], is_persistent?: boolean, resize_keyboard?: boolean, one_time_keyboard?: boolean, 
  *      input_field_placeholder?: string }} keyboard_markup_reply_data
  * @typedef {string | { text: string, request_user?: { request_id: number, user_is_bot?: boolean } }} keyboard_button_reply_data
  * 
- * @typedef {{ id: string, from: user_data, message?: message_data, inline_message_id?: string, chat_instance: string, data?: string }} callback_query_data
+ * @typedef {{ id: string, from: user_data, message: message_data, inline_message_id?: string, chat_instance: string, data?: string }} callback_query_data
  */
 
 /**
@@ -215,7 +217,7 @@ function command_forwardMessage(params, callback) {
     } : null);
 }
 /**
- * @param {{ message: { id: number, chatID: number }, text: string, parseMode?: 'MarkdownV2' | 'HTML' | 'Markdown', inlineKeyboard?: keyboard_markup_inline_data }} params 
+ * @param {{ message: { id: number, chatID: number }, text: string, parseMode?: message_parse_mode, inlineKeyboard?: keyboard_markup_inline_data }} params 
  * @param {(message: message_data | null, error?: string) => any} [callback] 
  */
 function command_editMessage(params, callback) {
