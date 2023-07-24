@@ -17,7 +17,7 @@ db.open((error) => {
             key: fs.readFileSync('data/private.key'),
             cert: fs.readFileSync('data/public.pem')
         }, (request, response) => {
-            var secretToken = request.headers['X-Telegram-Bot-Api-Secret-Token'];
+            var secretToken = request.headers['x-telegram-bot-api-secret-token'];
             if (!secretToken || (typeof secretToken !== 'string') || (secretToken != bot.getSecretToken())) {
                 log.warning(`[SERVER] received request with wrong secret token`);
                 response.writeHead(200);
