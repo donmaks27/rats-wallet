@@ -17,14 +17,6 @@ db.open((error) => {
             key: fs.readFileSync('data/private.key'),
             cert: fs.readFileSync('data/public.pem')
         }, (request, response) => {
-            var secretToken = request.headers['x-telegram-bot-api-secret-token'];
-            if (!secretToken || (typeof secretToken !== 'string') || (secretToken != bot.getSecretToken())) {
-                log.warning(`[SERVER] received request with wrong secret token`);
-                response.writeHead(200);
-                response.end();
-                return;
-            }
-
             var data = '';
             request.on('data', (chunk) => {
                 data += chunk;
@@ -33,21 +25,32 @@ db.open((error) => {
                 log.error('[SERVER] Receive request error: ' + error);
             });
             request.on('end', () => {
-                log.info(`[SERVER] recieved response data: ` + data);
-
+                var secretToken = request.headers['x-telegram-bot-api-secret-token'];
                 response.writeHead(200);
                 response.end();
-        
-                if (data.length > 0) {
-                    var dataJSON = null;
-                    try {
-                        dataJSON = JSON.parse(data);
-                    } catch (error) {
-                        log.error('[SERVER] Parse request data error: ' + error)
-                    }
-                    if (dataJSON != null) {
-                        wallet.onBotUpdate(dataJSON);
-                    }
+
+                if (data.length == 0) {
+                    log.info(`[SERVER] recieved empty request, ignore`);
+                    return;
+                }
+                if (!secretToken || (typeof secretToken !== 'string')) {
+                    log.warning(`[SERVER] recieved request without secret token header`);
+                    return;
+                }
+                if (secretToken != bot.getSecretToken()) {
+                    log.warning(`[SERVER] recieved request with wrong secret token ("${secretToken}")`);
+                    return;
+                }
+
+                log.info(`[SERVER] recieved request data: ` + data);
+                var dataJSON = null;
+                try {
+                    dataJSON = JSON.parse(data);
+                } catch (error) {
+                    log.error('[SERVER] Parse request data error: ' + error)
+                }
+                if (dataJSON != null) {
+                    wallet.onBotUpdate(dataJSON);
                 }
             });
         }).listen(bot.getServerAddress().port)

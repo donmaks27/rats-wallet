@@ -227,20 +227,14 @@ function sendUserInvite(invitingUser, invitedUserID) {
         db.user_get(invitedUserID, (invitedUserData, error) => {
             if (invitedUserData) {
                 log.warning(`[sendUserInvite] invited user ${invitedUserID} already registered`);
-                bot.editMessage({ 
-                    message: { chatID: invitingUser.id, id: invitingUserMessage.message_id },
-                    text: `User already registered, no need to invite him`
-                });
+                onUserSentInvite(invitingUserMessage, `User already registered, no need to invite him`);
                 return;
             }
             log.info(`[sendUserInvite] didn't find invited user ${invitedUserID} in database, searching for invite...`);
             findUserInvite(invitedUserID, (inviteData, error) => {
                 if (inviteData) {
                     log.warning(`[sendUserInvite] found active invitation for invited user ${invitedUserID}: ` + JSON.stringify(inviteData));
-                    bot.editMessage({ 
-                        message: { chatID: invitingUser.id, id: invitingUserMessage.message_id },
-                        text: `User already have active invite, no need to invite him again`
-                    });
+                    onUserSentInvite(invitingUserMessage, `User already have active invite, no need to invite him again`);
                     return;
                 }
                 log.info(`[sendUserInvite] didn't find invite for user ${invitedUserID}, creating the new one...`);
@@ -253,10 +247,7 @@ function sendUserInvite(invitingUser, invitedUserID) {
                 }, (error) => {
                     if (error) {
                         log.error(`[sendUserInvite] failed to create invite for user ${invitedUserID} (${error})`);
-                        bot.editMessage({ 
-                            message: { chatID: invitingUser.id, id: invitingUserMessage.message_id },
-                            text: `Something went wrong, failed to create invite`
-                        });
+                        onUserSentInvite(invitingUserMessage, `Something went wrong, failed to create invite`);
                         return;
                     }
                     log.info(`[sendUserInvite] invite for user ${invitedUserID} created, sending notification...`);
@@ -266,21 +257,27 @@ function sendUserInvite(invitingUser, invitedUserID) {
                     }, (invitedUserMessage, error) => {
                         if (error || !invitedUserMessage) {
                             log.error(`[sendUserInvite] failed to send notification about invite to user ${invitedUserID} (${error})`);
-                            bot.editMessage({ 
-                                message: { chatID: invitingUser.id, id: invitingUserMessage.message_id },
-                                text: `Something went wrong, failed to send notification about invite`
-                            });
+                            onUserSentInvite(invitingUserMessage, `Something went wrong, failed to send notification about invite`);
                         } else {
                             log.info(`[sendUserInvite] notification sent`);
-                            bot.editMessage({ 
-                                message: { chatID: invitingUser.id, id: invitingUserMessage.message_id },
-                                text: `Sent an invite to ${invitedUserMessage.chat.first_name}`
-                            });
+                            onUserSentInvite(invitingUserMessage, `Sent an invite to ${invitedUserMessage.chat.first_name}`);
                         }
                     });
                 });
             });
         });
+    });
+}
+/**
+ * @param {bot.message_data} invitingUserMessage 
+ * @param {string} result 
+ */
+function onUserSentInvite(invitingUserMessage, result) {
+    bot.deleteMessage({ chatID: invitingUserMessage.chat.id, messageID: invitingUserMessage.message_id });
+    bot.sendMessage({
+        chatID: invitingUserMessage.chat.id,
+        text: result,
+        removeKeyboard: true
     });
 }
 /**
