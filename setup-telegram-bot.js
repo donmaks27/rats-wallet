@@ -2,7 +2,7 @@
 
 var log = require('./src/log');
 var bot = require('./src/telegram-bot');
-var wallet = require('./src/rats-wallet');
+var wallet = require('./src/wallet');
 
 wallet.setupBotCommands((error) => {
     if (error) {
