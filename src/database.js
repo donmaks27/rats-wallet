@@ -29,6 +29,7 @@ module.exports.getAllData = getAllData;
 module.exports.user_create = user_create;
 module.exports.user_get = user_get;
 module.exports.user_getAll = user_getAll;
+module.exports.user_edit = user_edit;
 
 module.exports.currency_create = currency_create;
 module.exports.currency_get = currency_get;
@@ -290,6 +291,24 @@ function user_getAll(callback) {
         }
     });
 }
+/**
+ * @param {number} id 
+ * @param {{ name: string }} params 
+ * @param {(data: user_data | null, error?: string) => any} [callback] 
+ */
+function user_edit(id, params, callback) {
+    db.run(query_updateUser(id, params), (error) => {
+        if (error) {
+            if (callback) {
+                callback(null, `failed to update user ${id}: ` + error);
+            }
+        } else {
+            debug_log(`updated user ${id}: ` + JSON.stringify(params));
+            delete cached_data.users[id];
+            user_get(id, callback ? callback : function(){});
+        }
+    });
+}
 
 /**
  * @param {{ code: string, name: string }} params 
@@ -373,6 +392,7 @@ function currency_edit(code, params, callback) {
             }
         } else {
             debug_log(`updated currency "${code}": ` + JSON.stringify(params));
+            delete cached_data.currencies[code];
             currency_get(code, callback ? callback : function(){});
         }
     });
@@ -486,6 +506,7 @@ function label_edit(id, params, callback) {
             }
         } else {
             debug_log(`updated label ${id}: ` + JSON.stringify(params));
+            delete cached_data.labels[id];
             label_get(id, callback ? callback : function(){});
         }
     });
@@ -601,6 +622,7 @@ function category_edit(id, params, callback) {
             }
         } else {
             debug_log(`updated category ${id}: ` + JSON.stringify(params));
+            delete cached_data.categories[id];
             category_get(id, callback ? callback : function(){});
         }
     });
@@ -718,6 +740,7 @@ function account_edit(id, params, callback) {
             }
         } else {
             debug_log(`updated account ${id}: ` + JSON.stringify(params));
+            delete cached_data.accounts[id];
             account_get(id, callback ? callback : function(){});
         }
     });
@@ -949,39 +972,14 @@ function invite_delete(userID, callback) {
     } : undefined);
 }
 
+/**
+ * @param {string} [str] 
+ */
+function query_handle_string(str) {
+    return str ? str.replace(/'/g, "''") : 'NULL';
+}
 function query_initialize() {
-    return `CREATE TABLE users(id INTEGER PRIMARY KEY NOT NULL, name TEXT, create_date TEXT NOT NULL);
-    CREATE TABLE currencies(code TEXT NOT NULL PRIMARY KEY, name TEXT, is_active INTEGER NOT NULL, create_date TEXT NOT NULL);
-    CREATE TABLE labels(
-        id INTEGER PRIMARY KEY, user_id INTEGER, name TEXT, is_active INTEGER NOT NULL, create_date TEXT NOT NULL,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
-    );
-    CREATE TABLE categories(
-        id INTEGER PRIMARY KEY, user_id INTEGER, parent_id INTEGER, name TEXT, is_active INTEGER NOT NULL, create_date TEXT NOT NULL,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE,
-        FOREIGN KEY (parent_id) REFERENCES categories(id) ON UPDATE CASCADE ON DELETE SET NULL
-    );
-    CREATE TABLE accounts(
-        id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL, currency_code TEXT NOT NULL, name TEXT, start_amount INTEGER NOT NULL, is_active INTEGER NOT NULL, create_date TEXT NOT NULL,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE,
-        FOREIGN KEY (currency_code) REFERENCES currencies(code) ON UPDATE CASCADE ON DELETE CASCADE
-    );
-    CREATE TABLE records(
-        id INTEGER PRIMARY KEY, src_account_id INTEGER, src_amount INTEGER NOT NULL, dst_account_id INTEGER, dst_amount INTEGER NOT NULL, category_id INTEGER, date TEXT NOT NULL, create_date TEXT NOT NULL,
-        FOREIGN KEY (src_account_id) REFERENCES accounts(id) ON UPDATE CASCADE ON DELETE SET NULL,
-        FOREIGN KEY (dst_account_id) REFERENCES accounts(id) ON UPDATE CASCADE ON DELETE SET NULL,
-        FOREIGN KEY (category_id) REFERENCES categories(id) ON UPDATE CASCADE ON DELETE SET NULL
-    );
-    CREATE TABLE record_labels(
-        record_id INTEGER NOT NULL, label_id INTEGER NOT NULL, create_date TEXT NOT NULL,
-        FOREIGN KEY (record_id) REFERENCES records(id) ON UPDATE CASCADE ON DELETE CASCADE,
-        FOREIGN KEY (label_id) REFERENCES labels(id) ON UPDATE CASCADE ON DELETE CASCADE,
-        PRIMARY KEY (record_id, label_id)
-    );
-    CREATE TABLE user_invites(
-        id INTEGER PRIMARY KEY NOT NULL, inviting_user_id INTEGER NOT NULL, invite_date TEXT NOT NULL, expire_date TEXT NOT NULL,
-        FOREIGN KEY (inviting_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
-    );`;
+    return fs.readFileSync('data/database.sql', { encoding: 'utf-8' });
 }
 function query_getAllUsers() {
     return `SELECT * FROM users;`;
@@ -1030,7 +1028,7 @@ function query_getAllInvites() {
  * @param {{ id: number, name: string }} params
  */
 function query_createUser(params) {
-    return `INSERT INTO users(id, name, create_date) VALUES (${params.id}, '${params.name}', '${dateFormat.to_string(new Date())}');`;
+    return `INSERT INTO users(id, name, create_date) VALUES (${params.id}, '${query_handle_string(params.name)}', '${dateFormat.to_string(new Date())}');`;
 }
 /**
  * @param {number} id
@@ -1038,18 +1036,25 @@ function query_createUser(params) {
 function query_getUser(id) {
     return `SELECT * FROM users WHERE id = ${id} LIMIT 1;`;
 }
+/**
+ * @param {number} id
+ * @param {{ name: string }} params 
+ */
+function query_updateUser(id, params) {
+    return `UPDATE users SET name = '${query_handle_string(params.name)}' WHERE id = '${id}';`;
+}
 
 /**
  * @param {{ code: string, name: string }} params 
  */
 function query_createCurrency(params) {
-    return `INSERT INTO currencies(code, name, is_active, create_date) VALUES ('${params.code}', '${params.name}', 1, '${dateFormat.to_string(new Date())}');`;
+    return `INSERT INTO currencies(code, name, is_active, create_date) VALUES ('${query_handle_string(params.code)}', '${query_handle_string(params.name)}', 1, '${dateFormat.to_string(new Date())}');`;
 }
 /**
  * @param {string} code 
  */
 function query_getCurrency(code) {
-    return `SELECT * FROM currencies WHERE code = '${code}' LIMIT 1;`;
+    return `SELECT * FROM currencies WHERE code = '${query_handle_string(code)}' LIMIT 1;`;
 }
 /**
  * @param {string} code 
@@ -1059,18 +1064,18 @@ function query_updateCurrency(code, params) {
     var statements = [];
     const properties = Object.getOwnPropertyNames(params);
     if (properties.includes('name')) {
-        statements.push(`name = '${params.name}'`);
+        statements.push(`name = '${query_handle_string(params.name)}'`);
     }
     if (properties.includes('is_active')) {
         statements.push(`is_active = ${params.is_active ? 1 : 0}`);
     }
-    return `UPDATE currencies SET ${statements.join(', ')} WHERE code = '${code}';`;
+    return `UPDATE currencies SET ${statements.join(', ')} WHERE code = '${query_handle_string(code)}';`;
 }
 /**
  * @param {string} code 
  */
 function query_deleteCurrency(code) {
-    return `DELETE FROM currencies WHERE code = '${code}';`;
+    return `DELETE FROM currencies WHERE code = '${query_handle_string(code)}';`;
 }
 
 /**
@@ -1078,7 +1083,7 @@ function query_deleteCurrency(code) {
  */
 function query_createLabel(params) {
     return `INSERT INTO labels(user_id, name, is_active, create_date) VALUES (
-        ${params.user_id ? params.user_id : 'NULL'}, '${params.name}', 1, '${dateFormat.to_string(new Date())}'
+        ${params.user_id ? params.user_id : 'NULL'}, '${query_handle_string(params.name)}', 1, '${dateFormat.to_string(new Date())}'
     );`;
 }
 /**
@@ -1095,7 +1100,7 @@ function query_updateLabel(id, params) {
     var statements = [];
     const properties = Object.getOwnPropertyNames(params);
     if (properties.includes('name')) {
-        statements.push(`name = '${params.name}'`);
+        statements.push(`name = '${query_handle_string(params.name)}'`);
     }
     if (properties.includes('is_active')) {
         statements.push(`is_active = ${params.is_active ? 1 : 0}`);
@@ -1114,7 +1119,7 @@ function query_deleteLabel(id) {
  */
 function query_createCategory(params) {
     return `INSERT INTO categories(user_id, parent_id, name, is_active, create_date) VALUES (
-        ${params.user_id ? params.user_id : 'NULL'}, ${params.parent_id ? params.parent_id : 'NULL'}, '${params.name}', 1, '${dateFormat.to_string(new Date())}'
+        ${params.user_id ? params.user_id : 'NULL'}, ${params.parent_id ? params.parent_id : 'NULL'}, '${query_handle_string(params.name)}', 1, '${dateFormat.to_string(new Date())}'
     );`;
 }
 /**
@@ -1134,7 +1139,7 @@ function query_updateCategory(id, params) {
         statements.push(`parent_id = ${params.parent_id ? params.parent_id : 'NULL'}`);
     }
     if (properties.includes('name')) {
-        statements.push(`name = '${params.name}'`);
+        statements.push(`name = '${query_handle_string(params.name)}'`);
     }
     if (properties.includes('is_active')) {
         statements.push(`is_active = ${params.is_active ? 1 : 0}`);
@@ -1153,7 +1158,7 @@ function query_deleteCategory(id) {
  */
 function query_createAccount(params) {
     return `INSERT INTO accounts(user_id, currency_code, name, start_amount, is_active, create_date) VALUES (
-        ${params.user_id}, '${params.currency_code}', '${params.name}', ${params.start_amount ? params.start_amount : 0}, 1, '${dateFormat.to_string(new Date())}'
+        ${params.user_id}, '${query_handle_string(params.currency_code)}', '${query_handle_string(params.name)}', ${params.start_amount ? params.start_amount : 0}, 1, '${dateFormat.to_string(new Date())}'
     );`;
 }
 /**
@@ -1170,7 +1175,7 @@ function query_updateAccount(id, params) {
     var statements = [];
     const properties = Object.getOwnPropertyNames(params);
     if (properties.includes('name')) {
-        statements.push(`name = '${params.name}'`);
+        statements.push(`name = '${query_handle_string(params.name)}'`);
     }
     if (properties.includes('start_amount')) {
         statements.push(`start_amount = ${params.start_amount ? params.start_amount : 0}`);

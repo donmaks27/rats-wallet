@@ -277,9 +277,6 @@ function task_addCurrency(currency_code) {
  */
 function task_addLabel(user_id, label, db_data) {
     return (callback) => {
-        if (label.name.includes("'")) {
-            label.name = label.name.replace("'", "''");
-        }
         var params = { name: label.name };
         if (!label.global) {
             params.user_id = user_id;
