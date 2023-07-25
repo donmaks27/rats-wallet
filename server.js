@@ -6,7 +6,7 @@ var https = require('https');
 var log = require('./src/log');
 var bot = require('./src/telegram-bot');
 var db  = require('./src/database');
-var wallet = require('./src/rats-wallet');
+var wallet = require('./src/wallet');
 
 db.open((error) => {
     if (error) {

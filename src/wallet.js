@@ -1,13 +1,6 @@
 // @ts-check
 
 var logModule = require('./log');
-var db = require('./database');
-var bot = require('./telegram-bot');
-var dateFormat = require('./date-format');
-
-module.exports.setupBotCommands = setupBotCommands;
-module.exports.onBotUpdate = onBotUpdate;
-
 const logPrefix = '[WALLET]';
 const log = {
     error: (msg) => logModule.error(logPrefix + msg),
@@ -15,13 +8,16 @@ const log = {
     info: (msg) => logModule.info(logPrefix + msg),
 };
 
+var db = require('./database');
+var bot = require('./telegram-bot');
+var dateFormat = require('./date-format');
+
+var walletCommon = require('./wallet-common');
+var walletMenu   = require('./wallet-menu');
+
 const ERROR_MESSAGE_NOT_REGISTERED = `I can't find you in the database. Ask somebody to invite you!`;
 
 const REQUEST_ID_INVITE_USER = 1;
-
-const QUERY_MENU_BUTTON_SETTINGS = `MenuButtonSettings`;
-const QUERY_MENU_BUTTON_MAIN_MENU = `MenuButtonMainMenu`;
-const QUERY_MENU_BUTTON_CHANGE_NAME = `MenuButtonChangeName`;
 
 /** @type {{ [command: string]: { description: string, handler: (message: bot.message_data) => any } }} */
 const bot_commands = {
@@ -38,6 +34,9 @@ const bot_commands = {
         handler: commandHandler_cancel
     }*/
 };
+
+module.exports.setupBotCommands = setupBotCommands;
+module.exports.onBotUpdate = onBotUpdate;
 
 /**
  * @param {(error?: string) => any} callback 
@@ -91,8 +90,8 @@ function commandHandler_start(message) {
     log.info(`[START] searching for user ${message.from.id}...`);
     db.user_get(message.from.id, (userData, error) => {
         if (userData) {
-            log.info(`[START] user ${message.from.id} found ("${userData.name}"), sending welcome message`);
-            sendMenuMessage(message.from, getMenuMessageData_MainMenu(userData));
+            log.info(`[START] user ${message.from.id} found ("${userData.name}"), sending main menu message`);
+            walletMenu.sendMenuMessage(message.from, walletMenu.createMenuData({ type: 'main', userData: userData }));
         } else {
             log.warning(`[START] can't find user ${message.from.id} (${error}), searching for invites...`);
             findUserInvite(message.from.id, (inviteData, error) => {
@@ -215,24 +214,28 @@ function handleMenuButton(callbackQuery) {
     db.user_get(callbackQuery.from.id, (userData, error) => {
         if (error || !userData) {
             log.warning(`[MENU BUTTON] can't find data for user ${callbackQuery.from.id} in database`);
-            bot.answerCallbackQuery({ queryID: callbackQuery.id });
+        } else if (!callbackQuery.data) {
+            log.warning(`[MENU BUTTON] empty callback query data`);
         } else {
             log.info(`[MENU BUTTON] found data for user ${callbackQuery.from.id}, handling callback query...`);
-            switch (callbackQuery.data) {
-            case QUERY_MENU_BUTTON_SETTINGS:
-                log.info(`[MENU BUTTON] opening Settings`);
-                bot.answerCallbackQuery({ queryID: callbackQuery.id });
-                changeMenuMessage(callbackQuery.message, getMenuMessageData_Settings(userData));
-                break;
-            case QUERY_MENU_BUTTON_MAIN_MENU:
-                log.info(`[MENU BUTTON] opening Main menu`);
-                bot.answerCallbackQuery({ queryID: callbackQuery.id });
-                changeMenuMessage(callbackQuery.message, getMenuMessageData_MainMenu(userData));
+            const buttonData = callbackQuery.data.split(';');
+            switch (buttonData[0]) {
+            case walletCommon.MENU_BUTTON_GOTO:
+                const destination = buttonData.length > 1 ? buttonData[1] : '';
+                log.warning(`[MENU BUTTON] goto menu "${destination}"...`);
+                switch (destination) {
+                case 'main': case 'settings':
+                    walletMenu.changeMenuMessage(callbackQuery.message, walletMenu.createMenuData({ type: destination, userData: userData }));
+                    break;
+            
+                default:
+                    log.warning(`[MENU BUTTON] invalid goto button params`);
+                    break;
+                }
                 break;
             
             default: 
-                log.warning(`[MENU BUTTON] unknown callback query data "${callbackQuery.data}"`);
-                bot.answerCallbackQuery({ queryID: callbackQuery.id });
+                log.warning(`[MENU BUTTON] invalid callback query data "${callbackQuery.data}"`);
                 break;
             }
         }
@@ -347,104 +350,8 @@ function onInvitedUserEnterName(message) {
             } else {
                 log.info(`[onInvitedUserEnterName] user ${message.from.id} created: ` + JSON.stringify(userData));
                 db.invite_delete(userData.id);
-                sendMenuMessage(message.from, getMenuMessageData_MainMenu(userData));
+                walletMenu.sendMenuMessage(message.from, walletMenu.createMenuData({ type: 'main', userData: userData }));
             }
         });
     }
-}
-
-/**
- * @typedef {{ text: string, parseMode?: bot.message_parse_mode, keyboard: bot.keyboard_button_inline_data[][] }} menu_message_data
- */
-
-/**
- * @param {bot.user_data} user 
- * @param {menu_message_data} menuData 
- * @param {(message: bot.message_data | null, error?: string) => any} [callback] 
- */
-function sendMenuMessage(user, menuData, callback) {
-    log.info(`[MENU] sending menu message...`);
-    bot.sendMessage({
-        chatID: user.id,
-        text: menuData.text,
-        inlineKeyboard: {
-            inline_keyboard: menuData.keyboard
-        }
-    }, callback ? (message, error) => {
-        if (error) {
-            log.error(`[MENU] failed to send menu message (${error})`);
-            callback(null, `failed to send menu message: ` + error);
-        } else {
-            log.info(`[MENU] menu message created`);
-            callback(message);
-        }
-    } : undefined);
-}
-/**
- * @param {bot.message_data} menuMessage 
- * @param {menu_message_data} menuData 
- * @param {(message: bot.message_data | null, error?: string) => any} [callback] 
- */
-function changeMenuMessage(menuMessage, menuData, callback) {
-    log.info(`[MENU] changing menu message...`);
-    bot.editMessage({
-        message: {
-            chatID: menuMessage.chat.id,
-            id: menuMessage.message_id
-        },
-        text: menuData.text,
-        parseMode: menuData.parseMode,
-        inlineKeyboard: {
-            inline_keyboard: menuData.keyboard
-        }
-    }, callback ? (message, error) => {
-        if (error) {
-            log.error(`[MENU] failed to change menu message (${error})`);
-            callback(null, `failed to change menu message: ` + error);
-        } else {
-            log.info(`[MENU] menu message changed`);
-            callback(message);
-        }
-    } : undefined);
-}
-
-/**
- * @param {db.user_data} userData 
- * @returns {menu_message_data}
- */
-function getMenuMessageData_MainMenu(userData) {
-    return {
-        text: `Welcome, ${userData.name}!\nChoose an action:`,
-        keyboard: [
-            [
-                {
-                    text: 'Settings',
-                    callback_data: QUERY_MENU_BUTTON_SETTINGS
-                }
-            ]
-        ]
-    };
-}
-/**
- * @param {db.user_data} userData 
- * @returns {menu_message_data}
- */
-function getMenuMessageData_Settings(userData) {
-    return {
-        text: `Welcome, ${userData.name}!\nChoose an action:`,
-        keyboard: [
-            [
-                {
-                    text: 'Change name',
-                    callback_data: QUERY_MENU_BUTTON_CHANGE_NAME
-                }
-            ],
-            [
-                {
-                    text: '<< Back to Main',
-                    callback_data: QUERY_MENU_BUTTON_MAIN_MENU
-                }
-            ]
-        ]
-    };
 }
