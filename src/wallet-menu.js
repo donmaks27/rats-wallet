@@ -27,7 +27,8 @@ var walletCommon = require('./wallet-common');
 /** @type {{ [type: string]: (user: bot.user_data, userData: db.user_data) => menu_data }} */
 const WalletMenuConstructors = {
     main: createMenuData_MainMenu,
-    settings: createMenuData_Settings
+    settings: createMenuData_Settings,
+    wallet: createMenuData_Wallet
 };
 
 /**
@@ -122,7 +123,7 @@ function changeMenuMessage(menuMessage, type, user, userData, callback) {
 }
 
 /**
- * @param {'main'|'settings'} type 
+ * @param {'main'|'settings'|'wallet'} type 
  */
 function makeMenuButton(type) {
     return `${walletCommon.MENU_BUTTON_GOTO};${type}`;
@@ -145,9 +146,17 @@ function createMenuData_MainMenu(user, userData) {
         keyboard: [
             [
                 {
+                    text: 'Wallet',
+                    callback_data: makeMenuButton('wallet')
+                }
+            ],
+            [
+                {
                     text: 'Invite user',
                     callback_data: makeActionButton('invite')
-                },
+                }
+            ],
+            [
                 {
                     text: 'Settings',
                     callback_data: makeMenuButton('settings')
@@ -173,7 +182,26 @@ function createMenuData_Settings(user, userData) {
             ],
             [
                 {
-                    text: '<< Back to Main',
+                    text: '_<< Back to Main_',
+                    callback_data: makeMenuButton('main')
+                }
+            ]
+        ]
+    };
+}
+/**
+ * @param {bot.user_data} user 
+ * @param {db.user_data} userData 
+ * @returns {menu_data}
+ */
+function createMenuData_Wallet(user, userData) {
+    return {
+        text: `*This is your wallet*\nChoose what you want to do:`,
+        parseMode: 'MarkdownV2',
+        keyboard: [
+            [
+                {
+                    text: '_<< Back to Main_',
                     callback_data: makeMenuButton('main')
                 }
             ]
