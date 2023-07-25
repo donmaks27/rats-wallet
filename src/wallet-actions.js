@@ -73,9 +73,16 @@ function startUserAction(action, user, userData, callback) {
     var currentAction = walletCommon.getUserAction(userID);
     if (currentAction != walletCommon.ACTION_INVALID) {
         log.warning(userID, `found active action "${currentAction}"`);
-        if (callback) {
-            callback(false);
-        }
+        stopUserAction(user, userData, (success) => {
+            if (!success) {
+                log.error(userID, `failed to stop previous action`);
+                if (callback) {
+                    callback(false);
+                }
+            } else {
+                startUserAction(action, user, userData, callback);
+            }
+        });
         return;
     }
 

@@ -3,7 +3,6 @@
 var fs = require('fs');
 var sqlite = require('sqlite3');
 
-var dateFormat = require('./date-format');
 var log = require('./log');
 
 /**
@@ -184,8 +183,8 @@ function getAllData(callback) {
                                     dst_account_id: rows[i].dst_account_id ? rows[i].dst_account_id : invalid_id,
                                     dst_amount: rows[i].dst_amount,
                                     category_id: rows[i].category_id ? rows[i].category_id : invalid_id,
-                                    date: dateFormat.from_string(rows[i].date),
-                                    create_date: dateFormat.from_string(rows[i].create_date)
+                                    date: new Date(rows[i].date),
+                                    create_date: new Date(rows[i].create_date)
                                 });
                             }
                             db.all(query_getAllRecordLabels(), (error, rows) => {
@@ -197,7 +196,7 @@ function getAllData(callback) {
                                     result.record_labels.push({
                                         record_id: rows[i].record_id,
                                         label_id: rows[i].label_id,
-                                        create_date: dateFormat.from_string(rows[i].create_date)
+                                        create_date: new Date(rows[i].create_date)
                                     });
                                 }
                                 db.all(query_getAllInvites(), (error, rows) => {
@@ -209,8 +208,8 @@ function getAllData(callback) {
                                         result.user_invites.push({
                                             id: rows[i].id,
                                             inviting_user_id: rows[i].inviting_user_id,
-                                            invite_date: dateFormat.from_string(rows[i].invite_date),
-                                            expire_date: dateFormat.from_string(rows[i].expire_date)
+                                            invite_date: new Date(rows[i].invite_date),
+                                            expire_date: new Date(rows[i].expire_date)
                                         });
                                     }
                                     callback(result);
@@ -261,7 +260,7 @@ function user_get(id, callback) {
             var userData = {
                 id: row.id,
                 name: row.name,
-                create_date: dateFormat.from_string(row.create_date)
+                create_date: new Date(row.create_date)
             }
             cached_data.users[id] = userData;
             callback(userData);
@@ -282,7 +281,7 @@ function user_getAll(callback) {
                 var userData = {
                     id: rows[i].id,
                     name: rows[i].name,
-                    create_date: dateFormat.from_string(rows[i].create_date)
+                    create_date: new Date(rows[i].create_date)
                 };
                 cached_data.users[userData.id] = userData;
                 data.push(userData);
@@ -348,7 +347,7 @@ function currency_get(code, callback) {
                 code: row.code,
                 name: row.name,
                 is_active: row.is_active != 0,
-                create_date: dateFormat.from_string(row.create_date)
+                create_date: new Date(row.create_date)
             };
             cached_data.currencies[code] = data;
             callback(data);
@@ -370,7 +369,7 @@ function currency_getAll(callback) {
                     code: rows[i].code,
                     name: rows[i].name,
                     is_active: rows[i].is_active != 0,
-                    create_date: dateFormat.from_string(rows[i].create_date)
+                    create_date: new Date(rows[i].create_date)
                 };
                 cached_data.currencies[rowData.code] = rowData;
                 data.push(rowData);
@@ -460,7 +459,7 @@ function label_get(id, callback) {
                 user_id: row.user_id ? row.user_id : invalid_id,
                 name: row.name,
                 is_active: row.is_active != 0,
-                create_date: dateFormat.from_string(row.create_date)
+                create_date: new Date(row.create_date)
             };
             cached_data.labels[id] = data;
             callback(data);
@@ -484,7 +483,7 @@ function label_getAll(user_id, callback) {
                     user_id: rows[i].user_id ? rows[i].user_id : invalid_id,
                     name: rows[i].name,
                     is_active: rows[i].is_active != 0,
-                    create_date: dateFormat.from_string(rows[i].create_date)
+                    create_date: new Date(rows[i].create_date)
                 };
                 cached_data.labels[rowData.id] = rowData;
                 data.push(rowData);
@@ -575,7 +574,7 @@ function category_get(id, callback) {
                 parent_id: row.parent_id ? row.parent_id : invalid_id,
                 name: row.name,
                 is_active: row.is_active != 0,
-                create_date: dateFormat.from_string(row.create_date)
+                create_date: new Date(row.create_date)
             };
             cached_data.categories[id] = data;
             callback(data);
@@ -600,7 +599,7 @@ function category_getAll(user_id, callback) {
                     parent_id: rows[i].parent_id ? rows[i].parent_id : invalid_id,
                     name: rows[i].name,
                     is_active: rows[i].is_active != 0,
-                    create_date: dateFormat.from_string(rows[i].create_date)
+                    create_date: new Date(rows[i].create_date)
                 };
                 cached_data.categories[rowData.id] = rowData;
                 data.push(rowData);
@@ -692,7 +691,7 @@ function account_get(id, callback) {
                 name: row.name,
                 start_amount: row.start_amount,
                 is_active: row.is_active != 0,
-                create_date: dateFormat.from_string(row.create_date)
+                create_date: new Date(row.create_date)
             };
             cached_data.accounts[id] = data;
             callback(data);
@@ -718,7 +717,7 @@ function account_getAll(user_id, callback) {
                     name: rows[i].name,
                     start_amount: rows[i].start_amount,
                     is_active: rows[i].is_active != 0,
-                    create_date: dateFormat.from_string(rows[i].create_date)
+                    create_date: new Date(rows[i].create_date)
                 };
                 cached_data.accounts[rowData.id] = rowData;
                 data.push(rowData);
@@ -801,8 +800,8 @@ function record_get(id, callback) {
                 dst_account_id: row.dst_account_id ? row.dst_account_id : invalid_id,
                 dst_amount: row.dst_amount,
                 category_id: row.category_id ? row.category_id : invalid_id,
-                date: dateFormat.from_string(row.date),
-                create_date: dateFormat.from_string(row.create_date)
+                date: new Date(row.date),
+                create_date: new Date(row.create_date)
             });
         }
     });
@@ -942,8 +941,8 @@ function invite_get(userID, callback) {
             callback({
                 id: row.id,
                 inviting_user_id: row.inviting_user_id,
-                invite_date: dateFormat.from_string(row.invite_date),
-                expire_date: dateFormat.from_string(row.expire_date)
+                invite_date: new Date(row.invite_date),
+                expire_date: new Date(row.expire_date)
             });
         }
     });
@@ -1028,7 +1027,7 @@ function query_getAllInvites() {
  * @param {{ id: number, name: string }} params
  */
 function query_createUser(params) {
-    return `INSERT INTO users(id, name, create_date) VALUES (${params.id}, '${query_handle_string(params.name)}', '${dateFormat.to_string(new Date())}');`;
+    return `INSERT INTO users(id, name, create_date) VALUES (${params.id}, '${query_handle_string(params.name)}', ${Date.now()});`;
 }
 /**
  * @param {number} id
@@ -1041,14 +1040,14 @@ function query_getUser(id) {
  * @param {{ name: string }} params 
  */
 function query_updateUser(id, params) {
-    return `UPDATE users SET name = '${query_handle_string(params.name)}' WHERE id = '${id}';`;
+    return `UPDATE users SET name = '${query_handle_string(params.name)}' WHERE id = ${id};`;
 }
 
 /**
  * @param {{ code: string, name: string }} params 
  */
 function query_createCurrency(params) {
-    return `INSERT INTO currencies(code, name, is_active, create_date) VALUES ('${query_handle_string(params.code)}', '${query_handle_string(params.name)}', 1, '${dateFormat.to_string(new Date())}');`;
+    return `INSERT INTO currencies(code, name, is_active, create_date) VALUES ('${query_handle_string(params.code)}', '${query_handle_string(params.name)}', 1, ${Date.now()});`;
 }
 /**
  * @param {string} code 
@@ -1083,7 +1082,7 @@ function query_deleteCurrency(code) {
  */
 function query_createLabel(params) {
     return `INSERT INTO labels(user_id, name, is_active, create_date) VALUES (
-        ${params.user_id ? params.user_id : 'NULL'}, '${query_handle_string(params.name)}', 1, '${dateFormat.to_string(new Date())}'
+        ${params.user_id ? params.user_id : 'NULL'}, '${query_handle_string(params.name)}', 1, ${Date.now()}
     );`;
 }
 /**
@@ -1119,7 +1118,7 @@ function query_deleteLabel(id) {
  */
 function query_createCategory(params) {
     return `INSERT INTO categories(user_id, parent_id, name, is_active, create_date) VALUES (
-        ${params.user_id ? params.user_id : 'NULL'}, ${params.parent_id ? params.parent_id : 'NULL'}, '${query_handle_string(params.name)}', 1, '${dateFormat.to_string(new Date())}'
+        ${params.user_id ? params.user_id : 'NULL'}, ${params.parent_id ? params.parent_id : 'NULL'}, '${query_handle_string(params.name)}', 1, ${Date.now()}
     );`;
 }
 /**
@@ -1158,7 +1157,7 @@ function query_deleteCategory(id) {
  */
 function query_createAccount(params) {
     return `INSERT INTO accounts(user_id, currency_code, name, start_amount, is_active, create_date) VALUES (
-        ${params.user_id}, '${query_handle_string(params.currency_code)}', '${query_handle_string(params.name)}', ${params.start_amount ? params.start_amount : 0}, 1, '${dateFormat.to_string(new Date())}'
+        ${params.user_id}, '${query_handle_string(params.currency_code)}', '${query_handle_string(params.name)}', ${params.start_amount ? params.start_amount : 0}, 1, ${Date.now()}
     );`;
 }
 /**
@@ -1199,7 +1198,7 @@ function query_createRecord(params) {
     return `INSERT INTO records(src_account_id, src_amount, dst_account_id, dst_amount, category_id, date, create_date) VALUES (
         ${params.src_account_id ? params.src_account_id : 'NULL'}, ${params.src_amount ? params.src_amount : 0},
         ${params.dst_account_id ? params.dst_account_id : 'NULL'}, ${params.dst_amount ? params.dst_amount : 0},
-        ${params.category_id ? params.category_id : 'NULL'}, '${dateFormat.to_string(params.date)}', '${dateFormat.to_string(new Date())}'
+        ${params.category_id ? params.category_id : 'NULL'}, ${params.date.valueOf()}, ${Date.now()}
     );`;
 }
 /**
@@ -1231,7 +1230,7 @@ function query_updateRecord(id, params) {
         statements.push(`category_id = ${params.category_id ? params.category_id : 'NULL'}`);
     }
     if (properties.includes('date')) {
-        statements.push(`date = '${dateFormat.to_string(params.date)}'`);
+        statements.push(`date = ${params.date ? params.date.valueOf() : 0}`);
     }
     return `UPDATE records SET ${statements.join(', ')} WHERE id = ${id};`;
 }
@@ -1247,7 +1246,7 @@ function query_deleteRecord(id) {
  * @param {number} label_id 
  */
 function query_createRecordLabel(record_id, label_id) {
-    return `INSERT INTO record_labels(record_id, label_id, create_date) VALUES (${record_id}, ${label_id}, '${dateFormat.to_string(new Date())}');`;
+    return `INSERT INTO record_labels(record_id, label_id, create_date) VALUES (${record_id}, ${label_id}, ${Date.now()});`;
 }
 /**
  * @param {number} record_id 
@@ -1273,7 +1272,7 @@ function query_deleteRecordLabels(record_id) {
  * @param {user_invite_data} params 
  */
 function query_createInvite(params) {
-    return `INSERT INTO user_invites(id, inviting_user_id, invite_date, expire_date) VALUES (${params.id}, ${params.inviting_user_id}, '${dateFormat.to_string(params.invite_date)}', '${dateFormat.to_string(params.expire_date)}');`;
+    return `INSERT INTO user_invites(id, inviting_user_id, invite_date, expire_date) VALUES (${params.id}, ${params.inviting_user_id}, ${params.invite_date.valueOf()}, ${params.expire_date.valueOf()});`;
 }
 /**
  * @param {number} userID 

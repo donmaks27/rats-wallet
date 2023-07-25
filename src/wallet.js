@@ -90,7 +90,12 @@ function commandHandler_start(message) {
     db.user_get(message.from.id, (userData, error) => {
         if (userData) {
             log.info(`[START] user ${message.from.id} found ("${userData.name}"), sending main menu message`);
-            walletMenu.sendMenuMessage('main', message.from, userData);
+            if (walletCommon.getUserAction(message.from.id) == walletCommon.ACTION_INVALID) {
+                walletMenu.sendMenuMessage('main', message.from, userData);
+            } else {
+                walletCommon.setUserMenu(message.from.id, 'main');
+                walletActions.stopUserAction(message.from, userData);
+            }
         } else {
             log.warning(`[START] can't find user ${message.from.id} (${error}), searching for invites...`);
             walletCommon.findUserInvite(message.from.id, (inviteData, error) => {
