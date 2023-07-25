@@ -163,7 +163,7 @@ function userAction_changeName_start(user, userData, callback) {
             log.error(userID, `[changeName] failed to send start message: ` + error);
             callback(false);
         } else {
-            log.error(userID, `[changeName] sent start message`);
+            log.info(userID, `[changeName] sent start message`);
             callback(true);
         }
     });
@@ -201,11 +201,12 @@ function userAction_changeName_stop(user, userData, callback) {
     const userID = user.id;
     log.info(userID, `[changeName] restoring menu message...`);
     walletMenu.sendMenuMessage(walletCommon.getUserMenu(user.id), user, userData, (message, error) => {
-        if (!error) {
+        if (error) {
             log.error(userID, `[changeName] failed to restore menu message (${error})`);
         } else {
             log.info(userID, `[changeName] menu message restored`);
         }
+        walletCommon.clearUserAction(userID);
         callback(true);
     });
 }
