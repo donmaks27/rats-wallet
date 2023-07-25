@@ -145,6 +145,10 @@ function createMenuData_MainMenu(user, userData) {
         keyboard: [
             [
                 {
+                    text: 'Invite user',
+                    callback_data: makeActionButton('invite')
+                },
+                {
                     text: 'Settings',
                     callback_data: makeMenuButton('settings')
                 }

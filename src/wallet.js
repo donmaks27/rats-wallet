@@ -18,18 +18,12 @@ var walletActions = require('./wallet-actions');
 
 const COMMAND_ERROR_MESSAGE_NOT_REGISTERED = `I can't find you in the database. Ask somebody to invite you!`;
 
-const REQUEST_ID_INVITE_USER = 1;
-
 /** @type {{ [command: string]: { description: string, handler: (message: bot.message_data) => any } }} */
 const bot_commands = {
     start: {
         description: 'Start interaction with me',
         handler: commandHandler_start
     },
-    /*invite: {
-        description: 'Invite another user',
-        handler: commandHandler_invite
-    },*/
     cancel: {
         description: 'Cancel current operation',
         handler: commandHandler_cancel
@@ -99,7 +93,7 @@ function commandHandler_start(message) {
             walletMenu.sendMenuMessage('main', message.from, userData);
         } else {
             log.warning(`[START] can't find user ${message.from.id} (${error}), searching for invites...`);
-            findUserInvite(message.from.id, (inviteData, error) => {
+            walletCommon.findUserInvite(message.from.id, (inviteData, error) => {
                 if (inviteData) {
                     log.info(`[START] found invite for user ${message.from.id}`);
                     bot.sendMessage({ 
@@ -133,42 +127,6 @@ function commandHandler_start(message) {
 /**
  * @param {bot.message_data} message 
  */
-function commandHandler_invite(message) {
-    log.info(`[INVITE] serching for user ${message.from.id}...`);
-    db.user_get(message.from.id, (userData, error) => {
-        if (!userData) {
-            log.warning(`[INVITE] can't find user ${message.from.id} (${error}), ignoring`);
-            bot.sendMessage({ chatID: message.chat.id, text: COMMAND_ERROR_MESSAGE_NOT_REGISTERED });
-        } else {
-            log.info(`[INVITE] found user data, sending invitation keyboard...`);
-            bot.sendMessage({
-                chatID: message.chat.id,
-                text: `Please, choose the user you want to invite`,
-                keyboard: {
-                    is_persistent: false,
-                    one_time_keyboard: true,
-                    resize_keyboard: true,
-                    keyboard: [[{
-                        text: `Choose user...`,
-                        request_user: {
-                            request_id: REQUEST_ID_INVITE_USER,
-                            user_is_bot: false
-                        }
-                    }]]
-                }
-            }, (keyboardMessage, error) => {
-                if (error) {
-                    log.error(`[INVITE] failed to send invitation keyboard to user ${message.from.id} (${error})`);
-                } else {
-                    log.info(`[INVITE] user ${message.from.id} received invitation keyboard`);
-                }
-            });
-        }
-    });
-}
-/**
- * @param {bot.message_data} message 
- */
 function commandHandler_cancel(message) {
     log.info(`[CANCEL] searching for user ${message.from.id}...`);
     db.user_get(message.from.id, (userData, error) => {
@@ -189,7 +147,7 @@ function defaultUserMessageHandler(message) {
     db.user_get(message.from.id, (userData, error) => {
         if (!userData) {
             log.warning(`[DEFAULT] can't find user ${message.from.id} (${error}), searching for invite...`);
-            findUserInvite(message.from.id, (inviteData, error) => {
+            walletCommon.findUserInvite(message.from.id, (inviteData, error) => {
                 if (inviteData) {
                     log.info(`[DEFAULT] found invite for user ${message.from.id}, probably user entered the name`);
                     onInvitedUserEnterName(message);
@@ -244,97 +202,6 @@ function handleMenuButton(callbackQuery) {
                 break;
             }
         }
-    });
-}
-
-/**
- * @param {number} userID 
- * @param {(inviteData: db.user_invite_data | null, error?: string) => any} callback 
- */
-function findUserInvite(userID, callback) {
-    db.invite_get(userID, (inviteData, error) => {
-        if (error) {
-            callback(null, error);
-        } else if (!inviteData) {
-            callback(null, `empty invite data`);
-        } else if ((inviteData.expire_date.valueOf() > 0) && (inviteData.expire_date <= new Date())) {
-            db.invite_delete(userID, (error) => {
-                callback(null, `invite expired`);
-            });
-        } else {
-            callback(inviteData);
-        }
-    });
-}
-/**
- * @param {bot.user_data} invitingUser 
- * @param {number} invitedUserID 
- */
-function sendUserInvite(invitingUser, invitedUserID) {
-    log.info(`[sendUserInvite] deleting inviting keyboard from user ${invitingUser.id}...`);
-    bot.sendMessage({ 
-        chatID: invitingUser.id, 
-        text: `Sending invite...`, 
-        removeKeyboard: true 
-    }, (invitingUserMessage, error) => {
-        if (error || !invitingUserMessage) {
-            log.error(`[sendUserInvite] failed to delete inviting keyboard from user ${invitingUser.id} (${error})`);
-            return;
-        }
-        log.info(`[sendUserInvite] searching for invited user ${invitedUserID}...`);
-        db.user_get(invitedUserID, (invitedUserData, error) => {
-            if (invitedUserData) {
-                log.warning(`[sendUserInvite] invited user ${invitedUserID} already registered`);
-                onUserSentInvite(invitingUserMessage, `User already registered, no need to invite him`);
-                return;
-            }
-            log.info(`[sendUserInvite] didn't find invited user ${invitedUserID} in database, searching for invite...`);
-            findUserInvite(invitedUserID, (inviteData, error) => {
-                if (inviteData) {
-                    log.warning(`[sendUserInvite] found active invitation for invited user ${invitedUserID}: ` + JSON.stringify(inviteData));
-                    onUserSentInvite(invitingUserMessage, `User already have active invite, no need to invite him again`);
-                    return;
-                }
-                log.info(`[sendUserInvite] didn't find invite for user ${invitedUserID}, creating the new one...`);
-                let inviteDate = new Date();
-                db.invite_create({
-                    id: invitedUserID,
-                    inviting_user_id: invitingUser.id,
-                    invite_date: inviteDate,
-                    expire_date: new Date(inviteDate.valueOf() + 24*60*60*1000)
-                }, (error) => {
-                    if (error) {
-                        log.error(`[sendUserInvite] failed to create invite for user ${invitedUserID} (${error})`);
-                        onUserSentInvite(invitingUserMessage, `Something went wrong, failed to create invite`);
-                        return;
-                    }
-                    log.info(`[sendUserInvite] invite for user ${invitedUserID} created, sending notification...`);
-                    bot.sendMessage({ 
-                        chatID: invitedUserID, 
-                        text: `Hello! ${invitingUser.first_name} invited you here! Invite expires in 24 hours\nPlease, enter your name`
-                    }, (invitedUserMessage, error) => {
-                        if (error || !invitedUserMessage) {
-                            log.error(`[sendUserInvite] failed to send notification about invite to user ${invitedUserID} (${error})`);
-                            onUserSentInvite(invitingUserMessage, `Something went wrong, failed to send notification about invite`);
-                        } else {
-                            log.info(`[sendUserInvite] notification sent`);
-                            onUserSentInvite(invitingUserMessage, `Sent an invite to ${invitedUserMessage.chat.first_name}`);
-                        }
-                    });
-                });
-            });
-        });
-    });
-}
-/**
- * @param {bot.message_data} invitingUserMessage 
- * @param {string} result 
- */
-function onUserSentInvite(invitingUserMessage, result) {
-    bot.deleteMessage({ chatID: invitingUserMessage.chat.id, messageID: invitingUserMessage.message_id });
-    bot.sendMessage({
-        chatID: invitingUserMessage.chat.id,
-        text: result
     });
 }
 /**

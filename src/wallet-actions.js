@@ -34,12 +34,19 @@ var walletMenu = require('./wallet-menu');
 
 /** @type {{ [action: string]: { onStart: on_start_handler, onMessage: on_message_handler, onStop: on_stop_handler } }} */
 const WalletActionsHandlers = {
+    invite: {
+        onStart: userAction_invite_start,
+        onMessage: userAction_invite_onMessage,
+        onStop: userAction_invite_stop
+    },
     changeName: {
         onStart: userAction_changeName_start,
         onMessage: userAction_changeName_onMessage,
         onStop: userAction_changeName_stop
     }
 };
+
+const USER_REQUEST_ID_INVITE = 1;
 
 module.exports.startUserAction = startUserAction;
 module.exports.handleUserActionMessage = handleUserActionMessage;
@@ -151,6 +158,132 @@ function stopUserAction(user, userData, callback) {
  * @param {db.user_data} userData 
  * @param {(success: boolean) => any} callback
  */
+function userAction_invite_start(user, userData, callback) {
+    const userID = user.id;
+    log.info(userID, `[invite] sending invitation keyboard...`);
+    bot.sendMessage({
+        chatID: user.id,
+        text: `*Send invite*\nPlease, choose the user you want to invite`,
+        parseMode: 'MarkdownV2',
+        keyboard: {
+            is_persistent: false,
+            one_time_keyboard: true,
+            resize_keyboard: true,
+            keyboard: [[{
+                text: `Choose user...`,
+                request_user: {
+                    request_id: USER_REQUEST_ID_INVITE,
+                    user_is_bot: false
+                }
+            }]]
+        }
+    }, (message, error) => {
+        if (error) {
+            log.error(userID, `[invite] failed to invitation keyboard (${error})`);
+            callback(false);
+        } else {
+            log.info(userID, `[invite] user received invitation keyboard`);
+            callback(true);
+        }
+    });
+}
+/**
+ * @param {bot.message_data} message 
+ * @param {db.user_data} userData 
+ * @param {(success: boolean) => any} callback
+ */
+function userAction_invite_onMessage(message, userData, callback) {
+    const userID = message.from.id;
+    if (!message.user_shared) {
+        log.warning(userID, `[invite] expected message with user link`);
+        callback(false);
+        return;
+    }
+    if (message.user_shared.request_id != USER_REQUEST_ID_INVITE) {
+        log.warning(userID, `[invite] wrong request ID ${message.user_shared.request_id} (expected ${USER_REQUEST_ID_INVITE})`);
+        callback(false);
+        return;
+    }
+
+    const invitedUserID = message.user_shared.user_id;
+    log.info(userID, `[invite] searching for invited user ${invitedUserID}...`);
+    db.user_get(invitedUserID, (invitedUserData, error) => {
+        if (invitedUserData) {
+            log.warning(userID, `[invite] invited user ${invitedUserID} already registered`);
+            bot.sendMessage({ chatID: userID, text: `User already registered, no need to invite him` });
+            callback(true);
+            return;
+        }
+        log.info(userID, `[invite] didn't find invited user ${invitedUserID} in database, searching for invite...`);
+        walletCommon.findUserInvite(invitedUserID, (inviteData, error) => {
+            if (inviteData) {
+                log.warning(userID, `[invite] found active invitation for invited user ${invitedUserID}: ` + JSON.stringify(inviteData));
+                bot.sendMessage({ chatID: userID, text: `User already have active invite, no need to invite him again` });
+                callback(true);
+                return;
+            }
+            log.info(userID, `[invite] didn't find invite for user ${invitedUserID}, creating the new one...`);
+            let inviteDate = new Date();
+            db.invite_create({
+                id: invitedUserID,
+                inviting_user_id: userID,
+                invite_date: inviteDate,
+                expire_date: new Date(inviteDate.valueOf() + 24*60*60*1000)
+            }, (error) => {
+                if (error) {
+                    log.error(userID, `[invite] failed to create invite for user ${invitedUserID} (${error})`);
+                    bot.sendMessage({ chatID: userID, text: `Something went wrong, failed to create invite` });
+                    callback(true);
+                    return;
+                }
+                bot.sendMessage({ 
+                    chatID: invitedUserID, 
+                    text: `Hello! ${message.from.first_name} invited you here! Invite expires in 24 hours\nPlease, enter your name`
+                });
+                log.info(userID, `[invite] invite for user ${invitedUserID} created`);
+                walletCommon.setUserActionArgs(userID, { inviteSent: true });
+                stopUserAction(message.from, userData, callback);
+            });
+        });
+    });
+}
+/**
+ * @param {bot.user_data} user 
+ * @param {db.user_data} userData 
+ * @param {(success: boolean) => any} callback
+ */
+function userAction_invite_stop(user, userData, callback) {
+    const userID = user.id;
+    const actionArgs = walletCommon.getUserActionArgs(userID);
+    log.info(userID, `[invite] deleting inviting keyboard...`);
+    bot.sendMessage({
+        chatID: userID,
+        text: actionArgs && actionArgs.inviteSent ? `Invite sent` : `Operation canceled`,
+        removeKeyboard: true
+    }, (message, error) => {
+        if (error) {
+            log.error(userID, `[invite] failed to delete inviting keyboard (${error})`);
+            callback(false);
+        } else {
+            log.info(userID, `[invite] inviting keyboard deleted, restoring menu message...`);
+            walletMenu.sendMenuMessage(walletCommon.getUserMenu(userID), user, userData, (message, error) => {
+                if (error) {
+                    log.error(userID, `[invite] failed to restore menu message (${error})`);
+                } else {
+                    log.info(userID, `[invite] menu message restored`);
+                }
+                walletCommon.clearUserAction(userID);
+                callback(true);
+            });
+        }
+    });
+}
+
+/**
+ * @param {bot.user_data} user 
+ * @param {db.user_data} userData 
+ * @param {(success: boolean) => any} callback
+ */
 function userAction_changeName_start(user, userData, callback) {
     const userID = user.id;
     log.info(userID, `[changeName] sending start message...`);
@@ -160,7 +293,7 @@ function userAction_changeName_start(user, userData, callback) {
         parseMode: 'MarkdownV2'
     }, (message, error) => {
         if (error) {
-            log.error(userID, `[changeName] failed to send start message: ` + error);
+            log.error(userID, `[changeName] failed to send start message (${error})`);
             callback(false);
         } else {
             log.info(userID, `[changeName] sent start message`);
