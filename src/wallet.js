@@ -12,10 +12,11 @@ var db = require('./database');
 var bot = require('./telegram-bot');
 var dateFormat = require('./date-format');
 
-var walletCommon = require('./wallet-common');
-var walletMenu   = require('./wallet-menu');
+var walletCommon  = require('./wallet-common');
+var walletMenu    = require('./wallet-menu');
+var walletActions = require('./wallet-actions');
 
-const ERROR_MESSAGE_NOT_REGISTERED = `I can't find you in the database. Ask somebody to invite you!`;
+const COMMAND_ERROR_MESSAGE_NOT_REGISTERED = `I can't find you in the database. Ask somebody to invite you!`;
 
 const REQUEST_ID_INVITE_USER = 1;
 
@@ -25,14 +26,14 @@ const bot_commands = {
         description: 'Start interaction with me',
         handler: commandHandler_start
     },
-    invite: {
+    /*invite: {
         description: 'Invite another user',
         handler: commandHandler_invite
-    },
-    /*cancel: {
+    },*/
+    cancel: {
         description: 'Cancel current operation',
         handler: commandHandler_cancel
-    }*/
+    }
 };
 
 module.exports.setupBotCommands = setupBotCommands;
@@ -74,11 +75,15 @@ function onBotUpdate(updateData) {
  */
 function handleUserMessage(message) {
     var commandIndex = message.entities ? message.entities.findIndex(v => v.type == 'bot_command') : -1;
-    var command = message.text && (commandIndex != -1) ? message.text.substring(
-        message.entities[commandIndex].offset + 1, message.entities[commandIndex].offset + message.entities[commandIndex].length
-    ) : '';
-    if (bot_commands.hasOwnProperty(command)) {
-        bot_commands[command].handler(message);
+    if (commandIndex != -1) {
+        var command = message.text ? message.text.substring(
+            message.entities[commandIndex].offset + 1, message.entities[commandIndex].offset + message.entities[commandIndex].length
+        ) : '';
+        if (bot_commands.hasOwnProperty(command)) {
+            bot_commands[command].handler(message);
+        } else {
+            log.warning('invalid bot command');
+        }
     } else {
         defaultUserMessageHandler(message);
     }
@@ -91,7 +96,7 @@ function commandHandler_start(message) {
     db.user_get(message.from.id, (userData, error) => {
         if (userData) {
             log.info(`[START] user ${message.from.id} found ("${userData.name}"), sending main menu message`);
-            walletMenu.sendMenuMessage(message.from, walletMenu.createMenuData({ type: 'main', userData: userData }));
+            walletMenu.sendMenuMessage('main', message.from, userData);
         } else {
             log.warning(`[START] can't find user ${message.from.id} (${error}), searching for invites...`);
             findUserInvite(message.from.id, (inviteData, error) => {
@@ -119,7 +124,7 @@ function commandHandler_start(message) {
                     });
                 } else {
                     log.warning(`[START] can't find invite for user ${message.from.id} (${error})`);
-                    bot.sendMessage({ chatID: message.chat.id, text: ERROR_MESSAGE_NOT_REGISTERED });
+                    bot.sendMessage({ chatID: message.chat.id, text: COMMAND_ERROR_MESSAGE_NOT_REGISTERED });
                 }
             });
         }
@@ -133,7 +138,7 @@ function commandHandler_invite(message) {
     db.user_get(message.from.id, (userData, error) => {
         if (!userData) {
             log.warning(`[INVITE] can't find user ${message.from.id} (${error}), ignoring`);
-            bot.sendMessage({ chatID: message.chat.id, text: ERROR_MESSAGE_NOT_REGISTERED });
+            bot.sendMessage({ chatID: message.chat.id, text: COMMAND_ERROR_MESSAGE_NOT_REGISTERED });
         } else {
             log.info(`[INVITE] found user data, sending invitation keyboard...`);
             bot.sendMessage({
@@ -165,43 +170,38 @@ function commandHandler_invite(message) {
  * @param {bot.message_data} message 
  */
 function commandHandler_cancel(message) {
-    
+    log.info(`[CANCEL] searching for user ${message.from.id}...`);
+    db.user_get(message.from.id, (userData, error) => {
+        if (!userData) {
+            log.warning(`[CANCEL] can't find user ${message.from.id} (${error}), ignoring`);
+            bot.sendMessage({ chatID: message.chat.id, text: COMMAND_ERROR_MESSAGE_NOT_REGISTERED });
+        } else {
+            log.info(`[CANCEL] found user data, canceling current action...`);
+            walletActions.stopUserAction(message.from, userData);
+        }
+    });
 }
 /**
  * @param {bot.message_data} message 
  */
 function defaultUserMessageHandler(message) {
-    if (message.user_shared) {
-        log.info(`[DEFAULT] handling shared user reference...`);
-        switch (message.user_shared.request_id) {
-        case REQUEST_ID_INVITE_USER:
-            log.info(`[DEFAULT] this is invite request, sending invite from user ${message.from.id} to ${message.user_shared.user_id}`);
-            sendUserInvite(message.from, message.user_shared.user_id);
-            break;
-        default:
-            log.warning(`[DEFAULT] unknown request ID ${message.user_shared.request_id}, ignoring`);
-            break;
+    log.info(`[DEFAULT] searching for user ${message.from.id}...`);
+    db.user_get(message.from.id, (userData, error) => {
+        if (!userData) {
+            log.warning(`[DEFAULT] can't find user ${message.from.id} (${error}), searching for invite...`);
+            findUserInvite(message.from.id, (inviteData, error) => {
+                if (inviteData) {
+                    log.info(`[DEFAULT] found invite for user ${message.from.id}, probably user entered the name`);
+                    onInvitedUserEnterName(message);
+                } else {
+                    log.warning(`[DEFAULT] can't find invite for user ${message.from.id} (${error}), ingoring`);
+                }
+            });
+        } else {
+            log.info(`[DEFAULT] found data for user ${message.from.id}, handling user message`);
+            walletActions.handleUserActionMessage(message, userData);
         }
-    } else {
-        log.info(`[DEFAULT] searching for user ${message.from.id}...`);
-        db.user_get(message.from.id, (userData, error) => {
-            if (!userData) {
-                log.warning(`[DEFAULT] can't find user ${message.from.id} (${error}), searching for invite...`);
-                findUserInvite(message.from.id, (inviteData, error) => {
-                    if (inviteData) {
-                        log.info(`[DEFAULT] found invite, probably user entered their name`);
-                        onInvitedUserEnterName(message);
-                    } else {
-                        log.warning(`[DEFAULT] can't find invite for user ${message.from.id} (${error}), ingoring`);
-                        bot.sendMessage({ chatID: message.chat.id, text: ERROR_MESSAGE_NOT_REGISTERED });
-                    }
-                });
-            } else {
-                log.info(`[DEFAULT] I found user data, but I don't know what to do next`);
-                // TODO: Handle input from registered user
-            }
-        });
-    }
+    });
 }
 
 /**
@@ -221,16 +221,21 @@ function handleMenuButton(callbackQuery) {
             const buttonData = callbackQuery.data.split(';');
             switch (buttonData[0]) {
             case walletCommon.MENU_BUTTON_GOTO:
-                const destination = buttonData.length > 1 ? buttonData[1] : '';
-                log.warning(`[MENU BUTTON] goto menu "${destination}"...`);
-                switch (destination) {
-                case 'main': case 'settings':
-                    walletMenu.changeMenuMessage(callbackQuery.message, walletMenu.createMenuData({ type: destination, userData: userData }));
-                    break;
-            
-                default:
+                if (buttonData.length == 1) {
                     log.warning(`[MENU BUTTON] invalid goto button params`);
-                    break;
+                } else {
+                    const destination = buttonData[1];
+                    log.info(`[MENU BUTTON] goto menu "${destination}"...`);
+                    walletMenu.changeMenuMessage(callbackQuery.message, destination, callbackQuery.from, userData);
+                }
+                break;
+            case walletCommon.MENU_BUTTON_ACTION:
+                if (buttonData.length == 1) {
+                    log.warning(`[MENU BUTTON] invalid action button params`);
+                } else {
+                    const action = buttonData[1];
+                    log.info(`[MENU BUTTON] starting action "${action}"...`);
+                    walletActions.startUserAction(action, callbackQuery.from, userData);
                 }
                 break;
             
@@ -350,7 +355,7 @@ function onInvitedUserEnterName(message) {
             } else {
                 log.info(`[onInvitedUserEnterName] user ${message.from.id} created: ` + JSON.stringify(userData));
                 db.invite_delete(userData.id);
-                walletMenu.sendMenuMessage(message.from, walletMenu.createMenuData({ type: 'main', userData: userData }));
+                walletMenu.sendMenuMessage('main', message.from, userData);
             }
         });
     }

@@ -1,56 +1,105 @@
 // @ts-check
 
 var logModule = require('./log');
-const logPrefix = '[WALLET][MENU] ';
+const logPrefix = '[WALLET][MENU]';
 const log = {
-    error: (msg) => logModule.error(logPrefix + msg),
-    warning: (msg) => logModule.warning(logPrefix + msg),
-    info: (msg) => logModule.info(logPrefix + msg)
+    /**
+     * @param {number} userID 
+     * @param {string} msg 
+     */
+    error: (userID, msg) => logModule.error(`${logPrefix}[USER ${userID}] ${msg}`),
+    /**
+     * @param {number} userID 
+     * @param {string} msg 
+     */
+    warning: (userID, msg) => logModule.warning(`${logPrefix}[USER ${userID}] ${msg}`),
+    /**
+     * @param {number} userID 
+     * @param {string} msg 
+     */
+    info: (userID, msg) => logModule.info(`${logPrefix}[USER ${userID}] ${msg}`)
 };
 
 var db  = require('./database');
 var bot = require('./telegram-bot');
 var walletCommon = require('./wallet-common');
 
+/** @type {{ [type: string]: (user: bot.user_data, userData: db.user_data) => menu_data }} */
+const WalletMenuConstructors = {
+    main: createMenuData_MainMenu,
+    settings: createMenuData_Settings
+};
+
 /**
- * @typedef {{ type: 'main'|'settings', userData: db.user_data }} menu_params
  * @typedef {{ text: string, parseMode?: bot.message_parse_mode, keyboard: bot.keyboard_button_inline_data[][] }} menu_data
  */
 
 module.exports.sendMenuMessage = sendMenuMessage;
 module.exports.changeMenuMessage = changeMenuMessage;
-module.exports.createMenuData = createMenuData;
 
 /**
+ * @param {string} type
  * @param {bot.user_data} user 
- * @param {menu_data} menuData 
+ * @param {db.user_data} userData 
  * @param {(message: bot.message_data | null, error?: string) => any} [callback] 
  */
-function sendMenuMessage(user, menuData, callback) {
-    log.info(`sending menu message...`);
+function sendMenuMessage(type, user, userData, callback) {
+    const userID = user.id;
+    log.info(userID, `sending menu message "${type}"...`);
+
+    const menuConstructor = WalletMenuConstructors[type];
+    if (!menuConstructor) {
+        log.warning(userID, `invalid menu type "${type}"`);
+        if (callback) {
+            callback(null, `invalid menu type "${type}"`);
+        }
+        return;
+    }
+
+    walletCommon.setUserMenu(userID, type);
+    const menuData = menuConstructor(user, userData);
     bot.sendMessage({
-        chatID: user.id,
+        chatID: userID,
         text: menuData.text,
         inlineKeyboard: {
             inline_keyboard: menuData.keyboard
         }
-    }, callback ? (message, error) => {
+    }, (message, error) => {
         if (error) {
-            log.error(`failed to send menu message (${error})`);
-            callback(null, `failed to send menu message: ` + error);
+            log.error(userID, `failed to send menu message (${error})`);
+            if (callback) {
+                callback(null, `failed to send menu message: ` + error);
+            }
         } else {
-            log.info(`menu message created`);
-            callback(message);
+            log.info(userID, `menu message created`);
+            if (callback) {
+                callback(message);
+            }
         }
-    } : undefined);
+    });
 }
 /**
  * @param {bot.message_data} menuMessage 
- * @param {menu_data} menuData 
+ * @param {string} type
+ * @param {bot.user_data} user 
+ * @param {db.user_data} userData 
  * @param {(message: bot.message_data | null, error?: string) => any} [callback] 
  */
-function changeMenuMessage(menuMessage, menuData, callback) {
-    log.info(`changing menu message...`);
+function changeMenuMessage(menuMessage, type, user, userData, callback) {
+    const userID = user.id;
+    log.info(userID, `changing menu message "${type}"...`);
+
+    const menuConstructor = WalletMenuConstructors[type];
+    if (!menuConstructor) {
+        log.warning(userID, `invalid menu type "${type}"`);
+        if (callback) {
+            callback(null, `invalid menu type "${type}"`);
+        }
+        return;
+    }
+
+    walletCommon.setUserMenu(userID, type);
+    const menuData = menuConstructor(user, userData);
     bot.editMessage({
         message: {
             chatID: menuMessage.chat.id,
@@ -63,60 +112,65 @@ function changeMenuMessage(menuMessage, menuData, callback) {
         }
     }, callback ? (message, error) => {
         if (error) {
-            log.error(`failed to change menu message (${error})`);
+            log.error(userID, `failed to change menu message (${error})`);
             callback(null, `failed to change menu message: ` + error);
         } else {
-            log.info(`menu message changed`);
+            log.info(userID, `menu message changed`);
             callback(message);
         }
     } : undefined);
 }
 
-/** @type {{ [type: string]: (params: menu_params) => menu_data }} */
-const menuConstructors = {
-    main: createMenuData_MainMenu,
-    settings: createMenuData_Settings
-};
 /**
- * @param {menu_params} params
- * @returns {menu_data}
+ * @param {'main'|'settings'} type 
  */
-function createMenuData(params) {
-    const constructor = menuConstructors[params.type];
-    if (!constructor) {
-        return { text: 'none', keyboard: [] };
-    }
-    return constructor(params);
+function makeMenuButton(type) {
+    return `${walletCommon.MENU_BUTTON_GOTO};${type}`;
 }
 /**
- * @param {menu_params} params 
+ * @param {string} action 
+ */
+function makeActionButton(action) {
+    return `${walletCommon.MENU_BUTTON_ACTION};${action}`;
+}
+
+/**
+ * @param {bot.user_data} user 
+ * @param {db.user_data} userData 
  * @returns {menu_data}
  */
-function createMenuData_MainMenu(params) {
+function createMenuData_MainMenu(user, userData) {
     return {
-        text: `Welcome, ${params.userData.name}!\nChoose an action:`,
+        text: `Welcome, ${userData.name}!\nChoose an action:`,
         keyboard: [
             [
                 {
                     text: 'Settings',
-                    callback_data: walletCommon.MENU_BUTTON_GOTO + ';settings'
+                    callback_data: makeMenuButton('settings')
                 }
             ]
         ]
     };
 }
 /**
- * @param {menu_params} params 
+ * @param {bot.user_data} user 
+ * @param {db.user_data} userData 
  * @returns {menu_data}
  */
-function createMenuData_Settings(params) {
+function createMenuData_Settings(user, userData) {
     return {
-        text: `Welcome, ${params.userData.name}!\nChoose an action:`,
+        text: `Welcome, ${userData.name}!\nChoose an action:`,
         keyboard: [
             [
                 {
+                    text: 'Change name',
+                    callback_data: makeActionButton('changeName')
+                }
+            ],
+            [
+                {
                     text: '<< Back to Main',
-                    callback_data: walletCommon.MENU_BUTTON_GOTO + ';main'
+                    callback_data: makeMenuButton('main')
                 }
             ]
         ]
