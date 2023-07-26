@@ -27,9 +27,9 @@ var walletCommon = require('./wallet-common');
 var walletMenu = require('./wallet-menu');
 
 /**
- * @typedef {(user: bot.user_data, userData: db.user_data, callback: (success: boolean) => any) => void} on_start_handler
- * @typedef {(message: bot.message_data, userData: db.user_data, callback: (success: boolean) => any) => void} on_message_handler
- * @typedef {(user: bot.user_data, userData: db.user_data, callback: (success: boolean) => any) => void} on_stop_handler
+ * @typedef {(user: bot.user_data, userData: db.user_data, args: string[], callback: (success: boolean) => any) => void} on_start_handler
+ * @typedef {(message: bot.message_data, userData: db.user_data, args: string[], callback: (success: boolean) => any) => void} on_message_handler
+ * @typedef {(user: bot.user_data, userData: db.user_data, args: string[], callback: (success: boolean) => any) => void} on_stop_handler
  */
 
 /** @type {{ [action: string]: { onStart: on_start_handler, onMessage: on_message_handler, onStop: on_stop_handler } }} */
@@ -54,11 +54,12 @@ module.exports.stopUserAction = stopUserAction;
 
 /**
  * @param {string} action 
+ * @param {string[]} args 
  * @param {bot.user_data} user 
  * @param {db.user_data} userData 
  * @param {(success: boolean) => any} [callback] 
  */
-function startUserAction(action, user, userData, callback) {
+function startUserAction(action, args, user, userData, callback) {
     const userID = user.id;
     log.info(userID, `starting action "${action}"...`);
 
@@ -70,7 +71,7 @@ function startUserAction(action, user, userData, callback) {
         }
         return;
     }
-    var currentAction = walletCommon.getUserAction(userID);
+    var currentAction = walletCommon.getUserAction(userID).action;
     if (currentAction != walletCommon.ACTION_INVALID) {
         log.warning(userID, `found active action "${currentAction}"`);
         stopUserAction(user, userData, (success) => {
@@ -80,14 +81,14 @@ function startUserAction(action, user, userData, callback) {
                     callback(false);
                 }
             } else {
-                startUserAction(action, user, userData, callback);
+                startUserAction(action, args, user, userData, callback);
             }
         });
         return;
     }
 
-    walletCommon.setUserAction(userID, action);
-    actionHandlers.onStart(user, userData, (success) => {
+    walletCommon.setUserAction(userID, action, args);
+    actionHandlers.onStart(user, userData, args, (success) => {
         if (!success) {
             log.error(userID, `failed to start user action "${action}"`);
             walletCommon.clearUserAction(userID);
@@ -107,14 +108,14 @@ function handleUserActionMessage(message, userData) {
     const userID = message.from.id;
     log.info(userID, `handling current action message...`);
     var currentAction = walletCommon.getUserAction(userID);
-    if (currentAction == walletCommon.ACTION_INVALID) {
+    if (currentAction.action == walletCommon.ACTION_INVALID) {
         log.info(userID, `there is no active action`);
     } else {
-        const actionHandlers = WalletActionsHandlers[currentAction];
+        const actionHandlers = WalletActionsHandlers[currentAction.action];
         if (!actionHandlers) {
             log.warning(userID, `invalid action "${currentAction}"`);
         } else {
-            actionHandlers.onMessage(message, userData, (success) => {
+            actionHandlers.onMessage(message, userData, currentAction.args, (success) => {
                 if (!success) {
                     log.error(userID, `failed to handle message for action "${currentAction}"`);
                 } else {
@@ -133,20 +134,20 @@ function stopUserAction(user, userData, callback) {
     const userID = user.id;
     log.info(userID, `stopping current action...`);
     var currentAction = walletCommon.getUserAction(userID);
-    if (currentAction == walletCommon.ACTION_INVALID) {
+    if (currentAction.action == walletCommon.ACTION_INVALID) {
         log.info(userID, `there is no active action`);
         if (callback) {
             callback(true);
         }
     } else {
-        const actionHandlers = WalletActionsHandlers[currentAction];
+        const actionHandlers = WalletActionsHandlers[currentAction.action];
         if (!actionHandlers) {
             log.warning(userID, `invalid action "${currentAction}"`);
             if (callback) {
                 callback(false);
             }
         } else {
-            actionHandlers.onStop(user, userData, (success) => {
+            actionHandlers.onStop(user, userData, currentAction.args, (success) => {
                 if (!success) {
                     log.error(userID, `failed to stop action "${currentAction}"`);
                 } else {
@@ -163,9 +164,10 @@ function stopUserAction(user, userData, callback) {
 /**
  * @param {bot.user_data} user 
  * @param {db.user_data} userData 
+ * @param {string[]} args 
  * @param {(success: boolean) => any} callback
  */
-function userAction_invite_start(user, userData, callback) {
+function userAction_invite_start(user, userData, args, callback) {
     const userID = user.id;
     log.info(userID, `[invite] sending invitation keyboard...`);
     bot.sendMessage({
@@ -197,9 +199,10 @@ function userAction_invite_start(user, userData, callback) {
 /**
  * @param {bot.message_data} message 
  * @param {db.user_data} userData 
+ * @param {string[]} args 
  * @param {(success: boolean) => any} callback
  */
-function userAction_invite_onMessage(message, userData, callback) {
+function userAction_invite_onMessage(message, userData, args, callback) {
     const userID = message.from.id;
     if (!message.user_shared) {
         log.warning(userID, `[invite] expected message with user link`);
@@ -248,7 +251,7 @@ function userAction_invite_onMessage(message, userData, callback) {
                     text: `Hello! ${message.from.first_name} invited you here! Invite expires in 24 hours\nPlease, enter your name`
                 });
                 log.info(userID, `[invite] invite for user ${invitedUserID} created`);
-                walletCommon.setUserActionArgs(userID, { inviteSent: true });
+                walletCommon.setUserActionArgs(userID, [ 'inviteSent' ]);
                 stopUserAction(message.from, userData, callback);
             });
         });
@@ -257,15 +260,15 @@ function userAction_invite_onMessage(message, userData, callback) {
 /**
  * @param {bot.user_data} user 
  * @param {db.user_data} userData 
+ * @param {string[]} args 
  * @param {(success: boolean) => any} callback
  */
-function userAction_invite_stop(user, userData, callback) {
+function userAction_invite_stop(user, userData, args, callback) {
     const userID = user.id;
-    const actionArgs = walletCommon.getUserActionArgs(userID);
     log.info(userID, `[invite] deleting inviting keyboard...`);
     bot.sendMessage({
         chatID: userID,
-        text: actionArgs && actionArgs.inviteSent ? `Invite sent` : `Operation canceled`,
+        text: args.includes('inviteSent') ? `Invite sent` : `Operation canceled`,
         removeKeyboard: true
     }, (message, error) => {
         if (error) {
@@ -273,7 +276,8 @@ function userAction_invite_stop(user, userData, callback) {
             callback(false);
         } else {
             log.info(userID, `[invite] inviting keyboard deleted, restoring menu message...`);
-            walletMenu.sendMenuMessage(walletCommon.getUserMenu(userID), user, userData, (message, error) => {
+            const currentMenu = walletCommon.getUserMenu(userID);
+            walletMenu.sendMenuMessage(currentMenu.menu, currentMenu.args, user, userData, (message, error) => {
                 if (error) {
                     log.error(userID, `[invite] failed to restore menu message (${error})`);
                 } else {
@@ -289,9 +293,10 @@ function userAction_invite_stop(user, userData, callback) {
 /**
  * @param {bot.user_data} user 
  * @param {db.user_data} userData 
+ * @param {string[]} args 
  * @param {(success: boolean) => any} callback
  */
-function userAction_changeName_start(user, userData, callback) {
+function userAction_changeName_start(user, userData, args, callback) {
     const userID = user.id;
     log.info(userID, `[changeName] sending start message...`);
     bot.sendMessage({
@@ -311,9 +316,10 @@ function userAction_changeName_start(user, userData, callback) {
 /**
  * @param {bot.message_data} message 
  * @param {db.user_data} userData 
+ * @param {string[]} args 
  * @param {(success: boolean) => any} callback
  */
-function userAction_changeName_onMessage(message, userData, callback) {
+function userAction_changeName_onMessage(message, userData, args, callback) {
     const userID = message.from.id;
     if (!message.text || (message.text.length == 0)) {
         log.error(userID, `[changeName] empty new name`);
@@ -335,12 +341,14 @@ function userAction_changeName_onMessage(message, userData, callback) {
 /**
  * @param {bot.user_data} user 
  * @param {db.user_data} userData 
+ * @param {string[]} args 
  * @param {(success: boolean) => any} callback
  */
-function userAction_changeName_stop(user, userData, callback) {
+function userAction_changeName_stop(user, userData, args, callback) {
     const userID = user.id;
     log.info(userID, `[changeName] restoring menu message...`);
-    walletMenu.sendMenuMessage(walletCommon.getUserMenu(user.id), user, userData, (message, error) => {
+    const currentMenu = walletCommon.getUserMenu(userID);
+    walletMenu.sendMenuMessage(currentMenu.menu, currentMenu.args, user, userData, (message, error) => {
         if (error) {
             log.error(userID, `[changeName] failed to restore menu message (${error})`);
         } else {

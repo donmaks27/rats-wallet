@@ -53,6 +53,7 @@ module.exports.account_get = account_get;
 module.exports.account_getAll = account_getAll;
 module.exports.account_edit = account_edit;
 module.exports.account_delete = account_delete;
+module.exports.account_getBallance = account_getBallance;
 
 module.exports.record_create = record_create;
 module.exports.record_get = record_get;
@@ -767,6 +768,20 @@ function account_delete(id, callback) {
         }
     } : undefined);
 }
+/**
+ * @param {number} id 
+ * @param {{ startDate?: Date, endDate?: Date }} params 
+ * @param {(ballance: number, error?: string) => any} callback 
+ */
+function account_getBallance(id, params, callback) {
+    db.get(query_getAccountBallance(id, params), (error, row) => {
+        if (error) {
+            callback(0, `failed to get account ballance: ` + error);
+        } else {
+            callback(row.ballance);
+        }
+    });
+}
 
 /**
  * @param {{ src_account_id?: number, src_amount?: number, dst_account_id?: number, dst_amount?: number, category_id?: number, date: Date }} params 
@@ -1047,7 +1062,7 @@ function query_updateUser(id, params) {
  * @param {{ code: string, name: string }} params 
  */
 function query_createCurrency(params) {
-    return `INSERT INTO currencies(code, name, is_active, create_date) VALUES ('${query_handle_string(params.code)}', '${query_handle_string(params.name)}', 1, ${Date.now()});`;
+    return `INSERT INTO currencies(code, name, is_active, create_date) VALUES ('${query_handle_string(params.code)}', ${params.name ? `'${query_handle_string(params.name)}'` : 'NULL'}, 1, ${Date.now()});`;
 }
 /**
  * @param {string} code 
@@ -1189,6 +1204,25 @@ function query_updateAccount(id, params) {
  */
 function query_deleteAccount(id) {
     return `DELETE FROM accounts WHERE id = ${id};`;
+}
+/**
+ * @param {number} id 
+ * @param {{ startDate?: Date, endDate?: Date }} params 
+ */
+function query_getAccountBallance(id, params) {
+    /** @type {string[]} */
+    var conditions = [];
+    if (params.startDate && params.startDate.valueOf() > 0) {
+        conditions.push(`date >= ${params.startDate.valueOf()}`);
+    }
+    if (params.endDate && params.endDate.valueOf() > 0) {
+        conditions.push(`date <= ${params.endDate.valueOf()}`);
+    }
+    return `SELECT SUM(amount) AS ballance FROM (
+        SELECT SUM(dst_amount) amount, dst_account_id AS account_id FROM records WHERE ${conditions.concat(`dst_account_id = ${id}`).join(' AND ')}
+        UNION ALL
+        SELECT -SUM(src_amount) amount, src_account_id AS account_id FROM records WHERE ${conditions.concat(`src_account_id = ${id}`).join(' AND ')}
+    ) t;`;
 }
 
 /**

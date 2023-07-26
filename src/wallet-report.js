@@ -327,7 +327,7 @@ function task_addAccount(user_id, account, db_data) {
             name: account.name,
             user_id: user_id,
             currency_code: account.currency,
-            start_amount: account.start_amount * 100
+            start_amount: Math.round(account.start_amount * 100)
         }, (data, error) => {
             if (error) {
                 callback(error);
@@ -363,11 +363,11 @@ function task_addRecord(record, db_data) {
         var params = { date: new Date(record.date) };
         if (srcAccountIndex != -1) {
             params.src_account_id = db_data.accounts[srcAccountIndex].id;
-            params.src_amount = record.src_amount ? record.src_amount * 100 : 0;
+            params.src_amount = record.src_amount ? Math.round(record.src_amount * 100) : 0;
         }
         if (dstAccountIndex != -1) {
             params.dst_account_id = db_data.accounts[dstAccountIndex].id;
-            params.dst_amount = record.dst_amount ? record.dst_amount * 100 : 0;
+            params.dst_amount = record.dst_amount ? Math.round(record.dst_amount * 100) : 0;
         }
         if (categoryIndex != -1) {
             params.category_id = db_data.categories[categoryIndex].id

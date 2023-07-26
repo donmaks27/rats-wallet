@@ -25,15 +25,16 @@ var bot = require('./telegram-bot');
 var walletCommon = require('./wallet-common');
 
 /**
- * @typedef {'main'|'settings'|'wallet'|'accounts'} menu_type
+ * @typedef {'main'|'settings'|'wallet'|'accounts'|'account'} menu_type
  */
 
-/** @type {{ [type: string]: (user: bot.user_data, userData: db.user_data, callback: (menuData: menu_data) => any) => void }} */
+/** @type {{ [type: string]: (user: bot.user_data, userData: db.user_data, args: string[], callback: (menuData: menu_data) => any) => void }} */
 const WalletMenuConstructors = {
     main: createMenuData_MainMenu,
     settings: createMenuData_Settings,
     wallet: createMenuData_Wallet,
-    accounts: createMenuData_Accounts
+    accounts: createMenuData_Accounts,
+    account: createMenuData_Account
 };
 
 /**
@@ -44,26 +45,27 @@ module.exports.sendMenuMessage = sendMenuMessage;
 module.exports.changeMenuMessage = changeMenuMessage;
 
 /**
- * @param {{ type: string, args?: string[] }} menuParams
+ * @param {string} menu 
+ * @param {string[]} args 
  * @param {bot.user_data} user 
  * @param {db.user_data} userData 
  * @param {(message: bot.message_data | null, error?: string) => any} [callback] 
  */
-function sendMenuMessage(menuParams, user, userData, callback) {
+function sendMenuMessage(menu, args, user, userData, callback) {
     const userID = user.id;
-    log.info(userID, `sending menu message "${menuParams.type}"...`);
+    log.info(userID, `sending menu message "${menu}"...`);
 
-    const menuConstructor = WalletMenuConstructors[menuParams.type];
+    const menuConstructor = WalletMenuConstructors[menu];
     if (!menuConstructor) {
-        log.warning(userID, `invalid menu type "${menuParams.type}"`);
+        log.warning(userID, `invalid menu type "${menu}"`);
         if (callback) {
-            callback(null, `invalid menu type "${menuParams.type}"`);
+            callback(null, `invalid menu type "${menu}"`);
         }
         return;
     }
 
-    walletCommon.setUserMenu(userID, menuParams.type, menuParams.args);
-    menuConstructor(user, userData, (menuData) => {
+    walletCommon.setUserMenu(userID, menu, args);
+    menuConstructor(user, userData, args, (menuData) => {
         bot.sendMessage({
             chatID: userID,
             text: menuData.text,
@@ -89,26 +91,27 @@ function sendMenuMessage(menuParams, user, userData, callback) {
 }
 /**
  * @param {bot.message_data} menuMessage 
- * @param {{ type: string, args?: string[] }} menuParams
+ * @param {string} menu 
+ * @param {string[]} args 
  * @param {bot.user_data} user 
  * @param {db.user_data} userData 
  * @param {(message: bot.message_data | null, error?: string) => any} [callback] 
  */
-function changeMenuMessage(menuMessage, menuParams, user, userData, callback) {
+function changeMenuMessage(menuMessage, menu, args, user, userData, callback) {
     const userID = user.id;
-    log.info(userID, `changing menu message "${menuParams.type}"...`);
+    log.info(userID, `changing menu message "${menu}"...`);
 
-    const menuConstructor = WalletMenuConstructors[menuParams.type];
+    const menuConstructor = WalletMenuConstructors[menu];
     if (!menuConstructor) {
-        log.warning(userID, `invalid menu type "${menuParams.type}"`);
+        log.warning(userID, `invalid menu type "${menu}"`);
         if (callback) {
-            callback(null, `invalid menu type "${menuParams.type}"`);
+            callback(null, `invalid menu type "${menu}"`);
         }
         return;
     }
 
-    walletCommon.setUserMenu(userID, menuParams.type, menuParams.args);
-    menuConstructor(user, userData, (menuData) => {
+    walletCommon.setUserMenu(userID, menu, args);
+    menuConstructor(user, userData, args, (menuData) => {
         bot.editMessage({
             message: {
                 chatID: menuMessage.chat.id,
@@ -152,11 +155,12 @@ function makeActionButton(action) {
 /**
  * @param {bot.user_data} user 
  * @param {db.user_data} userData 
+ * @param {string[]} args 
  * @param {(menuData: menu_data) => any} callback 
  */
-function createMenuData_MainMenu(user, userData, callback) {
+function createMenuData_MainMenu(user, userData, args, callback) {
     callback({
-        text: `Welcome, ${userData.name}!\nChoose an action:`,
+        text: `Welcome, ${userData.name}!\nChoose what you want to do:`,
         keyboard: [
             [
                 {
@@ -182,11 +186,12 @@ function createMenuData_MainMenu(user, userData, callback) {
 /**
  * @param {bot.user_data} user 
  * @param {db.user_data} userData 
+ * @param {string[]} args 
  * @param {(menuData: menu_data) => any} callback 
  */
-function createMenuData_Settings(user, userData, callback) {
+function createMenuData_Settings(user, userData, args, callback) {
     callback({
-        text: `Welcome, ${userData.name}!\nChoose an action:`,
+        text: `Welcome, ${userData.name}!\nChoose what you want to do:`,
         keyboard: [
             [
                 {
@@ -206,9 +211,10 @@ function createMenuData_Settings(user, userData, callback) {
 /**
  * @param {bot.user_data} user 
  * @param {db.user_data} userData 
+ * @param {string[]} args 
  * @param {(menuData: menu_data) => any} callback 
  */
-function createMenuData_Wallet(user, userData, callback) {
+function createMenuData_Wallet(user, userData, args, callback) {
     callback({
         text: `*This is your wallet*\nChoose what you want to do:`,
         parseMode: 'MarkdownV2',
@@ -245,12 +251,12 @@ function createMenuData_Wallet(user, userData, callback) {
 /**
  * @param {bot.user_data} user 
  * @param {db.user_data} userData 
+ * @param {string[]} args 
  * @param {(menuData: menu_data) => any} callback 
  */
-function createMenuData_Accounts(user, userData, callback) {
+function createMenuData_Accounts(user, userData, args, callback) {
     const userID = user.id;
-    const menuArgs = walletCommon.getUserMenuArgs(userID);
-    const shouldShowArchived = menuArgs.includes('showAll');
+    const shouldShowArchived = args.includes('showAll');
     db.account_getAll(userID, (accounts, error) => {
         /** @type {bot.keyboard_button_inline_data[][]} */
         var menuDataKeyboard = [];
@@ -269,7 +275,7 @@ function createMenuData_Accounts(user, userData, callback) {
                 }
                 menuDataKeyboardRow.push({
                     text: accounts[i].name,
-                    callback_data: makeMenuButton('accounts')
+                    callback_data: makeMenuButton('account', [ `${accounts[i].id}` ])
                 });
                 if (menuDataKeyboardRow.length == 3) {
                     menuDataKeyboard.push(menuDataKeyboardRow);
@@ -294,5 +300,48 @@ function createMenuData_Accounts(user, userData, callback) {
             parseMode: 'MarkdownV2',
             keyboard: menuDataKeyboard
         });
+    });
+}
+/**
+ * @param {bot.user_data} user 
+ * @param {db.user_data} userData 
+ * @param {string[]} args 
+ * @param {(menuData: menu_data) => any} callback 
+ */
+function createMenuData_Account(user, userData, args, callback) {
+    const userID = user.id;
+    const accountID = args.length > 0 ? Number.parseInt(args[0]) : db.invalid_id;
+    db.account_get(accountID, (accountData, error) => {
+        if (error || !accountData) {
+            log.error(userID, `failed to get data of account ${accountID} (${error})`);
+            callback({
+                text: `_Hmm, something wrong..._`,
+                parseMode: 'MarkdownV2',
+                keyboard: [[{
+                    text: `<< Back to Accounts`,
+                    callback_data: makeMenuButton('accounts')
+                }]]
+            });
+        } else {
+            db.account_getBallance(accountID, {}, (ballance, error) => {
+                if (error) {
+                    log.error(userID, `failed to get ballance of account "${accountData.name}" (${error})`);
+                }
+                /** @type {string[]} */
+                var textLines = [];
+                textLines.push(`Account *${accountData.name}* (${accountData.currency_code})`);
+                textLines.push(`_Current ballance: ${Math.round(ballance) / 100}_`);
+                textLines.push(`Choose what you want to do:`);
+
+                /** @type {bot.keyboard_button_inline_data[][]} */
+                var menuDataKeyboard = [];
+                menuDataKeyboard.push([{ text: `<< Back to Accounts`, callback_data: makeMenuButton('accounts') }]);
+                callback({
+                    text: textLines.join('\n'),
+                    parseMode: 'MarkdownV2',
+                    keyboard: menuDataKeyboard
+                });
+            });
+        }
     });
 }
