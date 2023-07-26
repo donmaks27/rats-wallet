@@ -7,7 +7,7 @@ const MENU_BUTTON_ACTION = "MenuButtonAction";
 
 const ACTION_INVALID = 'none';
 
-/** @type {{ [userID: number]: { menu: string, menuArgs: string[], action: string, actionArgs: string[] } }} */
+/** @type {{ [userID: number]: { menu: string, menuArgs: string[], menuMessageID: number, action: string, actionArgs: string[] } }} */
 var WalletUsersState = {};
 
 module.exports.MENU_BUTTON_GOTO   = MENU_BUTTON_GOTO;
@@ -15,6 +15,8 @@ module.exports.MENU_BUTTON_ACTION = MENU_BUTTON_ACTION;
 module.exports.ACTION_INVALID = ACTION_INVALID;
 module.exports.getUserMenu = getUserMenu;
 module.exports.setUserMenu = setUserMenu;
+module.exports.getUserMenuMessageID = getUserMenuMessageID;
+module.exports.setUserMenuMessageID = setUserMenuMessageID;
 module.exports.getUserAction = getUserAction;
 module.exports.setUserAction = setUserAction;
 module.exports.clearUserAction = clearUserAction;
@@ -24,7 +26,7 @@ module.exports.findUserInvite = findUserInvite;
 
 function checkUserState(userID) {
     if (!WalletUsersState[userID]) {
-        WalletUsersState[userID] = { menu: 'main', menuArgs: [], action: ACTION_INVALID, actionArgs: [] };
+        WalletUsersState[userID] = { menu: 'main', menuArgs: [], menuMessageID: 0, action: ACTION_INVALID, actionArgs: [] };
     }
 }
 
@@ -44,6 +46,22 @@ function setUserMenu(userID, menu, args) {
     checkUserState(userID);
     WalletUsersState[userID].menu = menu;
     WalletUsersState[userID].menuArgs = args ? args : [];
+}
+
+/**
+ * @param {number} userID 
+ */
+function getUserMenuMessageID(userID) {
+    checkUserState(userID);
+    return WalletUsersState[userID].menuMessageID;
+}
+/**
+ * @param {number} userID 
+ * @param {number} messageID 
+ */
+function setUserMenuMessageID(userID, messageID) {
+    checkUserState(userID);
+    WalletUsersState[userID].menuMessageID = messageID;
 }
 
 /**

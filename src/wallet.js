@@ -188,8 +188,9 @@ function handleMenuButton(callbackQuery) {
                     log.warning(`[MENU BUTTON] invalid goto button params`);
                 } else {
                     const destination = buttonData[1];
-                    log.info(`[MENU BUTTON] goto menu "${destination}"...`);
-                    walletMenu.changeMenuMessage(callbackQuery.message, destination, buttonData.slice(2), callbackQuery.from, userData);
+                    const args = buttonData.slice(2);
+                    log.info(`[MENU BUTTON] goto menu "${destination}" (args: [ ${args.join('; ')} ])...`);
+                    walletMenu.changeMenuMessage(callbackQuery.message.message_id, destination, args, callbackQuery.from, userData);
                 }
                 break;
             case walletCommon.MENU_BUTTON_ACTION:
@@ -197,8 +198,9 @@ function handleMenuButton(callbackQuery) {
                     log.warning(`[MENU BUTTON] invalid action button params`);
                 } else {
                     const action = buttonData[1];
-                    log.info(`[MENU BUTTON] starting action "${action}"...`);
-                    walletActions.startUserAction(action, buttonData.slice(2), callbackQuery.from, userData);
+                    const args = buttonData.slice(2);
+                    log.info(`[MENU BUTTON] starting action "${action}" (args: [ ${args.join('; ')} ])...`);
+                    walletActions.startUserAction(action, args, callbackQuery.from, userData);
                 }
                 break;
             

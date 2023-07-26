@@ -43,7 +43,12 @@ const WalletActionsHandlers = {
         onStart: userAction_changeName_start,
         onMessage: userAction_changeName_onMessage,
         onStop: userAction_changeName_stop
-    }
+    },
+    archiveAccount: {
+        onStart: userAction_archiveAccount_start,
+        onMessage: userAction_archiveAccount_onMessage,
+        onStop: userAction_archiveAccount_stop
+    },
 };
 
 const USER_REQUEST_ID_INVITE = 1;
@@ -356,5 +361,77 @@ function userAction_changeName_stop(user, userData, args, callback) {
         }
         walletCommon.clearUserAction(userID);
         callback(true);
+    });
+}
+
+/**
+ * @param {bot.user_data} user 
+ * @param {db.user_data} userData 
+ * @param {string[]} args 
+ * @param {(success: boolean) => any} callback
+ */
+function userAction_archiveAccount_start(user, userData, args, callback) {
+    const userID = user.id;
+
+    const shouldArchive = !args.includes('unarchive');
+    log.info(userID, `[archiveAccount] ${ shouldArchive ? 'archiving' : 'unarchiving' } account...`);
+
+    const accountIDIndex = args.findIndex(v => v.startsWith('accountID='));
+    if (accountIDIndex == -1) {
+        log.error(userID, `[archiveAccount] can't find argument "accountID"`);
+        callback(false);
+        return;
+    }
+    const index = args[accountIDIndex].search(/(?<=^accountID=)[0-9]+$/g);
+    if (index == -1) {
+        log.error(userID, `[archiveAccount] invalid argument "accountID"`);
+        callback(false);
+        return;
+    }
+    const accountID = Number.parseInt(args[accountIDIndex].substring(index));
+    if (Number.isNaN(accountID)) {
+        log.error(userID, `[archiveAccount] invalid account ID`);
+        callback(false);
+        return;
+    }
+
+    db.account_edit(accountID, { is_active: !shouldArchive }, (accountData, error) => {
+        if (error || !accountData) {
+            log.error(userID, `[archiveAccount] failed to ${ shouldArchive ? 'archive' : 'unarchive' } account ${accountID} (${error})`);
+            callback(false);
+        } else {
+            log.info(userID, `[archiveAccount] account ${accountID} ${ shouldArchive ? 'archived' : 'unarchived' }`);
+            stopUserAction(user, userData, callback);
+        }
+    });
+}
+/**
+ * @param {bot.message_data} message 
+ * @param {db.user_data} userData 
+ * @param {string[]} args 
+ * @param {(success: boolean) => any} callback
+ */
+function userAction_archiveAccount_onMessage(message, userData, args, callback) {
+    callback(true);
+}
+/**
+ * @param {bot.user_data} user 
+ * @param {db.user_data} userData 
+ * @param {string[]} args 
+ * @param {(success: boolean) => any} callback
+ */
+function userAction_archiveAccount_stop(user, userData, args, callback) {
+    const userID = user.id;
+    log.info(userID, `[archiveAccount] updating menu...`);
+    const accountIDIndex = args.findIndex(v => v.startsWith('accountID='));
+    const accountID = Number.parseInt(args[accountIDIndex].substring(args[accountIDIndex].search(/(?<=^accountID=)[0-9]+$/g)));
+    walletMenu.changeMenuMessage(walletCommon.getUserMenuMessageID(userID), 'account', [ `${accountID}` ], user, userData, (message, error) => {
+        if (error) {
+            log.error(userID, `[archiveAccount] failed to update menu message`);
+            callback(false);
+        } else {
+            log.info(userID, `[archiveAccount] menu message updated`);
+            callback(true);
+        }
     });
 }

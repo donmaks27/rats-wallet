@@ -75,13 +75,14 @@ function sendMenuMessage(menu, args, user, userData, callback) {
                 inline_keyboard: menuData.keyboard
             }
         }, (message, error) => {
-            if (error) {
+            if (error || !message) {
                 log.error(userID, `failed to send menu message (${error})`);
                 if (callback) {
                     callback(null, `failed to send menu message: ` + error);
                 }
             } else {
                 log.info(userID, `menu message created`);
+                walletCommon.setUserMenuMessageID(userID, message.message_id);
                 if (callback) {
                     callback(message);
                 }
@@ -90,14 +91,14 @@ function sendMenuMessage(menu, args, user, userData, callback) {
     });
 }
 /**
- * @param {bot.message_data} menuMessage 
+ * @param {number} menuMessageID 
  * @param {string} menu 
  * @param {string[]} args 
  * @param {bot.user_data} user 
  * @param {db.user_data} userData 
  * @param {(message: bot.message_data | null, error?: string) => any} [callback] 
  */
-function changeMenuMessage(menuMessage, menu, args, user, userData, callback) {
+function changeMenuMessage(menuMessageID, menu, args, user, userData, callback) {
     const userID = user.id;
     log.info(userID, `changing menu message "${menu}"...`);
 
@@ -114,8 +115,8 @@ function changeMenuMessage(menuMessage, menu, args, user, userData, callback) {
     menuConstructor(user, userData, args, (menuData) => {
         bot.editMessage({
             message: {
-                chatID: menuMessage.chat.id,
-                id: menuMessage.message_id
+                chatID: userID,
+                id: menuMessageID
             },
             text: menuData.text,
             parseMode: menuData.parseMode,
@@ -123,11 +124,12 @@ function changeMenuMessage(menuMessage, menu, args, user, userData, callback) {
                 inline_keyboard: menuData.keyboard
             }
         }, callback ? (message, error) => {
-            if (error) {
+            if (error || !message) {
                 log.error(userID, `failed to change menu message (${error})`);
                 callback(null, `failed to change menu message: ` + error);
             } else {
                 log.info(userID, `menu message changed`);
+                walletCommon.setUserMenuMessageID(userID, message.message_id);
                 callback(message);
             }
         } : undefined);
@@ -147,9 +149,14 @@ function makeMenuButton(type, args) {
 }
 /**
  * @param {string} action 
+ * @param {string[]} [args] 
  */
-function makeActionButton(action) {
-    return `${walletCommon.MENU_BUTTON_ACTION};${action}`;
+function makeActionButton(action, args) {
+    var result = `${walletCommon.MENU_BUTTON_ACTION};${action}`;
+    if (args && (args.length > 0)) {
+        result += ';' + args.join(';');
+    }
+    return result;
 }
 
 /**
@@ -303,7 +310,7 @@ function createMenuData_Accounts(user, userData, args, callback) {
         menuDataKeyboard.push([{ text: `Create new account >>`, callback_data: makeMenuButton('accounts') }]);
         menuDataKeyboard.push([{ text: `<< Back to Wallet`, callback_data: makeMenuButton('wallet') }]);
         callback({
-            text: `*Your accounts:*`,
+            text: `*Accounts*\nChoose what you want to do:`,
             parseMode: 'MarkdownV2',
             keyboard: menuDataKeyboard
         });
@@ -337,11 +344,19 @@ function createMenuData_Account(user, userData, args, callback) {
                 /** @type {string[]} */
                 var textLines = [];
                 textLines.push(`Account *${escapeMessageMarkdown(accountData.name)}* ${escapeMessageMarkdown(`(${accountData.currency_code})`)}`);
+                if (accountData.is_active) {
+                    textLines[0] += ` _\\[archived\\]_`;
+                }
                 textLines.push(`_Current ballance: ${escapeMessageMarkdown(`${Math.round(ballance) / 100}`)}_`);
                 textLines.push(`Choose what you want to do:`);
 
                 /** @type {bot.keyboard_button_inline_data[][]} */
                 var menuDataKeyboard = [];
+                if (accountData.is_active) {
+                    menuDataKeyboard.push([{ text: `Archive account`, callback_data: makeActionButton('archiveAccount', [ `accountID=${accountID}` ]) }]);
+                } else {
+                    menuDataKeyboard.push([{ text: `Unarchive account`, callback_data: makeActionButton('archiveAccount', [ `accountID=${accountID}`, 'unarchive' ]) }]);
+                }
                 menuDataKeyboard.push([{ text: `<< Back to Accounts`, callback_data: makeMenuButton('accounts') }]);
                 callback({
                     text: textLines.join('\n'),
