@@ -329,7 +329,7 @@ function createMenuData_Account(user, userData, args, callback) {
                 }
                 /** @type {string[]} */
                 var textLines = [];
-                textLines.push(`Account *${accountData.name}* (${accountData.currency_code})`);
+                textLines.push(`Account *${accountData.name}* \\(${accountData.currency_code}\\)`);
                 textLines.push(`_Current ballance: ${Math.round(ballance) / 100}_`);
                 textLines.push(`Choose what you want to do:`);
 
