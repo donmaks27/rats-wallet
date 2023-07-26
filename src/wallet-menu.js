@@ -153,6 +153,13 @@ function makeActionButton(action) {
 }
 
 /**
+ * @param {string} msg 
+ */
+function escapeMessageMarkdown(msg) {
+    return msg.replace(/(?=[\_\*\[\]\(\)\~\`\>\#\+\-\=\|\{\}\.\!])/g, '\\');
+}
+
+/**
  * @param {bot.user_data} user 
  * @param {db.user_data} userData 
  * @param {string[]} args 
@@ -315,7 +322,7 @@ function createMenuData_Account(user, userData, args, callback) {
         if (error || !accountData) {
             log.error(userID, `failed to get data of account ${accountID} (${error})`);
             callback({
-                text: `_Hmm, something wrong\\.\\.\\._`,
+                text: `_${escapeMessageMarkdown(`Hmm, something wrong...`)}_`,
                 parseMode: 'MarkdownV2',
                 keyboard: [[{
                     text: `<< Back to Accounts`,
@@ -329,8 +336,8 @@ function createMenuData_Account(user, userData, args, callback) {
                 }
                 /** @type {string[]} */
                 var textLines = [];
-                textLines.push(`Account *${accountData.name}* \\(${accountData.currency_code}\\)`);
-                textLines.push(`_Current ballance: ${`${Math.round(ballance) / 100}`.replace('.', '\\.')}_`);
+                textLines.push(`Account *${escapeMessageMarkdown(accountData.name)}* ${escapeMessageMarkdown(`(${accountData.currency_code})`)}`);
+                textLines.push(`_Current ballance: ${escapeMessageMarkdown(`${Math.round(ballance) / 100}`)}_`);
                 textLines.push(`Choose what you want to do:`);
 
                 /** @type {bot.keyboard_button_inline_data[][]} */
