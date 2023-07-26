@@ -123,16 +123,20 @@ function changeMenuMessage(menuMessageID, menu, args, user, userData, callback) 
             inlineKeyboard: {
                 inline_keyboard: menuData.keyboard
             }
-        }, callback ? (message, error) => {
+        }, (message, error) => {
             if (error || !message) {
                 log.error(userID, `failed to change menu message (${error})`);
-                callback(null, `failed to change menu message: ` + error);
+                if (callback) {
+                    callback(null, `failed to change menu message: ` + error);
+                }
             } else {
                 log.info(userID, `menu message changed`);
                 walletCommon.setUserMenuMessageID(userID, message.message_id);
-                callback(message);
+                if (callback) {
+                    callback(message);
+                }
             }
-        } : undefined);
+        });
     });
 }
 
@@ -344,7 +348,7 @@ function createMenuData_Account(user, userData, args, callback) {
                 /** @type {string[]} */
                 var textLines = [];
                 textLines.push(`Account *${escapeMessageMarkdown(accountData.name)}* ${escapeMessageMarkdown(`(${accountData.currency_code})`)}`);
-                if (accountData.is_active) {
+                if (!accountData.is_active) {
                     textLines[0] += ` _\\[archived\\]_`;
                 }
                 textLines.push(`_Current ballance: ${escapeMessageMarkdown(`${Math.round(ballance) / 100}`)}_`);

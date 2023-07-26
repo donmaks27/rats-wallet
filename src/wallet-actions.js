@@ -118,13 +118,13 @@ function handleUserActionMessage(message, userData) {
     } else {
         const actionHandlers = WalletActionsHandlers[currentAction.action];
         if (!actionHandlers) {
-            log.warning(userID, `invalid action "${currentAction}"`);
+            log.warning(userID, `invalid action "${currentAction.action}"`);
         } else {
             actionHandlers.onMessage(message, userData, currentAction.args, (success) => {
                 if (!success) {
-                    log.error(userID, `failed to handle message for action "${currentAction}"`);
+                    log.error(userID, `failed to handle message for action "${currentAction.action}"`);
                 } else {
-                    log.info(userID, `handled message for action "${currentAction}"`);
+                    log.info(userID, `handled message for action "${currentAction.action}"`);
                 }
             });
         }
@@ -428,6 +428,7 @@ function userAction_archiveAccount_stop(user, userData, args, callback) {
     if (menuMessageID != 0) {
         log.info(userID, `[archiveAccount] updating menu...`);
         walletMenu.changeMenuMessage(walletCommon.getUserMenuMessageID(userID), 'account', [ `${accountID}` ], user, userData, (message, error) => {
+            walletCommon.clearUserAction(userID);
             if (error) {
                 log.error(userID, `[archiveAccount] failed to update menu message`);
                 callback(false);
@@ -439,6 +440,7 @@ function userAction_archiveAccount_stop(user, userData, args, callback) {
     } else {
         log.info(userID, `[archiveAccount] sending new menu message...`);
         walletMenu.sendMenuMessage('account', [ `${accountID}` ], user, userData, (message, error) => {
+            walletCommon.clearUserAction(userID);
             if (error) {
                 log.error(userID, `[archiveAccount] failed to send menu message`);
                 callback(false);
