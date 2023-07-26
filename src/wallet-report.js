@@ -332,8 +332,21 @@ function task_addAccount(user_id, account, db_data) {
             if (error) {
                 callback(error);
             } else if (data) {
-                db_data.accounts.push(data);
-                callback();
+                if (!account.archived) {
+                    db_data.accounts.push(data);
+                    callback();
+                } else {
+                    db.account_edit(data.id, {
+                        is_active: false
+                    }, (data, error) => {
+                        if (error) {
+                            callback(error);
+                        } else if (data) {
+                            db_data.accounts.push(data);
+                            callback();
+                        }
+                    });
+                }
             }
         });
     };
