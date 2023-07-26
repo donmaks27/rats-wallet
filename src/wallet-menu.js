@@ -315,7 +315,7 @@ function createMenuData_Account(user, userData, args, callback) {
         if (error || !accountData) {
             log.error(userID, `failed to get data of account ${accountID} (${error})`);
             callback({
-                text: `_Hmm, something wrong..._`,
+                text: `_Hmm, something wrong\\.\\.\\._`,
                 parseMode: 'MarkdownV2',
                 keyboard: [[{
                     text: `<< Back to Accounts`,
@@ -330,7 +330,7 @@ function createMenuData_Account(user, userData, args, callback) {
                 /** @type {string[]} */
                 var textLines = [];
                 textLines.push(`Account *${accountData.name}* \\(${accountData.currency_code}\\)`);
-                textLines.push(`_Current ballance: ${Math.round(ballance) / 100}_`);
+                textLines.push(`_Current ballance: ${`${Math.round(ballance) / 100}`.replace('.', '\\.')}_`);
                 textLines.push(`Choose what you want to do:`);
 
                 /** @type {bot.keyboard_button_inline_data[][]} */
