@@ -422,16 +422,30 @@ function userAction_archiveAccount_onMessage(message, userData, args, callback) 
  */
 function userAction_archiveAccount_stop(user, userData, args, callback) {
     const userID = user.id;
-    log.info(userID, `[archiveAccount] updating menu...`);
     const accountIDIndex = args.findIndex(v => v.startsWith('accountID='));
     const accountID = Number.parseInt(args[accountIDIndex].substring(args[accountIDIndex].search(/(?<=^accountID=)[0-9]+$/g)));
-    walletMenu.changeMenuMessage(walletCommon.getUserMenuMessageID(userID), 'account', [ `${accountID}` ], user, userData, (message, error) => {
-        if (error) {
-            log.error(userID, `[archiveAccount] failed to update menu message`);
-            callback(false);
-        } else {
-            log.info(userID, `[archiveAccount] menu message updated`);
-            callback(true);
-        }
-    });
+    const menuMessageID = walletCommon.getUserMenuMessageID(userID);
+    if (menuMessageID != 0) {
+        log.info(userID, `[archiveAccount] updating menu...`);
+        walletMenu.changeMenuMessage(walletCommon.getUserMenuMessageID(userID), 'account', [ `${accountID}` ], user, userData, (message, error) => {
+            if (error) {
+                log.error(userID, `[archiveAccount] failed to update menu message`);
+                callback(false);
+            } else {
+                log.info(userID, `[archiveAccount] menu message updated`);
+                callback(true);
+            }
+        });
+    } else {
+        log.info(userID, `[archiveAccount] sending new menu message...`);
+        walletMenu.sendMenuMessage('account', [ `${accountID}` ], user, userData, (message, error) => {
+            if (error) {
+                log.error(userID, `[archiveAccount] failed to send menu message`);
+                callback(false);
+            } else {
+                log.info(userID, `[archiveAccount] menu message sent`);
+                callback(true);
+            }
+        });
+    }
 }
