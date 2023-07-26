@@ -91,7 +91,7 @@ function commandHandler_start(message) {
         if (userData) {
             log.info(`[START] user ${message.from.id} found ("${userData.name}"), sending main menu message`);
             if (walletCommon.getUserAction(message.from.id) == walletCommon.ACTION_INVALID) {
-                walletMenu.sendMenuMessage('main', message.from, userData);
+                walletMenu.sendMenuMessage({ type: 'main' }, message.from, userData);
             } else {
                 walletCommon.setUserMenu(message.from.id, 'main');
                 walletActions.stopUserAction(message.from, userData);
@@ -189,7 +189,7 @@ function handleMenuButton(callbackQuery) {
                 } else {
                     const destination = buttonData[1];
                     log.info(`[MENU BUTTON] goto menu "${destination}"...`);
-                    walletMenu.changeMenuMessage(callbackQuery.message, destination, callbackQuery.from, userData);
+                    walletMenu.changeMenuMessage(callbackQuery.message, { type: destination, args: buttonData.slice(2) }, callbackQuery.from, userData);
                 }
                 break;
             case walletCommon.MENU_BUTTON_ACTION:
@@ -227,7 +227,7 @@ function onInvitedUserEnterName(message) {
             } else {
                 log.info(`[onInvitedUserEnterName] user ${message.from.id} created: ` + JSON.stringify(userData));
                 db.invite_delete(userData.id);
-                walletMenu.sendMenuMessage('main', message.from, userData);
+                walletMenu.sendMenuMessage({ type: 'main' }, message.from, userData);
             }
         });
     }

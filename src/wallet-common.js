@@ -7,7 +7,7 @@ const MENU_BUTTON_ACTION = "MenuButtonAction";
 
 const ACTION_INVALID = 'none';
 
-/** @type {{ [userID: number]: { menu: string, action: string, actionArgs?: any } }} */
+/** @type {{ [userID: number]: { menu: string, menuArgs: string[], action: string, actionArgs?: any } }} */
 var WalletUsersState = {};
 
 module.exports.MENU_BUTTON_GOTO   = MENU_BUTTON_GOTO;
@@ -15,6 +15,7 @@ module.exports.MENU_BUTTON_ACTION = MENU_BUTTON_ACTION;
 module.exports.ACTION_INVALID = ACTION_INVALID;
 module.exports.getUserMenu = getUserMenu;
 module.exports.setUserMenu = setUserMenu;
+module.exports.getUserMenuArgs = getUserMenuArgs;
 module.exports.getUserAction = getUserAction;
 module.exports.setUserAction = setUserAction;
 module.exports.clearUserAction = clearUserAction;
@@ -23,34 +24,42 @@ module.exports.setUserActionArgs = setUserActionArgs;
 
 module.exports.findUserInvite = findUserInvite;
 
-/**
- * @param {number} userID 
- */
-function getUserMenu(userID) {
+function checkUserState(userID) {
     if (!WalletUsersState[userID]) {
-        return 'main';
-    }
-    return WalletUsersState[userID].menu;
-}
-/**
- * @param {number} userID 
- * @param {string} menu 
- */
-function setUserMenu(userID, menu) {
-    if (!WalletUsersState[userID]) {
-        WalletUsersState[userID] = { menu: menu, action: ACTION_INVALID };
-    } else {
-        WalletUsersState[userID].menu = menu;
+        WalletUsersState[userID] = { menu: 'main', menuArgs: [], action: ACTION_INVALID };
     }
 }
 
 /**
  * @param {number} userID 
  */
+function getUserMenu(userID) {
+    checkUserState(userID);
+    return WalletUsersState[userID].menu;
+}
+/**
+ * @param {number} userID 
+ * @param {string} menu 
+ * @param {string[]} [args] 
+ */
+function setUserMenu(userID, menu, args) {
+    checkUserState(userID);
+    WalletUsersState[userID].menu = menu;
+    WalletUsersState[userID].menuArgs = args ? args : [];
+}
+/**
+ * @param {number} userID 
+ */
+function getUserMenuArgs(userID) {
+    checkUserState(userID);
+    return WalletUsersState[userID].menuArgs;
+}
+
+/**
+ * @param {number} userID 
+ */
 function getUserAction(userID) {
-    if (!WalletUsersState[userID]) {
-        return ACTION_INVALID;
-    }
+    checkUserState(userID);
     return WalletUsersState[userID].action;
 }
 /**
@@ -58,12 +67,9 @@ function getUserAction(userID) {
  * @param {string} action 
  */
 function setUserAction(userID, action) {
-    if (!WalletUsersState[userID]) {
-        WalletUsersState[userID] = { menu: 'main', action: action };
-    } else {
-        WalletUsersState[userID].action = action;
-        delete WalletUsersState[userID].actionArgs;
-    }
+    checkUserState(userID);
+    WalletUsersState[userID].action = action;
+    delete WalletUsersState[userID].actionArgs;
 }
 /**
  * @param {number} userID 
@@ -76,14 +82,16 @@ function clearUserAction(userID) {
  * @param {number} userID 
  */
 function getUserActionArgs(userID) {
-    return WalletUsersState[userID] ? WalletUsersState[userID].actionArgs : null;
+    checkUserState(userID);
+    return WalletUsersState[userID].actionArgs;
 }
 /**
  * @param {number} userID 
  * @param {any} args 
  */
 function setUserActionArgs(userID, args) {
-    if (WalletUsersState[userID] && (WalletUsersState[userID].action != ACTION_INVALID)) {
+    checkUserState(userID);
+    if (WalletUsersState[userID].action != ACTION_INVALID) {
         WalletUsersState[userID].actionArgs = args;
     }
 }

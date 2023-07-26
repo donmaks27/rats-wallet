@@ -44,25 +44,25 @@ module.exports.sendMenuMessage = sendMenuMessage;
 module.exports.changeMenuMessage = changeMenuMessage;
 
 /**
- * @param {string} type
+ * @param {{ type: string, args?: string[] }} menuParams
  * @param {bot.user_data} user 
  * @param {db.user_data} userData 
  * @param {(message: bot.message_data | null, error?: string) => any} [callback] 
  */
-function sendMenuMessage(type, user, userData, callback) {
+function sendMenuMessage(menuParams, user, userData, callback) {
     const userID = user.id;
-    log.info(userID, `sending menu message "${type}"...`);
+    log.info(userID, `sending menu message "${menuParams.type}"...`);
 
-    const menuConstructor = WalletMenuConstructors[type];
+    const menuConstructor = WalletMenuConstructors[menuParams.type];
     if (!menuConstructor) {
-        log.warning(userID, `invalid menu type "${type}"`);
+        log.warning(userID, `invalid menu type "${menuParams.type}"`);
         if (callback) {
-            callback(null, `invalid menu type "${type}"`);
+            callback(null, `invalid menu type "${menuParams.type}"`);
         }
         return;
     }
 
-    walletCommon.setUserMenu(userID, type);
+    walletCommon.setUserMenu(userID, menuParams.type, menuParams.args);
     menuConstructor(user, userData, (menuData) => {
         bot.sendMessage({
             chatID: userID,
@@ -89,25 +89,25 @@ function sendMenuMessage(type, user, userData, callback) {
 }
 /**
  * @param {bot.message_data} menuMessage 
- * @param {string} type
+ * @param {{ type: string, args?: string[] }} menuParams
  * @param {bot.user_data} user 
  * @param {db.user_data} userData 
  * @param {(message: bot.message_data | null, error?: string) => any} [callback] 
  */
-function changeMenuMessage(menuMessage, type, user, userData, callback) {
+function changeMenuMessage(menuMessage, menuParams, user, userData, callback) {
     const userID = user.id;
-    log.info(userID, `changing menu message "${type}"...`);
+    log.info(userID, `changing menu message "${menuParams.type}"...`);
 
-    const menuConstructor = WalletMenuConstructors[type];
+    const menuConstructor = WalletMenuConstructors[menuParams.type];
     if (!menuConstructor) {
-        log.warning(userID, `invalid menu type "${type}"`);
+        log.warning(userID, `invalid menu type "${menuParams.type}"`);
         if (callback) {
-            callback(null, `invalid menu type "${type}"`);
+            callback(null, `invalid menu type "${menuParams.type}"`);
         }
         return;
     }
 
-    walletCommon.setUserMenu(userID, type);
+    walletCommon.setUserMenu(userID, menuParams.type, menuParams.args);
     menuConstructor(user, userData, (menuData) => {
         bot.editMessage({
             message: {
@@ -133,9 +133,14 @@ function changeMenuMessage(menuMessage, type, user, userData, callback) {
 
 /**
  * @param {menu_type} type 
+ * @param {string[]} [args] 
  */
-function makeMenuButton(type) {
-    return `${walletCommon.MENU_BUTTON_GOTO};${type}`;
+function makeMenuButton(type, args) {
+    var result = `${walletCommon.MENU_BUTTON_GOTO};${type}`;
+    if (args && (args.length > 0)) {
+        result += ';' + args.join(';');
+    }
+    return result;
 }
 /**
  * @param {string} action 
@@ -244,26 +249,42 @@ function createMenuData_Wallet(user, userData, callback) {
  */
 function createMenuData_Accounts(user, userData, callback) {
     const userID = user.id;
+    const menuArgs = walletCommon.getUserMenuArgs(userID);
+    const shouldShowArchived = menuArgs.includes('showAll');
     db.account_getAll(userID, (accounts, error) => {
         /** @type {bot.keyboard_button_inline_data[][]} */
         var menuDataKeyboard = [];
+        var archivedAmount = 0;
         if (error) {
             log.error(userID, `failed to get accounts list (${error})`);
         } else {
             /** @type {bot.keyboard_button_inline_data[]} */
             var menuDataKeyboardRow = [];
             for (var i = 0; i < accounts.length; i++) {
+                if (!accounts[i].is_active) {
+                    archivedAmount++;
+                    if (!shouldShowArchived) {
+                        continue;
+                    }
+                }
                 menuDataKeyboardRow.push({
                     text: accounts[i].name,
                     callback_data: makeMenuButton('accounts')
                 });
-                if (i % 3 == 2) {
+                if (menuDataKeyboardRow.length == 3) {
                     menuDataKeyboard.push(menuDataKeyboardRow);
                     menuDataKeyboardRow = [];
                 }
             }
             if (menuDataKeyboardRow.length > 0) {
                 menuDataKeyboard.push(menuDataKeyboardRow);
+            }
+        }
+        if (archivedAmount > 0) {
+            if (!shouldShowArchived) {
+                menuDataKeyboard.push([{ text: `Show archived`, callback_data: makeMenuButton('accounts', [ 'showAll' ]) }]);
+            } else {
+                menuDataKeyboard.push([{ text: `Hide archived`, callback_data: makeMenuButton('accounts') }]);
             }
         }
         menuDataKeyboard.push([{ text: `Create new account >>`, callback_data: makeMenuButton('accounts') }]);
