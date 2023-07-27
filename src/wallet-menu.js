@@ -166,13 +166,7 @@ function makeActionButton(action, args) {
  * @param {walletCommon.args_data} [args] 
  */
 function makeButton(refType, refDestination, args) {
-    var result = `${refType}:${refDestination}`;
-    if (args) {
-        for (var argKey in args) {
-            result += `;${argKey}=${args[argKey]}`;
-        }
-    }
-    return result;
+    return walletCommon.encodeArgs(`${refType}:${refDestination}`, args);
 }
 
 /**

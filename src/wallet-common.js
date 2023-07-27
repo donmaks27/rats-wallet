@@ -112,18 +112,20 @@ function setUserActionArgs(userID, args) {
  */
 function encodeArgs(str, args) {
     var result = str;
-    for (var argKey in args) {
-        const argValue = args[argKey];
-        if (argValue === null) {
-            result += `;${argKey}=0`;
-        } else {
-            var prefix = '';
-            switch (typeof argValue) {
-            case 'boolean': prefix = 'b'; break;
-            case 'number': prefix = 'n'; break;
-            default: prefix = 's'; break;
+    if (args) {
+        for (var argKey in args) {
+            const argValue = args[argKey];
+            if (argValue === null) {
+                result += `;${argKey}=0`;
+            } else {
+                var prefix = '';
+                switch (typeof argValue) {
+                case 'boolean': prefix = 'b'; break;
+                case 'number': prefix = 'n'; break;
+                default: prefix = 's'; break;
+                }
+                result += `;${argKey}=${prefix}${argValue}`;
             }
-            result += `;${argKey}=${prefix}${argValue}`;
         }
     }
     return result;
