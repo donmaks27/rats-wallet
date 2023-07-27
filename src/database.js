@@ -8,7 +8,7 @@ var log = require('./log');
 /**
  * @typedef {{ users: user_data[], currencies: currency_data[], labels: label_data[], categories: category_data[], accounts: account_data[], records: record_data[], record_labels: record_label_data[], user_invites: user_invite_data[] }} full_data
  * @typedef {{ id: number, name: string, create_date: Date }} user_data
- * @typedef {{ code: string, name: string, is_active: boolean, create_date: Date }} currency_data
+ * @typedef {{ code: string, name: string | null, is_active: boolean, create_date: Date }} currency_data
  * @typedef {{ id: number, user_id: number, name: string, is_active: boolean, create_date: Date }} label_data
  * @typedef {{ id: number, user_id: number, parent_id: number, name: string, is_active: boolean, create_date: Date }} category_data
  * @typedef {{ id: number, user_id: number, currency_code: string, name: string, start_amount: number, is_active: boolean, create_date: Date }} account_data
@@ -311,7 +311,7 @@ function user_edit(id, params, callback) {
 }
 
 /**
- * @param {{ code: string, name: string }} params 
+ * @param {{ code: string, name?: string }} params 
  * @param {(data: currency_data | null, error?: string) => any} [callback] 
  */
 function currency_create(params, callback) {
@@ -1059,7 +1059,7 @@ function query_updateUser(id, params) {
 }
 
 /**
- * @param {{ code: string, name: string }} params 
+ * @param {{ code: string, name?: string }} params 
  */
 function query_createCurrency(params) {
     return `INSERT INTO currencies(code, name, is_active, create_date) VALUES ('${query_handle_string(params.code)}', ${params.name ? `'${query_handle_string(params.name)}'` : 'NULL'}, 1, ${Date.now()});`;
@@ -1078,7 +1078,11 @@ function query_updateCurrency(code, params) {
     var statements = [];
     const properties = Object.getOwnPropertyNames(params);
     if (properties.includes('name')) {
-        statements.push(`name = '${query_handle_string(params.name)}'`);
+        if (params.name) {
+            statements.push(`name = '${query_handle_string(params.name)}'`);
+        } else {
+            statements.push(`name = NULL`);
+        }
     }
     if (properties.includes('is_active')) {
         statements.push(`is_active = ${params.is_active ? 1 : 0}`);

@@ -25,16 +25,17 @@ var bot = require('./telegram-bot');
 var walletCommon = require('./wallet-common');
 
 /**
- * @typedef {'main'|'settings'|'wallet'|'accounts'|'account'} menu_type
+ * @typedef {'main'|'settings'|'wallet'|'accounts'|'account'|'createAccount_currency'} menu_type
  */
 
 /** @type {{ [type: string]: (user: bot.user_data, userData: db.user_data, args: walletCommon.args_data, callback: (menuData: menu_data) => any) => void }} */
 const WalletMenuConstructors = {
-    main: createMenuData_MainMenu,
-    settings: createMenuData_Settings,
-    wallet: createMenuData_Wallet,
-    accounts: createMenuData_Accounts,
-    account: createMenuData_Account
+    main:     createMenuData_main,
+    settings: createMenuData_settings,
+    wallet:   createMenuData_wallet,
+    accounts: createMenuData_accounts,
+    account:  createMenuData_account,
+    createAccount_currency: createMenuData_createAccount_currency
 };
 
 /**
@@ -187,7 +188,7 @@ function escapeMessageMarkdown(msg) {
  * @param {walletCommon.args_data} args 
  * @param {(menuData: menu_data) => any} callback 
  */
-function createMenuData_MainMenu(user, userData, args, callback) {
+function createMenuData_main(user, userData, args, callback) {
     callback({
         text: `Welcome, ${userData.name}!\nChoose what you want to do:`,
         keyboard: [
@@ -218,7 +219,7 @@ function createMenuData_MainMenu(user, userData, args, callback) {
  * @param {walletCommon.args_data} args 
  * @param {(menuData: menu_data) => any} callback 
  */
-function createMenuData_Settings(user, userData, args, callback) {
+function createMenuData_settings(user, userData, args, callback) {
     callback({
         text: `Welcome, ${userData.name}!\nChoose what you want to do:`,
         keyboard: [
@@ -243,7 +244,7 @@ function createMenuData_Settings(user, userData, args, callback) {
  * @param {walletCommon.args_data} args 
  * @param {(menuData: menu_data) => any} callback 
  */
-function createMenuData_Wallet(user, userData, args, callback) {
+function createMenuData_wallet(user, userData, args, callback) {
     callback({
         text: `*This is your wallet*\nChoose what you want to do:`,
         parseMode: 'MarkdownV2',
@@ -283,7 +284,7 @@ function createMenuData_Wallet(user, userData, args, callback) {
  * @param {walletCommon.args_data} args 
  * @param {(menuData: menu_data) => any} callback 
  */
-function createMenuData_Accounts(user, userData, args, callback) {
+function createMenuData_accounts(user, userData, args, callback) {
     const userID = user.id;
     const shouldShowArchived = args.showAll ? true : false;
     db.account_getAll(userID, (accounts, error) => {
@@ -291,7 +292,7 @@ function createMenuData_Accounts(user, userData, args, callback) {
         var menuDataKeyboard = [];
         var archivedAmount = 0;
         if (error) {
-            log.error(userID, `failed to get accounts list (${error})`);
+            log.error(userID, `[accounts] failed to get accounts list (${error})`);
         } else {
             /** @type {bot.keyboard_button_inline_data[]} */
             var menuDataKeyboardRow = [];
@@ -330,7 +331,7 @@ function createMenuData_Accounts(user, userData, args, callback) {
                 callback_data: makeMenuButton('accounts', { showAll: !shouldShowArchived }) 
             }]);
         }
-        menuDataKeyboard.push([{ text: `Create new account >>`, callback_data: makeMenuButton('accounts') }]);
+        menuDataKeyboard.push([{ text: `Create new account >>`, callback_data: makeMenuButton('createAccount_currency') }]);
         menuDataKeyboard.push([{ text: `<< Back to Wallet`, callback_data: makeMenuButton('wallet') }]);
         callback({
             text: `*Accounts*\nChoose what you want to do:`,
@@ -345,12 +346,12 @@ function createMenuData_Accounts(user, userData, args, callback) {
  * @param {walletCommon.args_data} args 
  * @param {(menuData: menu_data) => any} callback 
  */
-function createMenuData_Account(user, userData, args, callback) {
+function createMenuData_account(user, userData, args, callback) {
     const userID = user.id;
     const accountID = typeof args.accountID === 'number' ? args.accountID : db.invalid_id;
     db.account_get(accountID, (accountData, error) => {
         if (error || !accountData) {
-            log.error(userID, `failed to get data of account ${accountID} (${error})`);
+            log.error(userID, `[account] failed to get data of account ${accountID} (${error})`);
             callback({
                 text: `_${escapeMessageMarkdown(`Hmm, something wrong...`)}_`,
                 parseMode: 'MarkdownV2',
@@ -362,7 +363,7 @@ function createMenuData_Account(user, userData, args, callback) {
         } else {
             db.account_getBallance(accountID, {}, (ballance, error) => {
                 if (error) {
-                    log.error(userID, `failed to get ballance of account "${accountData.name}" (${error})`);
+                    log.error(userID, `[account] failed to get ballance of account "${accountData.name}" (${error})`);
                 }
                 /** @type {string[]} */
                 var textLines = [];
@@ -387,5 +388,39 @@ function createMenuData_Account(user, userData, args, callback) {
                 });
             });
         }
+    });
+}
+
+/**
+ * @param {bot.user_data} user 
+ * @param {db.user_data} userData 
+ * @param {walletCommon.args_data} args 
+ * @param {(menuData: menu_data) => any} callback 
+ */
+function createMenuData_createAccount_currency(user, userData, args, callback) {
+    const userID = user.id;
+    db.currency_getAll((currenciesData, error) => {
+        /** @type {menu_data} */
+        var menuData = { text: `*Creating new account*\nChoose currency for the new account:`, parseMode: 'MarkdownV2', keyboard: [] };
+        if (error) {
+            log.error(userID, `[createAccount_currency] failed to get currencies data (${error})`);
+            menuData.text = `_${escapeMessageMarkdown(`Hmm, something wrong...`)}_`;
+        } else {
+            for (var i = 0; i < currenciesData.length; i++) {
+                if (!currenciesData[i].is_active) {
+                    continue;
+                }
+                menuData.keyboard.push([{
+                    text: currenciesData[i].name ? `${currenciesData[i].name} (${currenciesData[i].code})` : currenciesData[i].code,
+                    callback_data: makeActionButton('createAccount', { currency: currenciesData[i].code })
+                }]);
+            }
+            if (menuData.keyboard.length == 0) {
+                log.warning(userID, `[createAccount_currency] there is no available currencies`);
+                menuData.text = `_${escapeMessageMarkdown(`Can't find any active currency...`)}_`;
+            }
+        }
+        menuData.keyboard.push([{ text: `<< Back to Accounts`, callback_data: makeMenuButton('accounts') }]);
+        callback(menuData);
     });
 }

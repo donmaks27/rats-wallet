@@ -263,8 +263,7 @@ function task_checkUserExists(user_id) {
 function task_addCurrency(currency_code) {
     return (callback) => {
         db.currency_create({
-            code: currency_code,
-            name: ''
+            code: currency_code
         }, (data, error) => {
             callback(error);
         });

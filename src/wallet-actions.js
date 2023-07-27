@@ -49,6 +49,11 @@ const WalletActionsHandlers = {
         onMessage: userAction_archiveAccount_onMessage,
         onStop: userAction_archiveAccount_stop
     },
+    createAccount: {
+        onStart: userAction_createAccount_start,
+        onMessage: userAction_createAccount_onMessage,
+        onStop: userAction_createAccount_stop
+    }
 };
 
 const USER_REQUEST_ID_INVITE = 1;
@@ -420,10 +425,152 @@ function userAction_archiveAccount_stop(user, userData, args, callback) {
     walletMenu.changeMenuMessage(menuMessageID, 'account', { accountID: accountID }, user, userData, (message, error) => {
         walletCommon.clearUserAction(userID);
         if (error) {
-            log.error(userID, `[archiveAccount] failed to update menu message`);
+            log.error(userID, `[archiveAccount] failed to update menu message (${error})`);
             callback(false);
         } else {
             log.info(userID, `[archiveAccount] menu message updated`);
+            callback(true);
+        }
+    });
+}
+
+/**
+ * @param {bot.user_data} user 
+ * @param {db.user_data} userData 
+ * @param {walletCommon.args_data} args 
+ * @param {(success: boolean) => any} callback
+ */
+function userAction_createAccount_start(user, userData, args, callback) {
+    const userID = user.id;
+
+    if (typeof args.currency !== 'string') {
+        log.warning(userID, `[createAccount] invalid argument "currency"`);
+        callback(false);
+        return;
+    }
+
+    log.info(userID, `[createAccount] clearing menu message...`);
+    const prevMenuMessageID = walletCommon.getUserMenuMessageID(userID);
+    if (prevMenuMessageID == 0) {
+        log.error(userID, `[createAccount] empty message menu ID`);
+        callback(false);
+    } else {
+        bot.editMessage({
+            message: { chatID: userID, id: prevMenuMessageID },
+            text: `Please, enter name of the new account:`,
+            inlineKeyboard: { inline_keyboard: [] }
+        }, (message, error) => {
+            if (error) {
+                log.error(userID, `[createAccount] failed to change menu message (${error})`);
+                callback(false);
+            } else {
+                log.info(userID, `[createAccount] changed menu message, starting stage "enterName`);
+                walletCommon.setUserMenuMessageID(userID, 0);
+                walletCommon.setUserMenu(userID, 'accounts'); // Just to be sure
+                args.stage = 'enterName';
+                walletCommon.setUserActionArgs(userID, args);
+                callback(true);
+            }
+        });
+    }
+}
+/**
+ * @param {bot.message_data} userMessage 
+ * @param {db.user_data} userData 
+ * @param {walletCommon.args_data} args 
+ * @param {(success: boolean) => any} callback
+ */
+function userAction_createAccount_onMessage(userMessage, userData, args, callback) {
+    const userID = userMessage.from.id;
+
+    if (!userMessage.text || (userMessage.text.length == 0)) {
+        log.warning(userID, `[createAccount] empty message text`);
+        callback(false);
+        return;
+    }
+    log.info(userID, `[createAccount] handling stage "${args.stage}"...`);
+    switch (args.stage) {
+    case 'enterName':
+        log.info(userID, `[createAccount] asking for initial ballance...`);
+        bot.sendMessage({ chatID: userID, text: `Please, enter initial ballance:` }, (message, error) => {
+            if (error) {
+                log.error(userID, `[createAccount] failed to ask for initial ballance (${error})`);
+                callback(false);
+            } else {
+                log.info(userID, `[createAccount] starting stage "enterBallance"`);
+                args.accountName = userMessage.text;
+                args.stage = 'enterBallance';
+                walletCommon.setUserActionArgs(userID, args);
+                callback(true);
+            }
+        });
+        break;
+        
+    case 'enterBallance': 
+        if (userMessage.text.match(/^-{0,1}[0-9]+$/g) == null) {
+            log.warning(userID, `[createAccount] invalid message text, it's not a number`);
+            bot.sendMessage({ chatID: userID, text: `It doesn't look like a number... Let's try again` });
+            callback(false);
+        } else {
+            const currency = args.currency;
+            const accountName = args.accountName;
+            if ((typeof currency !== 'string') || (typeof accountName !== 'string')) {
+                log.error(userID, `[createAccount] invalid arguments, this shouldn't happen!`);
+                stopUserAction(userMessage.from, userData, callback);
+            } else {
+                const ballance = Math.round(Number.parseInt(userMessage.text) * 100);
+                log.info(userID, `[createAccount] creating account "${accountName}", currency ${currency}, initial ballance ${ballance / 100}...`);
+                db.account_create({
+                    user_id: userID, currency_code: currency, name: accountName, start_amount: ballance
+                }, (accountData, error) => {
+                    if (error || !accountData) {
+                        log.error(userID, `[createAccount] failed to create account (${error})`);
+                        bot.sendMessage({ chatID: userID, text: `Sorry, something went wrong` }, (message, error) => {
+                            if (error) {
+                                log.error(userID, `[createAccount] failed to send an apology (${error})`);
+                            }
+                            stopUserAction(userMessage.from, userData, () => { callback(false); });
+                        });
+                    } else {
+                        log.info(userID, `[createAccount] account created`);
+                        args.accountID = accountData.id;
+                        walletCommon.setUserActionArgs(userID, args);
+                        stopUserAction(userMessage.from, userData, callback);
+                    }
+                });
+            }
+        }
+        break;
+
+    default:
+        log.error(userID, `[createAccount] invalid value of argument "stage"`);
+        stopUserAction(userMessage.from, userData, () => { callback(false); });
+        break;
+    }
+}
+/**
+ * @param {bot.user_data} user 
+ * @param {db.user_data} userData 
+ * @param {walletCommon.args_data} args 
+ * @param {(success: boolean) => any} callback
+ */
+function userAction_createAccount_stop(user, userData, args, callback) {
+    const userID = user.id;
+
+    const accountID = args.accountID;
+    const accountCreated = (typeof accountID === 'number') && (accountID != db.invalid_id);
+    if (accountCreated) {
+        log.info(userID, `[createAccount] opening account menu...`);
+    } else {
+        log.info(userID, `[createAccount] invalid account ID, restoring accounts menu...`);
+    }
+    walletMenu.sendMenuMessage(accountCreated ? 'account' : 'accounts', accountCreated ? { accountID: accountID } : {}, user, userData, (message, error) => {
+        walletCommon.clearUserAction(userID);
+        if (error) {
+            log.error(userID, `[createAccount] failed to send new menu message (${error})`);
+            callback(false);
+        } else {
+            log.info(userID, `[archiveAccount] new menu message sent`);
             callback(true);
         }
     });

@@ -113,7 +113,18 @@ function setUserActionArgs(userID, args) {
 function encodeArgs(str, args) {
     var result = str;
     for (var argKey in args) {
-        result += `;${argKey}=${args[argKey]}`;
+        const argValue = args[argKey];
+        if (argValue === null) {
+            result += `;${argKey}=0`;
+        } else {
+            var prefix = '';
+            switch (typeof argValue) {
+            case 'boolean': prefix = 'b'; break;
+            case 'number': prefix = 'n'; break;
+            default: prefix = 's'; break;
+            }
+            result += `;${argKey}=${prefix}${argValue}`;
+        }
     }
     return result;
 }
@@ -126,20 +137,20 @@ function decodeArgs(str) {
     /** @type {args_data} */
     var result = {};
     for (var i = 0; i < args.length; i++) {
-        var arg = args[i].split('=');
+        const arg = args[i].split('=');
         if (arg.length != 2) {
             continue;
         }
-        if (arg[1] == 'null') {
-            result[arg[0]] = null;
-        } else if (arg[1] == 'false') {
-            result[arg[0]] = false;
-        } else if (arg[1] == 'true') {
-            result[arg[0]] = true;
-        } else if (arg[1].match(/^-{0,1}[0-9]+$/g)) {
-            result[arg[0]] = Number.parseInt(arg[1]);
-        } else {
-            result[arg[0]] = arg[1];
+
+        const argKey = arg[0];
+        const argValue = arg[1].substring(1);
+        switch (arg[1][0]) {
+        case '0': result[argKey] = null; break;
+        case 'b': result[argKey] = argValue == 'true'; break;
+        case 'n': result[argKey] = Number.parseInt(argValue); break;
+        case 's': result[argKey] = argValue; break;
+        default:
+            continue;
         }
     }
     return result;
