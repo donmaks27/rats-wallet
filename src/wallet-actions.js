@@ -485,7 +485,7 @@ function userAction_createAccount_onMessage(userMessage, userData, args, callbac
 
     if (!userMessage.text || (userMessage.text.length == 0)) {
         log.warning(userID, `[createAccount] empty message text`);
-        callback(false);
+        callback(true);
         return;
     }
     log.info(userID, `[createAccount] handling stage "${args.stage}"...`);
@@ -507,10 +507,10 @@ function userAction_createAccount_onMessage(userMessage, userData, args, callbac
         break;
         
     case 'enterBallance': 
-        if (userMessage.text.match(/^-{0,1}[0-9]+$/g) == null) {
+        if (userMessage.text.match(/^-{0,1}[0-9]+(\.[0-9]*){0,1}$/g) == null) {
             log.warning(userID, `[createAccount] invalid message text, it's not a number`);
             bot.sendMessage({ chatID: userID, text: `It doesn't look like a number... Let's try again` });
-            callback(false);
+            callback(true);
         } else {
             const currency = args.currency;
             const accountName = args.accountName;
@@ -518,7 +518,7 @@ function userAction_createAccount_onMessage(userMessage, userData, args, callbac
                 log.error(userID, `[createAccount] invalid arguments, this shouldn't happen!`);
                 stopUserAction(userMessage.from, userData, callback);
             } else {
-                const ballance = Math.round(Number.parseInt(userMessage.text) * 100);
+                const ballance = Math.round(Number.parseFloat(userMessage.text) * 100);
                 log.info(userID, `[createAccount] creating account "${accountName}", currency ${currency}, initial ballance ${ballance / 100}...`);
                 db.account_create({
                     user_id: userID, currency_code: currency, name: accountName, start_amount: ballance
