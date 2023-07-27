@@ -183,7 +183,7 @@ function handleMenuButton(callbackQuery) {
         } else {
             log.info(`[MENU BUTTON] found data for user ${callbackQuery.from.id}, handling callback query "${callbackQuery.data}"...`);
             const buttonFirstSeparatorIndex = callbackQuery.data.indexOf(';');
-            const buttonRef = callbackQuery.data.substring(0, buttonFirstSeparatorIndex).split(':');
+            const buttonRef = callbackQuery.data.substring(0, buttonFirstSeparatorIndex != -1 ? buttonFirstSeparatorIndex : callbackQuery.data.length).split(':');
             if (buttonRef.length != 2) {
                 log.error(`[MENU BUTTON] invalid button reference format`);
             } else {
