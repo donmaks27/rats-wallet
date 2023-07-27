@@ -27,9 +27,9 @@ var walletCommon = require('./wallet-common');
 var walletMenu = require('./wallet-menu');
 
 /**
- * @typedef {(user: bot.user_data, userData: db.user_data, args: string[], callback: (success: boolean) => any) => void} on_start_handler
- * @typedef {(message: bot.message_data, userData: db.user_data, args: string[], callback: (success: boolean) => any) => void} on_message_handler
- * @typedef {(user: bot.user_data, userData: db.user_data, args: string[], callback: (success: boolean) => any) => void} on_stop_handler
+ * @typedef {(user: bot.user_data, userData: db.user_data, args: walletCommon.args_data, callback: (success: boolean) => any) => void} on_start_handler
+ * @typedef {(message: bot.message_data, userData: db.user_data, args: walletCommon.args_data, callback: (success: boolean) => any) => void} on_message_handler
+ * @typedef {(user: bot.user_data, userData: db.user_data, args: walletCommon.args_data, callback: (success: boolean) => any) => void} on_stop_handler
  */
 
 /** @type {{ [action: string]: { onStart: on_start_handler, onMessage: on_message_handler, onStop: on_stop_handler } }} */
@@ -59,7 +59,7 @@ module.exports.stopUserAction = stopUserAction;
 
 /**
  * @param {string} action 
- * @param {string[]} args 
+ * @param {walletCommon.args_data} args 
  * @param {bot.user_data} user 
  * @param {db.user_data} userData 
  * @param {(success: boolean) => any} [callback] 
@@ -169,7 +169,7 @@ function stopUserAction(user, userData, callback) {
 /**
  * @param {bot.user_data} user 
  * @param {db.user_data} userData 
- * @param {string[]} args 
+ * @param {walletCommon.args_data} args 
  * @param {(success: boolean) => any} callback
  */
 function userAction_invite_start(user, userData, args, callback) {
@@ -204,7 +204,7 @@ function userAction_invite_start(user, userData, args, callback) {
 /**
  * @param {bot.message_data} message 
  * @param {db.user_data} userData 
- * @param {string[]} args 
+ * @param {walletCommon.args_data} args 
  * @param {(success: boolean) => any} callback
  */
 function userAction_invite_onMessage(message, userData, args, callback) {
@@ -256,7 +256,7 @@ function userAction_invite_onMessage(message, userData, args, callback) {
                     text: `Hello! ${message.from.first_name} invited you here! Invite expires in 24 hours\nPlease, enter your name`
                 });
                 log.info(userID, `[invite] invite for user ${invitedUserID} created`);
-                walletCommon.setUserActionArgs(userID, [ 'inviteSent' ]);
+                walletCommon.setUserActionArgs(userID, { inviteSent: true });
                 stopUserAction(message.from, userData, callback);
             });
         });
@@ -265,7 +265,7 @@ function userAction_invite_onMessage(message, userData, args, callback) {
 /**
  * @param {bot.user_data} user 
  * @param {db.user_data} userData 
- * @param {string[]} args 
+ * @param {walletCommon.args_data} args 
  * @param {(success: boolean) => any} callback
  */
 function userAction_invite_stop(user, userData, args, callback) {
@@ -273,7 +273,7 @@ function userAction_invite_stop(user, userData, args, callback) {
     log.info(userID, `[invite] deleting inviting keyboard...`);
     bot.sendMessage({
         chatID: userID,
-        text: args.includes('inviteSent') ? `Invite sent` : `Operation canceled`,
+        text: args.inviteSent ? `Invite sent` : `Operation canceled`,
         removeKeyboard: true
     }, (message, error) => {
         if (error) {
@@ -298,7 +298,7 @@ function userAction_invite_stop(user, userData, args, callback) {
 /**
  * @param {bot.user_data} user 
  * @param {db.user_data} userData 
- * @param {string[]} args 
+ * @param {walletCommon.args_data} args 
  * @param {(success: boolean) => any} callback
  */
 function userAction_changeName_start(user, userData, args, callback) {
@@ -321,7 +321,7 @@ function userAction_changeName_start(user, userData, args, callback) {
 /**
  * @param {bot.message_data} message 
  * @param {db.user_data} userData 
- * @param {string[]} args 
+ * @param {walletCommon.args_data} args 
  * @param {(success: boolean) => any} callback
  */
 function userAction_changeName_onMessage(message, userData, args, callback) {
@@ -346,7 +346,7 @@ function userAction_changeName_onMessage(message, userData, args, callback) {
 /**
  * @param {bot.user_data} user 
  * @param {db.user_data} userData 
- * @param {string[]} args 
+ * @param {walletCommon.args_data} args 
  * @param {(success: boolean) => any} callback
  */
 function userAction_changeName_stop(user, userData, args, callback) {
@@ -367,34 +367,20 @@ function userAction_changeName_stop(user, userData, args, callback) {
 /**
  * @param {bot.user_data} user 
  * @param {db.user_data} userData 
- * @param {string[]} args 
+ * @param {walletCommon.args_data} args 
  * @param {(success: boolean) => any} callback
  */
 function userAction_archiveAccount_start(user, userData, args, callback) {
     const userID = user.id;
-
-    const shouldArchive = !args.includes('unarchive');
-    log.info(userID, `[archiveAccount] ${ shouldArchive ? 'archiving' : 'unarchiving' } account...`);
-
-    const accountIDIndex = args.findIndex(v => v.startsWith('accountID='));
-    if (accountIDIndex == -1) {
-        log.error(userID, `[archiveAccount] can't find argument "accountID"`);
-        callback(false);
-        return;
-    }
-    const index = args[accountIDIndex].search(/(?<=^accountID=)[0-9]+$/g);
-    if (index == -1) {
+    if (typeof args.accountID !== 'number') {
         log.error(userID, `[archiveAccount] invalid argument "accountID"`);
         callback(false);
         return;
     }
-    const accountID = Number.parseInt(args[accountIDIndex].substring(index));
-    if (Number.isNaN(accountID)) {
-        log.error(userID, `[archiveAccount] invalid account ID`);
-        callback(false);
-        return;
-    }
-
+    
+    const accountID = args.accountID;
+    const shouldArchive = args.archive ? true : false;
+    log.info(userID, `[archiveAccount] ${ shouldArchive ? 'archiving' : 'unarchiving' } account ${accountID}...`);
     db.account_edit(accountID, { is_active: !shouldArchive }, (accountData, error) => {
         if (error || !accountData) {
             log.error(userID, `[archiveAccount] failed to ${ shouldArchive ? 'archive' : 'unarchive' } account ${accountID} (${error})`);
@@ -408,7 +394,7 @@ function userAction_archiveAccount_start(user, userData, args, callback) {
 /**
  * @param {bot.message_data} message 
  * @param {db.user_data} userData 
- * @param {string[]} args 
+ * @param {walletCommon.args_data} args 
  * @param {(success: boolean) => any} callback
  */
 function userAction_archiveAccount_onMessage(message, userData, args, callback) {
@@ -417,37 +403,28 @@ function userAction_archiveAccount_onMessage(message, userData, args, callback) 
 /**
  * @param {bot.user_data} user 
  * @param {db.user_data} userData 
- * @param {string[]} args 
+ * @param {walletCommon.args_data} args 
  * @param {(success: boolean) => any} callback
  */
 function userAction_archiveAccount_stop(user, userData, args, callback) {
     const userID = user.id;
-    const accountIDIndex = args.findIndex(v => v.startsWith('accountID='));
-    const accountID = Number.parseInt(args[accountIDIndex].substring(args[accountIDIndex].search(/(?<=^accountID=)[0-9]+$/g)));
-    const menuMessageID = walletCommon.getUserMenuMessageID(userID);
-    if (menuMessageID != 0) {
-        log.info(userID, `[archiveAccount] updating menu...`);
-        walletMenu.changeMenuMessage(walletCommon.getUserMenuMessageID(userID), 'account', [ `${accountID}` ], user, userData, (message, error) => {
-            walletCommon.clearUserAction(userID);
-            if (error) {
-                log.error(userID, `[archiveAccount] failed to update menu message`);
-                callback(false);
-            } else {
-                log.info(userID, `[archiveAccount] menu message updated`);
-                callback(true);
-            }
-        });
-    } else {
-        log.info(userID, `[archiveAccount] sending new menu message...`);
-        walletMenu.sendMenuMessage('account', [ `${accountID}` ], user, userData, (message, error) => {
-            walletCommon.clearUserAction(userID);
-            if (error) {
-                log.error(userID, `[archiveAccount] failed to send menu message`);
-                callback(false);
-            } else {
-                log.info(userID, `[archiveAccount] menu message sent`);
-                callback(true);
-            }
-        });
+    if (typeof args.accountID !== 'number') {
+        log.error(userID, `[archiveAccount] invalid argument "accountID"`);
+        callback(false);
+        return;
     }
+
+    const accountID = args.accountID;
+    const menuMessageID = walletCommon.getUserMenuMessageID(userID);
+    log.info(userID, `[archiveAccount] updating menu...`);
+    walletMenu.changeMenuMessage(menuMessageID, 'account', { accountID: accountID }, user, userData, (message, error) => {
+        walletCommon.clearUserAction(userID);
+        if (error) {
+            log.error(userID, `[archiveAccount] failed to update menu message`);
+            callback(false);
+        } else {
+            log.info(userID, `[archiveAccount] menu message updated`);
+            callback(true);
+        }
+    });
 }

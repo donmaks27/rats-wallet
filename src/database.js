@@ -32,7 +32,7 @@ module.exports.user_edit = user_edit;
 
 module.exports.currency_create = currency_create;
 module.exports.currency_get = currency_get;
-module.exports.currency_get_all = currency_getAll;
+module.exports.currency_getAll = currency_getAll;
 module.exports.currency_edit = currency_edit;
 module.exports.currency_delete = currency_delete;
 

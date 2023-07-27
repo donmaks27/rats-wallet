@@ -91,7 +91,7 @@ function commandHandler_start(message) {
         if (userData) {
             log.info(`[START] user ${message.from.id} found ("${userData.name}"), sending main menu message`);
             if (walletCommon.getUserAction(message.from.id).action == walletCommon.ACTION_INVALID) {
-                walletMenu.sendMenuMessage('main', [], message.from, userData);
+                walletMenu.sendMenuMessage('main', {}, message.from, userData);
             } else {
                 walletCommon.setUserMenu(message.from.id, 'main');
                 walletActions.stopUserAction(message.from, userData);
@@ -172,41 +172,37 @@ function defaultUserMessageHandler(message) {
  */
 function handleMenuButton(callbackQuery) {
     bot.answerCallbackQuery({ queryID: callbackQuery.id });
+    if (!callbackQuery.data) {
+        log.warning(`[MENU BUTTON] empty callback query data`);
+    }
 
     log.info(`[MENU BUTTON] searching for user ${callbackQuery.from.id}...`);
     db.user_get(callbackQuery.from.id, (userData, error) => {
         if (error || !userData) {
             log.warning(`[MENU BUTTON] can't find data for user ${callbackQuery.from.id} in database`);
-        } else if (!callbackQuery.data) {
-            log.warning(`[MENU BUTTON] empty callback query data`);
         } else {
-            log.info(`[MENU BUTTON] found data for user ${callbackQuery.from.id}, handling callback query...`);
-            const buttonData = callbackQuery.data.split(';');
-            switch (buttonData[0]) {
-            case walletCommon.MENU_BUTTON_GOTO:
-                if (buttonData.length == 1) {
-                    log.warning(`[MENU BUTTON] invalid goto button params`);
-                } else {
-                    const destination = buttonData[1];
-                    const args = buttonData.slice(2);
-                    log.info(`[MENU BUTTON] goto menu "${destination}" (args: [ ${args.join('; ')} ])...`);
-                    walletMenu.changeMenuMessage(callbackQuery.message.message_id, destination, args, callbackQuery.from, userData);
-                }
-                break;
-            case walletCommon.MENU_BUTTON_ACTION:
-                if (buttonData.length == 1) {
-                    log.warning(`[MENU BUTTON] invalid action button params`);
-                } else {
-                    const action = buttonData[1];
-                    const args = buttonData.slice(2);
-                    log.info(`[MENU BUTTON] starting action "${action}" (args: [ ${args.join('; ')} ])...`);
-                    walletActions.startUserAction(action, args, callbackQuery.from, userData);
-                }
-                break;
+            log.info(`[MENU BUTTON] found data for user ${callbackQuery.from.id}, handling callback query "${callbackQuery.data}"...`);
+            const buttonFirstSeparatorIndex = callbackQuery.data.indexOf(';');
+            const buttonRef = callbackQuery.data.substring(0, buttonFirstSeparatorIndex).split(':');
+            if (buttonRef.length != 2) {
+                log.error(`[MENU BUTTON] invalid button reference format`);
+            } else {
+                const buttonArgs = walletCommon.decodeArgs(callbackQuery.data.substring(buttonFirstSeparatorIndex + 1));
+                switch (buttonRef[0]) {
+                case walletCommon.MENU_BUTTON_GOTO:
+                    log.info(`[MENU BUTTON] goto menu "${buttonRef[1]}" (args: ${JSON.stringify(buttonArgs)})...`);
+                    walletMenu.changeMenuMessage(callbackQuery.message.message_id, buttonRef[1], buttonArgs, callbackQuery.from, userData);
+                    break;
+
+                case walletCommon.MENU_BUTTON_ACTION:
+                    log.info(`[MENU BUTTON] starting action "${buttonRef[1]}" (args: ${JSON.stringify(buttonArgs)})...`);
+                    walletActions.startUserAction(buttonRef[1], buttonArgs, callbackQuery.from, userData);
+                    break;
             
-            default: 
-                log.warning(`[MENU BUTTON] invalid callback query data "${callbackQuery.data}"`);
-                break;
+                default:
+                    log.error(`[MENU BUTTON] invalid button reference "${buttonRef[0]}"`);
+                    break;
+                }
             }
         }
     });
@@ -229,7 +225,7 @@ function onInvitedUserEnterName(message) {
             } else {
                 log.info(`[onInvitedUserEnterName] user ${message.from.id} created: ` + JSON.stringify(userData));
                 db.invite_delete(userData.id);
-                walletMenu.sendMenuMessage('main', [], message.from, userData);
+                walletMenu.sendMenuMessage('main', {}, message.from, userData);
             }
         });
     }

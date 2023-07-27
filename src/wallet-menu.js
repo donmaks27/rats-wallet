@@ -28,7 +28,7 @@ var walletCommon = require('./wallet-common');
  * @typedef {'main'|'settings'|'wallet'|'accounts'|'account'} menu_type
  */
 
-/** @type {{ [type: string]: (user: bot.user_data, userData: db.user_data, args: string[], callback: (menuData: menu_data) => any) => void }} */
+/** @type {{ [type: string]: (user: bot.user_data, userData: db.user_data, args: walletCommon.args_data, callback: (menuData: menu_data) => any) => void }} */
 const WalletMenuConstructors = {
     main: createMenuData_MainMenu,
     settings: createMenuData_Settings,
@@ -46,7 +46,7 @@ module.exports.changeMenuMessage = changeMenuMessage;
 
 /**
  * @param {string} menu 
- * @param {string[]} args 
+ * @param {walletCommon.args_data} args 
  * @param {bot.user_data} user 
  * @param {db.user_data} userData 
  * @param {(message: bot.message_data | null, error?: string) => any} [callback] 
@@ -93,14 +93,19 @@ function sendMenuMessage(menu, args, user, userData, callback) {
 /**
  * @param {number} menuMessageID 
  * @param {string} menu 
- * @param {string[]} args 
+ * @param {walletCommon.args_data} args 
  * @param {bot.user_data} user 
  * @param {db.user_data} userData 
  * @param {(message: bot.message_data | null, error?: string) => any} [callback] 
  */
 function changeMenuMessage(menuMessageID, menu, args, user, userData, callback) {
     const userID = user.id;
-    log.info(userID, `changing menu message "${menu}"...`);
+    log.info(userID, `changing menu message ${menuMessageID} to menu "${menu}"...`);
+    if (menuMessageID == 0) {
+        log.info(userID, `invalid message ID ${menuMessageID}, sending new menu "${menu}"...`);
+        sendMenuMessage(menu, args, user, userData, callback);
+        return;
+    }
 
     const menuConstructor = WalletMenuConstructors[menu];
     if (!menuConstructor) {
@@ -142,23 +147,29 @@ function changeMenuMessage(menuMessageID, menu, args, user, userData, callback) 
 
 /**
  * @param {menu_type} type 
- * @param {string[]} [args] 
+ * @param {walletCommon.args_data} [args] 
  */
 function makeMenuButton(type, args) {
-    var result = `${walletCommon.MENU_BUTTON_GOTO};${type}`;
-    if (args && (args.length > 0)) {
-        result += ';' + args.join(';');
-    }
-    return result;
+    return makeButton(walletCommon.MENU_BUTTON_GOTO, type, args);
 }
 /**
  * @param {string} action 
- * @param {string[]} [args] 
+ * @param {walletCommon.args_data} [args] 
  */
 function makeActionButton(action, args) {
-    var result = `${walletCommon.MENU_BUTTON_ACTION};${action}`;
-    if (args && (args.length > 0)) {
-        result += ';' + args.join(';');
+    return makeButton(walletCommon.MENU_BUTTON_ACTION, action, args);
+}
+/**
+ * @param {string} refType 
+ * @param {string} refDestination 
+ * @param {walletCommon.args_data} [args] 
+ */
+function makeButton(refType, refDestination, args) {
+    var result = `${refType}:${refDestination}`;
+    if (args) {
+        for (var argKey in args) {
+            result += `;${argKey}=${args[argKey]}`;
+        }
     }
     return result;
 }
@@ -173,7 +184,7 @@ function escapeMessageMarkdown(msg) {
 /**
  * @param {bot.user_data} user 
  * @param {db.user_data} userData 
- * @param {string[]} args 
+ * @param {walletCommon.args_data} args 
  * @param {(menuData: menu_data) => any} callback 
  */
 function createMenuData_MainMenu(user, userData, args, callback) {
@@ -204,7 +215,7 @@ function createMenuData_MainMenu(user, userData, args, callback) {
 /**
  * @param {bot.user_data} user 
  * @param {db.user_data} userData 
- * @param {string[]} args 
+ * @param {walletCommon.args_data} args 
  * @param {(menuData: menu_data) => any} callback 
  */
 function createMenuData_Settings(user, userData, args, callback) {
@@ -229,7 +240,7 @@ function createMenuData_Settings(user, userData, args, callback) {
 /**
  * @param {bot.user_data} user 
  * @param {db.user_data} userData 
- * @param {string[]} args 
+ * @param {walletCommon.args_data} args 
  * @param {(menuData: menu_data) => any} callback 
  */
 function createMenuData_Wallet(user, userData, args, callback) {
@@ -269,12 +280,12 @@ function createMenuData_Wallet(user, userData, args, callback) {
 /**
  * @param {bot.user_data} user 
  * @param {db.user_data} userData 
- * @param {string[]} args 
+ * @param {walletCommon.args_data} args 
  * @param {(menuData: menu_data) => any} callback 
  */
 function createMenuData_Accounts(user, userData, args, callback) {
     const userID = user.id;
-    const shouldShowArchived = args.includes('showAll');
+    const shouldShowArchived = args.showAll ? true : false;
     db.account_getAll(userID, (accounts, error) => {
         /** @type {bot.keyboard_button_inline_data[][]} */
         var menuDataKeyboard = [];
@@ -284,6 +295,15 @@ function createMenuData_Accounts(user, userData, args, callback) {
         } else {
             /** @type {bot.keyboard_button_inline_data[]} */
             var menuDataKeyboardRow = [];
+            accounts.sort((v1, v2) => { 
+                if (v1.is_active != v2.is_active) {
+                    return v1.is_active ? -1 : 1;
+                }
+                if (v1.create_date != v2.create_date) {
+                    return v1.create_date > v2.create_date ? -1 : 1;
+                }
+                return v1.name.localeCompare(v2.name);
+            });
             for (var i = 0; i < accounts.length; i++) {
                 if (!accounts[i].is_active) {
                     archivedAmount++;
@@ -292,8 +312,8 @@ function createMenuData_Accounts(user, userData, args, callback) {
                     }
                 }
                 menuDataKeyboardRow.push({
-                    text: accounts[i].name,
-                    callback_data: makeMenuButton('account', [ `${accounts[i].id}` ])
+                    text: accounts[i].is_active ? accounts[i].name : `[${accounts[i].name}]`,
+                    callback_data: makeMenuButton('account', { accountID: accounts[i].id })
                 });
                 if (menuDataKeyboardRow.length == 3) {
                     menuDataKeyboard.push(menuDataKeyboardRow);
@@ -305,11 +325,10 @@ function createMenuData_Accounts(user, userData, args, callback) {
             }
         }
         if (archivedAmount > 0) {
-            if (!shouldShowArchived) {
-                menuDataKeyboard.push([{ text: `Show archived`, callback_data: makeMenuButton('accounts', [ 'showAll' ]) }]);
-            } else {
-                menuDataKeyboard.push([{ text: `Hide archived`, callback_data: makeMenuButton('accounts') }]);
-            }
+            menuDataKeyboard.push([{ 
+                text: shouldShowArchived ? `Hide archived` : `Show archived`, 
+                callback_data: makeMenuButton('accounts', { showAll: !shouldShowArchived }) 
+            }]);
         }
         menuDataKeyboard.push([{ text: `Create new account >>`, callback_data: makeMenuButton('accounts') }]);
         menuDataKeyboard.push([{ text: `<< Back to Wallet`, callback_data: makeMenuButton('wallet') }]);
@@ -323,12 +342,12 @@ function createMenuData_Accounts(user, userData, args, callback) {
 /**
  * @param {bot.user_data} user 
  * @param {db.user_data} userData 
- * @param {string[]} args 
+ * @param {walletCommon.args_data} args 
  * @param {(menuData: menu_data) => any} callback 
  */
 function createMenuData_Account(user, userData, args, callback) {
     const userID = user.id;
-    const accountID = args.length > 0 ? Number.parseInt(args[0]) : db.invalid_id;
+    const accountID = typeof args.accountID === 'number' ? args.accountID : db.invalid_id;
     db.account_get(accountID, (accountData, error) => {
         if (error || !accountData) {
             log.error(userID, `failed to get data of account ${accountID} (${error})`);
@@ -356,11 +375,10 @@ function createMenuData_Account(user, userData, args, callback) {
 
                 /** @type {bot.keyboard_button_inline_data[][]} */
                 var menuDataKeyboard = [];
-                if (accountData.is_active) {
-                    menuDataKeyboard.push([{ text: `Archive account`, callback_data: makeActionButton('archiveAccount', [ `accountID=${accountID}` ]) }]);
-                } else {
-                    menuDataKeyboard.push([{ text: `Unarchive account`, callback_data: makeActionButton('archiveAccount', [ `accountID=${accountID}`, 'unarchive' ]) }]);
-                }
+                menuDataKeyboard.push([{ 
+                    text: accountData.is_active ? `Archive account` : `Unarchive account`, 
+                    callback_data: makeActionButton('archiveAccount', { accountID: accountID, archive: accountData.is_active })
+                }]);
                 menuDataKeyboard.push([{ text: `<< Back to Accounts`, callback_data: makeMenuButton('accounts') }]);
                 callback({
                     text: textLines.join('\n'),

@@ -50,7 +50,7 @@ module.exports.deleteMyCommands = command_deleteMyCommands;
  *      input_field_placeholder?: string }} keyboard_markup_reply_data
  * @typedef {string | { text: string, request_user?: { request_id: number, user_is_bot?: boolean } }} keyboard_button_reply_data
  * 
- * @typedef {{ id: string, from: user_data, message: message_data, inline_message_id?: string, chat_instance: string, data?: string }} callback_query_data
+ * @typedef {{ id: string, from: user_data, message: message_data, inline_message_id?: string, chat_instance: string, data: string }} callback_query_data
  */
 
 /**

@@ -2,12 +2,16 @@
 
 var db = require('./database');
 
+/**
+ * @typedef {{ [key: string]: string|number|boolean|null }} args_data
+ */
+
 const MENU_BUTTON_GOTO   = "MenuButtonGoto";
 const MENU_BUTTON_ACTION = "MenuButtonAction";
 
 const ACTION_INVALID = 'none';
 
-/** @type {{ [userID: number]: { menu: string, menuArgs: string[], menuMessageID: number, action: string, actionArgs: string[] } }} */
+/** @type {{ [userID: number]: { menu: string, menuArgs: args_data, menuMessageID: number, action: string, actionArgs: args_data } }} */
 var WalletUsersState = {};
 
 module.exports.MENU_BUTTON_GOTO   = MENU_BUTTON_GOTO;
@@ -22,11 +26,14 @@ module.exports.setUserAction = setUserAction;
 module.exports.clearUserAction = clearUserAction;
 module.exports.setUserActionArgs = setUserActionArgs;
 
+module.exports.encodeArgs = encodeArgs;
+module.exports.decodeArgs = decodeArgs;
+
 module.exports.findUserInvite = findUserInvite;
 
 function checkUserState(userID) {
     if (!WalletUsersState[userID]) {
-        WalletUsersState[userID] = { menu: 'main', menuArgs: [], menuMessageID: 0, action: ACTION_INVALID, actionArgs: [] };
+        WalletUsersState[userID] = { menu: 'main', menuArgs: {}, menuMessageID: 0, action: ACTION_INVALID, actionArgs: {} };
     }
 }
 
@@ -40,12 +47,12 @@ function getUserMenu(userID) {
 /**
  * @param {number} userID 
  * @param {string} menu 
- * @param {string[]} [args] 
+ * @param {args_data} [args] 
  */
 function setUserMenu(userID, menu, args) {
     checkUserState(userID);
     WalletUsersState[userID].menu = menu;
-    WalletUsersState[userID].menuArgs = args ? args : [];
+    WalletUsersState[userID].menuArgs = args ? args : {};
 }
 
 /**
@@ -74,12 +81,12 @@ function getUserAction(userID) {
 /**
  * @param {number} userID 
  * @param {string} action 
- * @param {string[]} [args] 
+ * @param {args_data} [args] 
  */
 function setUserAction(userID, action, args) {
     checkUserState(userID);
     WalletUsersState[userID].action = action;
-    WalletUsersState[userID].actionArgs = args ? args : [];
+    WalletUsersState[userID].actionArgs = args ? args : {};
 }
 /**
  * @param {number} userID 
@@ -90,13 +97,52 @@ function clearUserAction(userID) {
 
 /**
  * @param {number} userID 
- * @param {string[]} args 
+ * @param {args_data} args 
  */
 function setUserActionArgs(userID, args) {
     checkUserState(userID);
     if (WalletUsersState[userID].action != ACTION_INVALID) {
         WalletUsersState[userID].actionArgs = args;
     }
+}
+
+/**
+ * @param {string} str 
+ * @param {args_data} [args] 
+ */
+function encodeArgs(str, args) {
+    var result = str;
+    for (var argKey in args) {
+        result += `;${argKey}=${args[argKey]}`;
+    }
+    return result;
+}
+/**
+ * @param {string} str 
+ * @returns {args_data}
+ */
+function decodeArgs(str) {
+    var args = str.split(';');
+    /** @type {args_data} */
+    var result = {};
+    for (var i = 0; i < args.length; i++) {
+        var arg = args[i].split('=');
+        if (arg.length != 2) {
+            continue;
+        }
+        if (arg[1] == 'null') {
+            result[arg[0]] = null;
+        } else if (arg[1] == 'false') {
+            result[arg[0]] = false;
+        } else if (arg[1] == 'true') {
+            result[arg[0]] = true;
+        } else if (arg[1].match(/^-{0,1}[0-9]+$/g)) {
+            result[arg[0]] = Number.parseInt(arg[1]);
+        } else {
+            result[arg[0]] = arg[1];
+        }
+    }
+    return result;
 }
 
 /**
