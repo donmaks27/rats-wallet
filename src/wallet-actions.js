@@ -184,6 +184,7 @@ function stopUserAction(user, userData, callback) {
  */
 function userAction_invite_start(user, userData, args, callback) {
     const userID = user.id;
+
     log.info(userID, `[invite] sending invitation keyboard...`);
     bot.sendMessage({
         chatID: user.id,
@@ -206,6 +207,12 @@ function userAction_invite_start(user, userData, args, callback) {
             log.error(userID, `[invite] failed to invitation keyboard (${error})`);
             callback(false);
         } else {
+            const menuMessageID = walletCommon.getUserMenuMessageID(userID);
+            walletCommon.setUserMenuMessageID(userID, 0);
+            if (menuMessageID != 0) {
+                bot.deleteMessage({ chatID: userID, messageID: menuMessageID });
+            }
+
             log.info(userID, `[invite] user received invitation keyboard`);
             callback(true);
         }
@@ -313,12 +320,15 @@ function userAction_invite_stop(user, userData, args, callback) {
  */
 function userAction_changeName_start(user, userData, args, callback) {
     const userID = user.id;
+
     log.info(userID, `[changeName] sending start message...`);
-    bot.sendMessage({
-        chatID: user.id,
-        text: `*Changing user name*\nPlease, enter new name`,
-        parseMode: 'MarkdownV2'
-    }, (message, error) => {
+    const menuMessageID = walletCommon.getUserMenuMessageID(userID);
+    const messageText = `*Changing user name*\nPlease, enter new name`;
+    /**
+     * @param {bot.message_data | null} message 
+     * @param {string} [error] 
+     */
+    var messageCallback = (message, error) => {
         if (error) {
             log.error(userID, `[changeName] failed to send start message (${error})`);
             callback(false);
@@ -326,7 +336,20 @@ function userAction_changeName_start(user, userData, args, callback) {
             log.info(userID, `[changeName] sent start message`);
             callback(true);
         }
-    });
+    };
+
+    walletCommon.setUserMenuMessageID(userID, 0);
+    if (menuMessageID != 0) {
+        bot.editMessage({
+            message: { chatID: userID, id: menuMessageID },
+            text: messageText, parseMode: 'MarkdownV2',
+            inlineKeyboard: {
+                inline_keyboard: []
+            }
+        }, messageCallback);
+    } else {
+        bot.sendMessage({ chatID: userID, text: messageText, parseMode: 'MarkdownV2' }, messageCallback);
+    }
 }
 /**
  * @param {bot.message_data} message 
