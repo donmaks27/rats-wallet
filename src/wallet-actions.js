@@ -622,6 +622,7 @@ function userAction_deleteAccount_stop(user, userData, args, callback) {
     const userID = user.id;
     log.info(userID, `[deleteAccount] switching to accounts menu...`);
     walletMenu.changeMenuMessage(walletCommon.getUserMenuMessageID(userID), 'accounts', {}, user, userData, (message, error) => {
+        walletCommon.clearUserAction(userID);
         if (error) {
             log.error(userID, `[deleteAccount] failed switch to accounts menu (${error})`);
             callback(false);
