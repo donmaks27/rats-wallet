@@ -445,7 +445,7 @@ function createMenuData_deleteAccount(user, userData, args, callback) {
             });
         } else {
             callback({ 
-                text: `*Deleting account*\nYou are going to delete account *${escapeMessageMarkdown(accountData.name)}*. Are you sure?`, 
+                text: `*Deleting account*\nYou are going to delete account *${escapeMessageMarkdown(accountData.name)}*` + escapeMessageMarkdown(`. Are you sure?`), 
                 parseMode: 'MarkdownV2', 
                 keyboard: [[
                     {
