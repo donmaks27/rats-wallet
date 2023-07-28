@@ -25,7 +25,7 @@ var bot = require('./telegram-bot');
 var walletCommon = require('./wallet-common');
 
 /**
- * @typedef {'main'|'settings'|'wallet'|'accounts'|'account'|'createAccount_currency'} menu_type
+ * @typedef {'main'|'settings'|'wallet'|'accounts'|'account'|'createAccount_currency'|'deleteAccount'} menu_type
  */
 
 /** @type {{ [type: string]: (user: bot.user_data, userData: db.user_data, args: walletCommon.args_data, callback: (menuData: menu_data) => any) => void }} */
@@ -35,7 +35,8 @@ const WalletMenuConstructors = {
     wallet:   createMenuData_wallet,
     accounts: createMenuData_accounts,
     account:  createMenuData_account,
-    createAccount_currency: createMenuData_createAccount_currency
+    createAccount_currency: createMenuData_createAccount_currency,
+    deleteAccount:          createMenuData_deleteAccount
 };
 
 /**
@@ -347,12 +348,8 @@ function createMenuData_account(user, userData, args, callback) {
         if (error || !accountData) {
             log.error(userID, `[account] failed to get data of account ${accountID} (${error})`);
             callback({
-                text: `_${escapeMessageMarkdown(`Hmm, something wrong...`)}_`,
-                parseMode: 'MarkdownV2',
-                keyboard: [[{
-                    text: `<< Back to Accounts`,
-                    callback_data: makeMenuButton('accounts')
-                }]]
+                text: `_${escapeMessageMarkdown(`Hmm, something wrong...`)}_`, parseMode: 'MarkdownV2',
+                keyboard: [[{ text: `<< Back to Accounts`, callback_data: makeMenuButton('accounts') }]]
             });
         } else {
             db.account_getBallance(accountID, {}, (ballance, error) => {
@@ -365,20 +362,32 @@ function createMenuData_account(user, userData, args, callback) {
                 if (!accountData.is_active) {
                     textLines[0] += ` _\\[archived\\]_`;
                 }
-                textLines.push(`_Current ballance: ${escapeMessageMarkdown(`${Math.round(ballance) / 100}`)}_`);
+                textLines.push(`_Current ballance: ${escapeMessageMarkdown(`${Math.round(accountData.start_amount + ballance) / 100}`)}_`);
                 textLines.push(`Choose what you want to do:`);
 
-                /** @type {bot.keyboard_button_inline_data[][]} */
-                var menuDataKeyboard = [];
-                menuDataKeyboard.push([{ 
-                    text: accountData.is_active ? `Archive account` : `Unarchive account`, 
-                    callback_data: makeActionButton('archiveAccount', { accountID: accountID, archive: accountData.is_active })
-                }]);
-                menuDataKeyboard.push([{ text: `<< Back to Accounts`, callback_data: makeMenuButton('accounts') }]);
                 callback({
                     text: textLines.join('\n'),
                     parseMode: 'MarkdownV2',
-                    keyboard: menuDataKeyboard
+                    keyboard: [
+                        [
+                            { 
+                                text: accountData.is_active ? `Archive account` : `Unarchive account`, 
+                                callback_data: makeActionButton('archiveAccount', { accountID: accountID, archive: accountData.is_active })
+                            }
+                        ],
+                        [
+                            {
+                                text: `Delete account`,
+                                callback_data: makeMenuButton('deleteAccount', { accountID: accountID })
+                            }
+                        ],
+                        [
+                            { 
+                                text: `<< Back to Accounts`, 
+                                callback_data: makeMenuButton('accounts') 
+                            }
+                        ]
+                    ]
                 });
             });
         }
@@ -416,5 +425,39 @@ function createMenuData_createAccount_currency(user, userData, args, callback) {
         }
         menuData.keyboard.push([{ text: `<< Back to Accounts`, callback_data: makeMenuButton('accounts') }]);
         callback(menuData);
+    });
+}
+/**
+ * @param {bot.user_data} user 
+ * @param {db.user_data} userData 
+ * @param {walletCommon.args_data} args 
+ * @param {(menuData: menu_data) => any} callback 
+ */
+function createMenuData_deleteAccount(user, userData, args, callback) {
+    const userID = user.id;
+    const accountID = typeof args.accountID === 'number' ? args.accountID : db.invalid_id;
+    db.account_get(accountID, (accountData, error) => {
+        if (error || !accountData) {
+            log.error(userID, `[deleteAccount] failed to get data of account ${accountID} (${error})`);
+            callback({
+                text: `_${escapeMessageMarkdown(`Hmm, something wrong...`)}_`, parseMode: 'MarkdownV2',
+                keyboard: [[{ text: `<< Back to Accounts`, callback_data: makeMenuButton('accounts') }]]
+            });
+        } else {
+            callback({ 
+                text: `*Deleting account*\nYou are going to delete account *${escapeMessageMarkdown(accountData.name)}*. Are you sure?`, 
+                parseMode: 'MarkdownV2', 
+                keyboard: [[
+                    {
+                        text: 'No',
+                        callback_data: makeMenuButton('account', { accountID: accountID })
+                    },
+                    {
+                        text: 'Yes',
+                        callback_data: makeActionButton('deleteAccount', { accountID: accountID })
+                    }
+                ]] 
+            });
+        }
     });
 }

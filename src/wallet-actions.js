@@ -53,6 +53,11 @@ const WalletActionsHandlers = {
         onStart: userAction_createAccount_start,
         onMessage: userAction_createAccount_onMessage,
         onStop: userAction_createAccount_stop
+    },
+    deleteAccount: {
+        onStart: userAction_deleteAccount_start,
+        onMessage: userAction_deleteAccount_onMessage,
+        onStop: userAction_deleteAccount_stop
     }
 };
 
@@ -571,6 +576,57 @@ function userAction_createAccount_stop(user, userData, args, callback) {
             callback(false);
         } else {
             log.info(userID, `[archiveAccount] new menu message sent`);
+            callback(true);
+        }
+    });
+}
+
+/**
+ * @param {bot.user_data} user 
+ * @param {db.user_data} userData 
+ * @param {walletCommon.args_data} args 
+ * @param {(success: boolean) => any} callback
+ */
+function userAction_deleteAccount_start(user, userData, args, callback) {
+    const userID = user.id;
+    const accountID = args.accountID;
+    if (typeof accountID !== 'number') {
+        log.warning(userID, `[deleteAccount] invalid argument "accountID"`);
+        callback(false);
+        return;
+    }
+    db.account_delete(accountID, (error) => {
+        if (error) {
+            log.error(userID, `[deleteAccount] failed to delete account ${accountID} (${error})`);
+        }
+        stopUserAction(user, userData, callback);
+    });
+}
+/**
+ * @param {bot.message_data} userMessage 
+ * @param {db.user_data} userData 
+ * @param {walletCommon.args_data} args 
+ * @param {(success: boolean) => any} callback
+ */
+function userAction_deleteAccount_onMessage(userMessage, userData, args, callback) {
+    const userID = userMessage.from.id;
+    callback(true);
+}
+/**
+ * @param {bot.user_data} user 
+ * @param {db.user_data} userData 
+ * @param {walletCommon.args_data} args 
+ * @param {(success: boolean) => any} callback
+ */
+function userAction_deleteAccount_stop(user, userData, args, callback) {
+    const userID = user.id;
+    log.info(userID, `[deleteAccount] switching to accounts menu...`);
+    walletMenu.changeMenuMessage(walletCommon.getUserMenuMessageID(userID), 'accounts', {}, user, userData, (message, error) => {
+        if (error) {
+            log.error(userID, `[deleteAccount] failed switch to accounts menu (${error})`);
+            callback(false);
+        } else {
+            log.info(userID, `[deleteAccount] switched to accounts menu`);
             callback(true);
         }
     });

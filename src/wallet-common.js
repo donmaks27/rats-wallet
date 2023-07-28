@@ -140,7 +140,7 @@ function decodeArgs(str) {
     var result = {};
     for (var i = 0; i < args.length; i++) {
         const arg = args[i].split('=');
-        if (arg.length != 2) {
+        if ((arg.length != 2) || (arg[1].length == 0)) {
             continue;
         }
 
