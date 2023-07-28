@@ -258,7 +258,7 @@ function createMenuData_wallet(user, userData, args, callback) {
             [
                 {
                     text: 'Currencies >>',
-                    callback_data: makeMenuButton('wallet')
+                    callback_data: makeMenuButton('currencies')
                 },
                 {
                     text: 'Labels >>',
