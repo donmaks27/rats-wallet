@@ -548,6 +548,12 @@ function createMenuData_currency(user, userData, args, callback) {
                 parseMode: 'MarkdownV2',
                 keyboard: [
                     [
+                        { 
+                            text: currencyData.is_active ? `Archive currency` : `Unarchive currency`, 
+                            callback_data: makeActionButton('archiveCurrency', { currency: currencyCode, archive: currencyData.is_active })
+                        }
+                    ],
+                    [
                         {
                             text: `<< Back to Currencies`,
                             callback_data: makeMenuButton('currencies')

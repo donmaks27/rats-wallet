@@ -58,6 +58,11 @@ const WalletActionsHandlers = {
         onStart: userAction_deleteAccount_start,
         onMessage: userAction_deleteAccount_onMessage,
         onStop: userAction_deleteAccount_stop
+    },
+    archiveCurrency: {
+        onStart: userAction_archiveCurrency_start,
+        onMessage: userAction_archiveCurrency_onMessage,
+        onStop: userAction_archiveCurrency_stop
     }
 };
 
@@ -651,6 +656,71 @@ function userAction_deleteAccount_stop(user, userData, args, callback) {
             callback(false);
         } else {
             log.info(userID, `[deleteAccount] switched to accounts menu`);
+            callback(true);
+        }
+    });
+}
+
+/**
+ * @param {bot.user_data} user 
+ * @param {db.user_data} userData 
+ * @param {walletCommon.args_data} args 
+ * @param {(success: boolean) => any} callback
+ */
+function userAction_archiveCurrency_start(user, userData, args, callback) {
+    const userID = user.id;
+    if (typeof args.currency !== 'string') {
+        log.error(userID, `[archiveCurrency] invalid argument "currency"`);
+        callback(false);
+        return;
+    }
+    
+    const currencyCode = args.currency;
+    const shouldArchive = args.archive ? true : false;
+    log.info(userID, `[archiveCurrency] ${ shouldArchive ? 'archiving' : 'unarchiving' } currency ${currencyCode}...`);
+    db.currency_edit(currencyCode, { is_active: !shouldArchive }, (currencyData, error) => {
+        if (error || !currencyData) {
+            log.error(userID, `[archiveCurrency] failed to ${ shouldArchive ? 'archive' : 'unarchive' } currency ${currencyCode} (${error})`);
+            callback(false);
+        } else {
+            log.info(userID, `[archiveCurrency] currency ${currencyCode} ${ shouldArchive ? 'archived' : 'unarchived' }`);
+            stopUserAction(user, userData, callback);
+        }
+    });
+}
+/**
+ * @param {bot.message_data} message 
+ * @param {db.user_data} userData 
+ * @param {walletCommon.args_data} args 
+ * @param {(success: boolean) => any} callback
+ */
+function userAction_archiveCurrency_onMessage(message, userData, args, callback) {
+    callback(true);
+}
+/**
+ * @param {bot.user_data} user 
+ * @param {db.user_data} userData 
+ * @param {walletCommon.args_data} args 
+ * @param {(success: boolean) => any} callback
+ */
+function userAction_archiveCurrency_stop(user, userData, args, callback) {
+    const userID = user.id;
+    if (typeof args.currency !== 'string') {
+        log.error(userID, `[archiveCurrency] invalid argument "currency"`);
+        callback(false);
+        return;
+    }
+
+    const currencyCode = args.currency;
+    const menuMessageID = walletCommon.getUserMenuMessageID(userID);
+    log.info(userID, `[archiveCurrency] updating menu...`);
+    walletMenu.changeMenuMessage(menuMessageID, 'currency', { currency: currencyCode }, user, userData, (message, error) => {
+        walletCommon.clearUserAction(userID);
+        if (error) {
+            log.error(userID, `[archiveCurrency] failed to update menu message (${error})`);
+            callback(false);
+        } else {
+            log.info(userID, `[archiveCurrency] menu message updated`);
             callback(true);
         }
     });
