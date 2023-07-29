@@ -552,33 +552,35 @@ function createMenuData_currency(user, userData, args, callback) {
             if (!currencyData.is_active) {
                 menuText += ` _${escapeMessageMarkdown(`[archived]`)}_`;
             }
+            /** @type {bot.keyboard_button_inline_data[][]} */
+            var menuDataKeyboard = [];
+            if (userID == bot.getOwnerUserID()) {
+                menuDataKeyboard.push([
+                    {
+                        text: `Clear name`,
+                        callback_data: makeActionButton('renameCurrency', { currency: currencyCode, clearName: true })
+                    },
+                    {
+                        text: 'Rename',
+                        callback_data: makeActionButton('renameCurrency', { currency: currencyCode, clearName: false })
+                    }
+                ], [
+                    { 
+                        text: currencyData.is_active ? `Archive currency` : `Unarchive currency`, 
+                        callback_data: makeActionButton('archiveCurrency', { currency: currencyCode, archive: currencyData.is_active })
+                    }
+                ]);
+            }
+            menuDataKeyboard.push([
+                {
+                    text: `<< Back to Currencies`,
+                    callback_data: makeMenuButton('currencies')
+                }
+            ]);
             callback({
                 text: menuText + `\nChoose what you want to do:`,
                 parseMode: 'MarkdownV2',
-                keyboard: [
-                    [
-                        {
-                            text: `Clear name`,
-                            callback_data: makeActionButton('renameCurrency', { currency: currencyCode, clearName: true })
-                        },
-                        {
-                            text: 'Rename',
-                            callback_data: makeActionButton('renameCurrency', { currency: currencyCode, clearName: false })
-                        }
-                    ],
-                    [
-                        { 
-                            text: currencyData.is_active ? `Archive currency` : `Unarchive currency`, 
-                            callback_data: makeActionButton('archiveCurrency', { currency: currencyCode, archive: currencyData.is_active })
-                        }
-                    ],
-                    [
-                        {
-                            text: `<< Back to Currencies`,
-                            callback_data: makeMenuButton('currencies')
-                        }
-                    ]
-                ]
+                keyboard: menuDataKeyboard
             });
         }
     });
