@@ -314,7 +314,7 @@ function createMenuData_accounts(user, userData, args, callback) {
                     }
                 }
                 menuDataKeyboardRow.push({
-                    text: accounts[i].is_active ? `${shouldShowArchived ? '🟢 ' : ''}${accounts[i].name}` : `🟡 [${accounts[i].name}]`,
+                    text: accounts[i].is_active ? `🟢 ${accounts[i].name}` : `🟡 [${accounts[i].name}]`,
                     callback_data: makeMenuButton('account', { accountID: accounts[i].id })
                 });
                 if (menuDataKeyboardRow.length == 3) {
@@ -504,7 +504,7 @@ function createMenuData_currencies(user, userData, args, callback) {
                 }
                 var title = currenciesData[i].name ? `${currenciesData[i].name} (${currenciesData[i].code})` : currenciesData[i].code;
                 menuDataKeyboardRow.push({
-                    text: currenciesData[i].is_active ? `${shouldShowArchived ? '🟢 ' : ''}${title}` : `🟡 [${title}]`,
+                    text: currenciesData[i].is_active ? `🟢 ${title}` : `🟡 [${title}]`,
                     callback_data: makeMenuButton('currency', { currency: currenciesData[i].code })
                 });
                 if (menuDataKeyboardRow.length == 2) {
