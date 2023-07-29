@@ -381,7 +381,7 @@ function currency_getAll(callback) {
 }
 /**
  * @param {string} code 
- * @param {{ name?: string, is_active?: boolean }} params 
+ * @param {{ name?: string | null, is_active?: boolean }} params 
  * @param {(data: currency_data | null, error?: string) => any} [callback] 
  */
 function currency_edit(code, params, callback) {
@@ -1072,7 +1072,7 @@ function query_getCurrency(code) {
 }
 /**
  * @param {string} code 
- * @param {{ name?: string, is_active?: boolean }} params 
+ * @param {{ name?: string | null, is_active?: boolean }} params 
  */
 function query_updateCurrency(code, params) {
     var statements = [];

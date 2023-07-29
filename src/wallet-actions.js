@@ -63,6 +63,11 @@ const WalletActionsHandlers = {
         onStart: userAction_archiveCurrency_start,
         onMessage: userAction_archiveCurrency_onMessage,
         onStop: userAction_archiveCurrency_stop
+    },
+    renameCurrency: {
+        onStart: userAction_renameCurrency_start,
+        onMessage: userAction_renameCurrency_onMessage,
+        onStop: userAction_renameCurrency_stop
     }
 };
 
@@ -721,6 +726,113 @@ function userAction_archiveCurrency_stop(user, userData, args, callback) {
             callback(false);
         } else {
             log.info(userID, `[archiveCurrency] menu message updated`);
+            callback(true);
+        }
+    });
+}
+
+/**
+ * @param {bot.user_data} user 
+ * @param {db.user_data} userData 
+ * @param {walletCommon.args_data} args 
+ * @param {(success: boolean) => any} callback
+ */
+function userAction_renameCurrency_start(user, userData, args, callback) {
+    const userID = user.id;
+    if (typeof args.currency !== 'string') {
+        log.error(userID, `[renameCurrency] invalid argument "currency"`);
+        callback(false);
+        return;
+    }
+    const currencyCode = args.currency;
+    const shouldClearName = args.clearName ? true : false;
+    if (shouldClearName) {
+        log.info(userID, `[renameCurrency] clearing name of currency ${currencyCode}...`);
+        db.currency_edit(currencyCode, { name: null }, (currencyData, error) => {
+            if (error) {
+                log.error(userID, `[renameCurrency] failed to clear name of currency ${currencyCode} (${error})`);
+                callback(false);
+            } else {
+                log.info(userID, `[renameCurrency] currency name of ${currencyCode} cleared`);
+                stopUserAction(user, userData, callback);
+            }
+        });
+    } else {
+        log.info(userID, `[renameCurrency] changing name of currency ${currencyCode}...`);
+        const menuMessageID = walletCommon.getUserMenuMessageID(userID);
+        walletCommon.setUserMenuMessageID(userID, 0);
+        const messageText = `Please, enter new currency name`;
+        /**
+         * @param {bot.message_data | null} message 
+         * @param {string} [error] 
+         */
+        var messageCallback = (message, error) => {
+            if (error) {
+                log.error(userID, `[renameCurrency] failed to send message about changing name of currency ${currencyCode} (${error})`);
+                callback(false);
+            } else {
+                log.info(userID, `[renameCurrency] sent message about changing name of currency ${currencyCode}`);
+                callback(true);
+            }
+        }
+        if (menuMessageID == 0) {
+            bot.sendMessage({ 
+                chatID: userID, text: messageText
+            }, messageCallback);
+        } else {
+            bot.editMessage({ 
+                message: { chatID: userID, id: menuMessageID }, 
+                text: messageText, inlineKeyboard: { inline_keyboard:[] } 
+            }, messageCallback);
+        }
+    }
+}
+/**
+ * @param {bot.message_data} message 
+ * @param {db.user_data} userData 
+ * @param {walletCommon.args_data} args 
+ * @param {(success: boolean) => any} callback
+ */
+function userAction_renameCurrency_onMessage(message, userData, args, callback) {
+    const userID = message.from.id;
+    const shouldClearName = args.clearName ? true : false;
+    if (shouldClearName) {
+        log.warning(userID, `[renameCurrency] shouldClearName is true, it shouldn't happen, action should be stopped already`);
+        callback(true);
+        return;
+    }
+    if (!message.text || (message.text.length == 0)) {
+        log.warning(userID, `[renameCurrency] empty message text`);
+        callback(true);
+        return;
+    }
+    const currencyCode = typeof args.currency === 'string' ? args.currency : '';
+    db.currency_edit(currencyCode, { name: message.text }, (currencyData, error) => {
+        if (error || !currencyData) {
+            log.error(userID, `[renameCurrency] failed to change name of currency ${currencyCode} (${error})`);
+            callback(false);
+        } else {
+            log.info(userID, `[renameCurrency] changed name of currency ${currencyCode} (${currencyData.name})`);
+            stopUserAction(message.from, userData, (success) => { callback(true); });
+        }
+    });
+}
+/**
+ * @param {bot.user_data} user 
+ * @param {db.user_data} userData 
+ * @param {walletCommon.args_data} args 
+ * @param {(success: boolean) => any} callback
+ */
+function userAction_renameCurrency_stop(user, userData, args, callback) {
+    const userID = user.id;
+    log.info(userID, `[renameCurrency] returning to currency ${args.currency} menu`);
+    walletMenu.changeMenuMessage(walletCommon.getUserMenuMessageID(userID), 'currency', { currency: args.currency }, user, userData, (message, error) => {
+        walletCommon.clearUserAction(userID);
+        if (error) {
+            log.error(userID, `[renameCurrency] failed to return to currency ${args.currency} menu (${error})`);
+            callback(false);
+        } else {
+            log.info(userID, `[renameCurrency] returned to currency ${args.currency} menu`);
             callback(true);
         }
     });

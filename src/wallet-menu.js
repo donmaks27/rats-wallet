@@ -493,6 +493,8 @@ function createMenuData_currencies(user, userData, args, callback) {
                 }
                 return 0;
             });
+            /** @type {bot.keyboard_button_inline_data[]} */
+            var menuDataKeyboardRow = [];
             for (var i = 0; i < currenciesData.length; i++) {
                 if (!currenciesData[i].is_active) {
                     archivedAmount++;
@@ -500,11 +502,18 @@ function createMenuData_currencies(user, userData, args, callback) {
                         continue;
                     }
                 }
-                var title = currenciesData[i].name ? `${currenciesData[i].name} (${currenciesData[i].code})` : currenciesData[i].code
-                menuDataKeyboard.push([{
+                var title = currenciesData[i].name ? `${currenciesData[i].name} (${currenciesData[i].code})` : currenciesData[i].code;
+                menuDataKeyboardRow.push({
                     text: currenciesData[i].is_active ? title : `[${title}]`,
                     callback_data: makeMenuButton('currency', { currency: currenciesData[i].code })
-                }]);
+                });
+                if (menuDataKeyboardRow.length == 2) {
+                    menuDataKeyboard.push(menuDataKeyboardRow);
+                    menuDataKeyboardRow = [];
+                }
+            }
+            if (menuDataKeyboardRow.length > 0) {
+                menuDataKeyboard.push(menuDataKeyboardRow);
             }
             if (archivedAmount > 0) {
                 menuDataKeyboard.push([{
@@ -547,6 +556,16 @@ function createMenuData_currency(user, userData, args, callback) {
                 text: menuText + `\nChoose what you want to do:`,
                 parseMode: 'MarkdownV2',
                 keyboard: [
+                    [
+                        {
+                            text: `Clear name`,
+                            callback_data: makeActionButton('renameCurrency', { currency: currencyCode, clearName: true })
+                        },
+                        {
+                            text: 'Rename',
+                            callback_data: makeActionButton('renameCurrency', { currency: currencyCode, clearName: false })
+                        }
+                    ],
                     [
                         { 
                             text: currencyData.is_active ? `Archive currency` : `Unarchive currency`, 
