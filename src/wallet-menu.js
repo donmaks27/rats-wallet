@@ -173,13 +173,10 @@ function makeButton(refType, refDestination, args) {
 }
 
 /**
- * @param {string} msg 
+ * @param {string} str 
  */
-function escapeMessageMarkdown(msg) {
-    return msg.replace(/(?=[\_\*\[\]\(\)\~\`\>\#\+\-\=\|\{\}\.\!])/g, '\\');
-}
 function makeMenuMessageTitle(str) {
-    return `*${escapeMessageMarkdown(str)}*`;
+    return `*${bot.escapeMarkdown(str)}*`;
 }
 
 /**
@@ -314,7 +311,7 @@ function createMenuData_accounts(user, userData, args, callback) {
                     }
                 }
                 menuDataKeyboardRow.push({
-                    text: accounts[i].is_active ? `🟢 ${accounts[i].name}` : `🟡 [${accounts[i].name}]`,
+                    text: (accounts[i].is_active ? '🟢' : '🟡') + accounts[i].name,
                     callback_data: makeMenuButton('account', { accountID: accounts[i].id })
                 });
                 if (menuDataKeyboardRow.length == 3) {
@@ -354,7 +351,7 @@ function createMenuData_account(user, userData, args, callback) {
         if (error || !accountData) {
             log.error(userID, `[account] failed to get data of account ${accountID} (${error})`);
             callback({
-                text: `_${escapeMessageMarkdown(`Hmm, something wrong...`)}_`, parseMode: 'MarkdownV2',
+                text: `_${bot.escapeMarkdown(`Hmm, something wrong...`)}_`, parseMode: 'MarkdownV2',
                 keyboard: [[{ text: `<< Back to Accounts`, callback_data: makeMenuButton('accounts') }]]
             });
         } else {
@@ -364,11 +361,11 @@ function createMenuData_account(user, userData, args, callback) {
                 }
                 /** @type {string[]} */
                 var textLines = [];
-                textLines.push(`Account *${escapeMessageMarkdown(accountData.name)}* ${escapeMessageMarkdown(`(${accountData.currency_code})`)}`);
+                textLines.push((accountData.is_active ? '🟢' : '🟡') + ` Account *${bot.escapeMarkdown(accountData.name)}* ${bot.escapeMarkdown(`(${accountData.currency_code})`)}`);
                 if (!accountData.is_active) {
                     textLines[0] += ` _\\[archived\\]_`;
                 }
-                textLines.push(`_Current ballance: ${escapeMessageMarkdown(`${Math.round(accountData.start_amount + ballance) / 100}`)}_`);
+                textLines.push(`_Current ballance: ${bot.escapeMarkdown(`${Math.round(accountData.start_amount + ballance) / 100}`)}_`);
                 textLines.push(`Choose what you want to do:`);
 
                 callback({
@@ -413,7 +410,7 @@ function createMenuData_createAccount(user, userData, args, callback) {
         var menuData = { text: makeMenuMessageTitle(`Creating new account`) + `\nChoose currency for the new account:`, parseMode: 'MarkdownV2', keyboard: [] };
         if (error) {
             log.error(userID, `[createAccount_currency] failed to get currencies data (${error})`);
-            menuData.text = `_${escapeMessageMarkdown(`Hmm, something wrong...`)}_`;
+            menuData.text = `_${bot.escapeMarkdown(`Hmm, something wrong...`)}_`;
         } else {
             for (var i = 0; i < currenciesData.length; i++) {
                 if (!currenciesData[i].is_active) {
@@ -426,7 +423,7 @@ function createMenuData_createAccount(user, userData, args, callback) {
             }
             if (menuData.keyboard.length == 0) {
                 log.warning(userID, `[createAccount_currency] there is no available currencies`);
-                menuData.text = `_${escapeMessageMarkdown(`Can't find any active currency...`)}_`;
+                menuData.text = `_${bot.escapeMarkdown(`Can't find any active currency...`)}_`;
             }
         }
         menuData.keyboard.push([{ text: `<< Back to Accounts`, callback_data: makeMenuButton('accounts') }]);
@@ -446,12 +443,12 @@ function createMenuData_deleteAccount(user, userData, args, callback) {
         if (error || !accountData) {
             log.error(userID, `[deleteAccount] failed to get data of account ${accountID} (${error})`);
             callback({
-                text: `_${escapeMessageMarkdown(`Hmm, something wrong...`)}_`, parseMode: 'MarkdownV2',
+                text: `_${bot.escapeMarkdown(`Hmm, something wrong...`)}_`, parseMode: 'MarkdownV2',
                 keyboard: [[{ text: `<< Back to Accounts`, callback_data: makeMenuButton('accounts') }]]
             });
         } else {
             callback({ 
-                text: makeMenuMessageTitle(`Deleting account`) + `\nYou are going to delete account *${escapeMessageMarkdown(accountData.name)}*` + escapeMessageMarkdown(`. Are you sure?`), 
+                text: makeMenuMessageTitle(`Deleting account`) + `\nYou are going to delete account *${bot.escapeMarkdown(accountData.name)}*` + bot.escapeMarkdown(`. Are you sure?`), 
                 parseMode: 'MarkdownV2', 
                 keyboard: [[
                     {
@@ -502,9 +499,9 @@ function createMenuData_currencies(user, userData, args, callback) {
                         continue;
                     }
                 }
-                var title = currenciesData[i].name ? `${currenciesData[i].name} (${currenciesData[i].code})` : currenciesData[i].code;
+                var currencyTitle = currenciesData[i].name ? `${currenciesData[i].name} (${currenciesData[i].code})` : currenciesData[i].code;
                 menuDataKeyboardRow.push({
-                    text: currenciesData[i].is_active ? `🟢 ${title}` : `🟡 [${title}]`,
+                    text: (currenciesData[i].is_active ? '🟢' : '🟡') + currencyTitle,
                     callback_data: makeMenuButton('currency', { currency: currenciesData[i].code })
                 });
                 if (menuDataKeyboardRow.length == 2) {
@@ -522,7 +519,9 @@ function createMenuData_currencies(user, userData, args, callback) {
                 }]);
             }
         }
-        //menuDataKeyboard.push([{ text: `Create new currency >>`, callback_data: makeActionButton('createCurrency') }]);
+        if (userID == bot.getOwnerUserID()) {
+            menuDataKeyboard.push([{ text: `Create new currency >>`, callback_data: makeActionButton('createCurrency') }]);
+        }
         menuDataKeyboard.push([{ text: `<< Back to Wallet`, callback_data: makeMenuButton('wallet') }]);
         callback({
             text: makeMenuMessageTitle(`Currencies`) + `\nChoose a currency:`,
@@ -544,13 +543,13 @@ function createMenuData_currency(user, userData, args, callback) {
         if (error || !currencyData) {
             log.error(userID, `[currency] failed to get data of currency ${currencyCode} (${error})`);
             callback({
-                text: `_${escapeMessageMarkdown(`Hmm, something wrong...`)}_`, parseMode: 'MarkdownV2',
+                text: `_${bot.escapeMarkdown(`Hmm, something wrong...`)}_`, parseMode: 'MarkdownV2',
                 keyboard: [[{ text: `<< Back to Currencies`, callback_data: makeMenuButton('currencies') }]]
             });
         } else {
-            var menuText = `Currency *${escapeMessageMarkdown(currencyData.name ? `${currencyData.name} (${currencyCode})` : `${currencyCode}`)}*`;
+            var menuText = (currencyData.is_active ? '🟢' : '🟡') + ` Currency *${bot.escapeMarkdown(currencyData.name ? `${currencyData.name} (${currencyCode})` : `${currencyCode}`)}*`;
             if (!currencyData.is_active) {
-                menuText += ` _${escapeMessageMarkdown(`[archived]`)}_`;
+                menuText += ` _${bot.escapeMarkdown(`[archived]`)}_`;
             }
             /** @type {bot.keyboard_button_inline_data[][]} */
             var menuDataKeyboard = [];

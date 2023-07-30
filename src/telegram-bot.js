@@ -17,6 +17,11 @@ module.exports.getOwnerUserID = () => botInfo.ownerUserID;
 module.exports.getServerAddress = () => botInfo.server;
 module.exports.getSecretToken = () => botInfo.secretToken;
 
+/**
+ * @param {string} msg 
+ */
+module.exports.escapeMarkdown = (msg) => msg.replace(/(?=[\_\*\[\]\(\)\~\`\>\#\+\-\=\|\{\}\.\!])/g, '\\');
+
 module.exports.getMe = command_getMe;
 module.exports.sendMessage = command_sendMessage;
 module.exports.forwardMessage = command_forwardMessage;
@@ -221,6 +226,16 @@ function command_forwardMessage(params, callback) {
  * @param {(message: message_data | null, error?: string) => any} [callback] 
  */
 function command_editMessage(params, callback) {
+    if (params.message.id == 0) {
+        command_sendMessage({ 
+            chatID: params.message.chatID, 
+            text: params.text, 
+            parseMode: params.parseMode,
+            inlineKeyboard: params.inlineKeyboard
+        }, callback);
+        return;
+    }
+
     var requestParams = {
         chat_id: params.message.chatID,
         message_id: params.message.id,

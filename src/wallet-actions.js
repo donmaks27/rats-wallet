@@ -46,7 +46,7 @@ const WalletActionsHandlers = {
     },
     archiveAccount: {
         onStart: userAction_archiveAccount_start,
-        onMessage: userAction_archiveAccount_onMessage,
+        onMessage: userAction_onMessage_empty,
         onStop: userAction_archiveAccount_stop
     },
     createAccount: {
@@ -56,18 +56,23 @@ const WalletActionsHandlers = {
     },
     deleteAccount: {
         onStart: userAction_deleteAccount_start,
-        onMessage: userAction_deleteAccount_onMessage,
+        onMessage: userAction_onMessage_empty,
         onStop: userAction_deleteAccount_stop
     },
     archiveCurrency: {
         onStart: userAction_archiveCurrency_start,
-        onMessage: userAction_archiveCurrency_onMessage,
+        onMessage: userAction_onMessage_empty,
         onStop: userAction_archiveCurrency_stop
     },
     renameCurrency: {
         onStart: userAction_renameCurrency_start,
         onMessage: userAction_renameCurrency_onMessage,
         onStop: userAction_renameCurrency_stop
+    },
+    createCurrency: {
+        onStart: userAction_createCurrency_start,
+        onMessage: userAction_createCurrency_onMessage,
+        onStop: userAction_createCurrency_stop
     }
 };
 
@@ -184,6 +189,16 @@ function stopUserAction(user, userData, callback) {
             });
         }
     }
+}
+
+/**
+ * @param {bot.message_data} message 
+ * @param {db.user_data} userData 
+ * @param {walletCommon.args_data} args 
+ * @param {(success: boolean) => any} callback
+ */
+function userAction_onMessage_empty(message, userData, args, callback) {
+    callback(true);
 }
 
 /**
@@ -330,15 +345,17 @@ function userAction_invite_stop(user, userData, args, callback) {
  */
 function userAction_changeName_start(user, userData, args, callback) {
     const userID = user.id;
-
     log.info(userID, `[changeName] sending start message...`);
     const menuMessageID = walletCommon.getUserMenuMessageID(userID);
-    const messageText = `*Changing user name*\nPlease, enter new name`;
-    /**
-     * @param {bot.message_data | null} message 
-     * @param {string} [error] 
-     */
-    var messageCallback = (message, error) => {
+    walletCommon.setUserMenuMessageID(userID, 0);
+    bot.editMessage({
+        message: { chatID: userID, id: menuMessageID },
+        text: `*Changing user name*\nPlease, enter new name`, 
+        parseMode: 'MarkdownV2',
+        inlineKeyboard: {
+            inline_keyboard: []
+        }
+    }, (message, error) => {
         if (error) {
             log.error(userID, `[changeName] failed to send start message (${error})`);
             callback(false);
@@ -346,20 +363,7 @@ function userAction_changeName_start(user, userData, args, callback) {
             log.info(userID, `[changeName] sent start message`);
             callback(true);
         }
-    };
-
-    walletCommon.setUserMenuMessageID(userID, 0);
-    if (menuMessageID != 0) {
-        bot.editMessage({
-            message: { chatID: userID, id: menuMessageID },
-            text: messageText, parseMode: 'MarkdownV2',
-            inlineKeyboard: {
-                inline_keyboard: []
-            }
-        }, messageCallback);
-    } else {
-        bot.sendMessage({ chatID: userID, text: messageText, parseMode: 'MarkdownV2' }, messageCallback);
-    }
+    });
 }
 /**
  * @param {bot.message_data} message 
@@ -435,15 +439,6 @@ function userAction_archiveAccount_start(user, userData, args, callback) {
     });
 }
 /**
- * @param {bot.message_data} message 
- * @param {db.user_data} userData 
- * @param {walletCommon.args_data} args 
- * @param {(success: boolean) => any} callback
- */
-function userAction_archiveAccount_onMessage(message, userData, args, callback) {
-    callback(true);
-}
-/**
  * @param {bot.user_data} user 
  * @param {db.user_data} userData 
  * @param {walletCommon.args_data} args 
@@ -495,7 +490,8 @@ function userAction_createAccount_start(user, userData, args, callback) {
     } else {
         bot.editMessage({
             message: { chatID: userID, id: prevMenuMessageID },
-            text: `Please, enter name of the new account:`,
+            text: `*Creating new account*\nPlease, enter name of the new account:`,
+            parseMode: 'MarkdownV2',
             inlineKeyboard: { inline_keyboard: [] }
         }, (message, error) => {
             if (error) {
@@ -636,16 +632,6 @@ function userAction_deleteAccount_start(user, userData, args, callback) {
     });
 }
 /**
- * @param {bot.message_data} userMessage 
- * @param {db.user_data} userData 
- * @param {walletCommon.args_data} args 
- * @param {(success: boolean) => any} callback
- */
-function userAction_deleteAccount_onMessage(userMessage, userData, args, callback) {
-    const userID = userMessage.from.id;
-    callback(true);
-}
-/**
  * @param {bot.user_data} user 
  * @param {db.user_data} userData 
  * @param {walletCommon.args_data} args 
@@ -692,15 +678,6 @@ function userAction_archiveCurrency_start(user, userData, args, callback) {
             stopUserAction(user, userData, callback);
         }
     });
-}
-/**
- * @param {bot.message_data} message 
- * @param {db.user_data} userData 
- * @param {walletCommon.args_data} args 
- * @param {(success: boolean) => any} callback
- */
-function userAction_archiveCurrency_onMessage(message, userData, args, callback) {
-    callback(true);
 }
 /**
  * @param {bot.user_data} user 
@@ -761,12 +738,12 @@ function userAction_renameCurrency_start(user, userData, args, callback) {
         log.info(userID, `[renameCurrency] changing name of currency ${currencyCode}...`);
         const menuMessageID = walletCommon.getUserMenuMessageID(userID);
         walletCommon.setUserMenuMessageID(userID, 0);
-        const messageText = `Please, enter new currency name`;
-        /**
-         * @param {bot.message_data | null} message 
-         * @param {string} [error] 
-         */
-        var messageCallback = (message, error) => {
+        bot.editMessage({ 
+            message: { chatID: userID, id: menuMessageID }, 
+            text: `*Renaming currency ${bot.escapeMarkdown(currencyCode)}*\nPlease, enter new currency name`, 
+            parseMode: 'MarkdownV2',
+            inlineKeyboard: { inline_keyboard:[] } 
+        }, (message, error) => {
             if (error) {
                 log.error(userID, `[renameCurrency] failed to send message about changing name of currency ${currencyCode} (${error})`);
                 callback(false);
@@ -774,17 +751,7 @@ function userAction_renameCurrency_start(user, userData, args, callback) {
                 log.info(userID, `[renameCurrency] sent message about changing name of currency ${currencyCode}`);
                 callback(true);
             }
-        }
-        if (menuMessageID == 0) {
-            bot.sendMessage({ 
-                chatID: userID, text: messageText
-            }, messageCallback);
-        } else {
-            bot.editMessage({ 
-                message: { chatID: userID, id: menuMessageID }, 
-                text: messageText, inlineKeyboard: { inline_keyboard:[] } 
-            }, messageCallback);
-        }
+        });
     }
 }
 /**
@@ -836,4 +803,103 @@ function userAction_renameCurrency_stop(user, userData, args, callback) {
             callback(true);
         }
     });
+}
+
+/**
+ * @param {bot.user_data} user 
+ * @param {db.user_data} userData 
+ * @param {walletCommon.args_data} args 
+ * @param {(success: boolean) => any} callback
+ */
+function userAction_createCurrency_start(user, userData, args, callback) {
+    const userID = user.id;
+    log.info(userID, `[createCurrency] sending message abount new currency code...`);
+    const menuMessageID = walletCommon.getUserMenuMessageID(userID);
+    walletCommon.setUserMenuMessageID(userID, 0);
+    bot.editMessage({
+        message: { chatID: userID, id: menuMessageID },
+        text: `*Creating new currency*\nPlease, enter new currency code`,
+        parseMode: 'MarkdownV2',
+        inlineKeyboard: { inline_keyboard: [] }
+    }, (message, error) => {
+        if (error) {
+            log.error(userID, `[createCurrency] failed to send message abount new currency code (${error})`);
+            callback(false);
+        } else {
+            log.info(userID, `[createCurrency] sent message abount new currency code`);
+            callback(true);
+        }
+    });
+}
+/**
+ * @param {bot.message_data} message 
+ * @param {db.user_data} userData 
+ * @param {walletCommon.args_data} args 
+ * @param {(success: boolean) => any} callback
+ */
+function userAction_createCurrency_onMessage(message, userData, args, callback) {
+    const userID = message.from.id;
+    if (!message.text || (message.text.length == 0)) {
+        log.warning(userID, `[createCurrency] empty message text`);
+        callback(true);
+        return;
+    }
+    const currencyCode = message.text;
+    log.info(userID, `[createCurrency] searching currency ${currencyCode}...`);
+    db.currency_get(currencyCode, (currencyData, error) => {
+        if (currencyData) {
+            log.warning(userID, `[createCurrency] currency ${currencyCode} already created`);
+            bot.sendMessage({ chatID: userID, text: `Such currency already exists, try again` });
+            callback(true);
+        } else {
+            log.info(userID, `[createCurrency] didn't find currency ${currencyCode}, creating new currency...`);
+            db.currency_create({ code: currencyCode }, (currencyData, error) => {
+                if (error) {
+                    log.error(userID, `[createCurrency] failed to create currency ${currencyCode} (${error})`);
+                    stopUserAction(message.from, userData, () => callback(false));
+                } else {
+                    log.info(userID, `[createCurrency] created currency ${currencyCode}`);
+                    args.currency = currencyCode;
+                    walletCommon.setUserActionArgs(userID, args);
+                    stopUserAction(message.from, userData, callback);
+                }
+            });
+        }
+    });
+}
+/**
+ * @param {bot.user_data} user 
+ * @param {db.user_data} userData 
+ * @param {walletCommon.args_data} args 
+ * @param {(success: boolean) => any} callback
+ */
+function userAction_createCurrency_stop(user, userData, args, callback) {
+    const userID = user.id;
+    const currencyCreated = typeof args.currency === 'string' ? true : false;
+    const currencyCode = typeof args.currency === 'string' ? args.currency : '';
+    if (!currencyCreated) {
+        log.info(userID, `[createCurrency] switching to currencies menu...`);
+        walletMenu.sendMenuMessage('currencies', {}, user, userData, (message, error) => {
+            walletCommon.clearUserAction(userID);
+            if (error) {
+                log.error(userID, `[createCurrency] failed to switch to currencies menu (${error})`);
+                callback(false);
+            } else {
+                log.info(userID, `[createCurrency] switched to currencies menu`);
+                callback(true);
+            }
+        });
+    } else {
+        log.info(userID, `[createCurrency] switching to currency menu ${currencyCode}...`);
+        walletMenu.sendMenuMessage('currency', { currency: currencyCode }, user, userData, (message, error) => {
+            walletCommon.clearUserAction(userID);
+            if (error) {
+                log.error(userID, `[createCurrency] failed to switch to currency menu ${currencyCode} (${error})`);
+                callback(false);
+            } else {
+                log.info(userID, `[createCurrency] switched to currency menu ${currencyCode}`);
+                callback(true);
+            }
+        });
+    }
 }
