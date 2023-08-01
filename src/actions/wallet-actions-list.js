@@ -10,14 +10,15 @@ var WalletActionsHandlers = {};
  */
 module.exports.register = (stopCallback) => {
     WalletActionsHandlers = {
-        invite:          require('./invite').register(stopCallback),
-        changeName:      require('./changeName').register(stopCallback),
-        archiveAccount:  require('./archiveAccount').register(stopCallback),
-        deleteAccount:   require('./deleteAccount').register(stopCallback),
-        createAccount:   require('./createAccount').register(stopCallback),
-        archiveCurrency: require('./archiveCurrency').register(stopCallback),
-        renameCurrency:  require('./renameCurrency').register(stopCallback),
-        createCurrency:  require('./createCurrency').register(stopCallback),
+        invite:             require('./invite').register(stopCallback),
+        changeUserName:     require('./changeUserName').register(stopCallback),
+        archiveAccount:     require('./archiveAccount').register(stopCallback),
+        deleteAccount:      require('./deleteAccount').register(stopCallback),
+        createAccount:      require('./createAccount').register(stopCallback),
+        archiveCurrency:    require('./archiveCurrency').register(stopCallback),
+        changeCurrencyName: require('./changeCurrencyName').register(stopCallback),
+        createCurrency:     require('./createCurrency').register(stopCallback),
+        deleteCurrency:     require('./deleteCurrency').register(stopCallback),
     };
 }
 /**
