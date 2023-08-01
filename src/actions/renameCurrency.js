@@ -6,7 +6,7 @@ var walletCommon = require('../wallet-common');
 var walletMenu = require('../wallet-menu');
 var actionBase = require('./wallet-action-base');
 
-const ACTION_NAME = 'changeCurrencyName';
+const ACTION_NAME = 'renameCurrency';
 
 const log = {
     /**

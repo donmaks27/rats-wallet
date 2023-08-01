@@ -183,7 +183,7 @@ function createMenuData_settings(user, userData, args, callback) {
             [
                 {
                     text: 'Change name',
-                    callback_data: makeActionButton('changeUserName')
+                    callback_data: makeActionButton('renameUser')
                 }
             ],
             [
@@ -519,12 +519,12 @@ function createMenuData_currency(user, userData, args, callback) {
                 if (currencyData.name) {
                     menuDataKeyboeardRenameButtons.push({
                         text: `Clear name`,
-                        callback_data: makeActionButton('changeCurrencyName', { currency: currencyCode, clearName: true })
+                        callback_data: makeActionButton('renameCurrency', { currency: currencyCode, clearName: true })
                     });
                 }
                 menuDataKeyboeardRenameButtons.push({
                     text: 'Rename',
-                    callback_data: makeActionButton('changeCurrencyName', { currency: currencyCode, clearName: false })
+                    callback_data: makeActionButton('renameCurrency', { currency: currencyCode, clearName: false })
                 });
                 menuDataKeyboard.push(menuDataKeyboeardRenameButtons, [
                     { 

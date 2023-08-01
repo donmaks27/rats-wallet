@@ -6,8 +6,8 @@ var db = require('./database');
  * @typedef {{ [key: string]: string|number|boolean|null }} args_data
  */
 
-const MENU_BUTTON_GOTO   = "MenuButtonGoto";
-const MENU_BUTTON_ACTION = "MenuButtonAction";
+const MENU_BUTTON_GOTO   = "menu";
+const MENU_BUTTON_ACTION = "action";
 
 const ACTION_INVALID = 'none';
 
@@ -115,16 +115,21 @@ function encodeArgs(str, args) {
     if (args) {
         for (var argKey in args) {
             const argValue = args[argKey];
+            result += `;${argKey}=`;
             if (argValue === null) {
-                result += `;${argKey}=0`;
+                result += '0';
             } else {
-                var prefix = '';
                 switch (typeof argValue) {
-                case 'boolean': prefix = 'b'; break;
-                case 'number': prefix = 'n'; break;
-                default: prefix = 's'; break;
+                case 'boolean': 
+                    result += argValue ? 't' : 'f'; 
+                    break;
+                case 'number': 
+                    result += `n${argValue}`; 
+                    break;
+                default: 
+                    result += `s${argValue}`; 
+                    break;
                 }
-                result += `;${argKey}=${prefix}${argValue}`;
             }
         }
     }
@@ -148,11 +153,11 @@ function decodeArgs(str) {
         const argValue = arg[1].substring(1);
         switch (arg[1][0]) {
         case '0': result[argKey] = null; break;
-        case 'b': result[argKey] = argValue == 'true'; break;
+        case 't': result[argKey] = true; break;
+        case 'f': result[argKey] = false; break;
         case 'n': result[argKey] = Number.parseInt(argValue); break;
         case 's': result[argKey] = argValue; break;
-        default:
-            continue;
+        default: ;
         }
     }
     return result;
