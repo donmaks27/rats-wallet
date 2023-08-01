@@ -1,6 +1,10 @@
 // @ts-check
 
 var logModule = require('./log');
+var db  = require('./database');
+var bot = require('./telegram-bot');
+var walletCommon = require('./wallet-common');
+
 const log = {
     /**
      * @param {number} userID 
@@ -18,13 +22,17 @@ const log = {
      */
     info: (userID, msg) => logModule.info(`[WALLET][ACTION][USER ${userID}] ${msg}`)
 };
-
-var db  = require('./database');
-var bot = require('./telegram-bot');
-var walletCommon = require('./wallet-common');
-var walletActionsList = require('./actions/wallet-actions-list');
-
-walletActionsList.register(stopUserAction);
+const WalletActionsHandlers = {
+    ...require('./actions/invite').register(stopUserAction),
+    ...require('./actions/renameUser').register(stopUserAction),
+    ...require('./actions/archiveAccount').register(stopUserAction),
+    ...require('./actions/deleteAccount').register(stopUserAction),
+    ...require('./actions/createAccount').register(stopUserAction),
+    ...require('./actions/archiveCurrency').register(stopUserAction),
+    ...require('./actions/renameCurrency').register(stopUserAction),
+    ...require('./actions/createCurrency').register(stopUserAction),
+    ...require('./actions/deleteCurrency').register(stopUserAction),
+};
 
 module.exports.startUserAction = startUserAction;
 module.exports.handleUserActionMessage = handleUserActionMessage;
@@ -41,7 +49,7 @@ function startUserAction(action, args, user, userData, callback) {
     const userID = user.id;
     log.info(userID, `starting action "${action}"...`);
 
-    const actionHandlers = walletActionsList.getHandlers(action);
+    const actionHandlers = WalletActionsHandlers[action];
     if (!actionHandlers) {
         log.warning(userID, `invalid user action "${action}"`);
         if (callback) {
@@ -90,7 +98,7 @@ function handleUserActionMessage(message, userData) {
     if (currentAction.action == walletCommon.ACTION_INVALID) {
         log.info(userID, `there is no active action`);
     } else {
-        const actionHandlers = walletActionsList.getHandlers(currentAction.action);
+        const actionHandlers = WalletActionsHandlers[currentAction.action];
         if (!actionHandlers) {
             log.warning(userID, `invalid action "${currentAction.action}"`);
         } else if (actionHandlers.onMessage) {
@@ -121,7 +129,7 @@ function stopUserAction(user, userData, callback) {
             callback(true);
         }
     } else {
-        const actionHandlers = walletActionsList.getHandlers(currentAction.action);
+        const actionHandlers = WalletActionsHandlers[currentAction.action];
         if (!actionHandlers) {
             log.warning(userID, `invalid action "${currentAction}"`);
             if (callback) {

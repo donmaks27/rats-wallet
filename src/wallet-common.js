@@ -4,10 +4,13 @@ var db = require('./database');
 
 /**
  * @typedef {{ [key: string]: string|number|boolean|null }} args_data
+ * @typedef {'invite'|'renameUser'|'archiveAccount'|'deleteAccount'|'createAccount'|'archiveCurrency'|'renameCurrency'|'createCurrency'|'deleteCurrency'
+ *           } action_type
+ * @typedef {'main'|'settings'|'wallet'|'accounts'|'account'|'createAccount'|'deleteAccount'|'currencies'|'currency'|'deleteCurrency'} menu_type
  */
 
-const MENU_BUTTON_GOTO   = "menu";
-const MENU_BUTTON_ACTION = "action";
+const MENU_BUTTON_GOTO   = "m";
+const MENU_BUTTON_ACTION = "a";
 
 const ACTION_INVALID = 'none';
 

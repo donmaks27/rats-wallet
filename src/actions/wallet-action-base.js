@@ -11,7 +11,7 @@ var walletCommon = require('../wallet-common');
  * @typedef {(message: bot.message_data, userData: db.user_data, args: walletCommon.args_data, callback: (success: boolean) => any) => any} action_message_func
  * @typedef {(user: bot.user_data, userData: db.user_data, args: walletCommon.args_data, callback: (success: boolean) => any) => any} action_stop_func
  * @typedef {{ start: action_start_func, onMessage?: action_message_func, stop: action_stop_func }} action_handlers
- * @typedef {(stopCallback: action_stop_callback) => action_handlers} register_func
+ * @typedef {(stopCallback: action_stop_callback) => { [actionName: string]: action_handlers }} register_func
  */
 
 /**

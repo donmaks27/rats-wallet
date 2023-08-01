@@ -34,8 +34,10 @@ var ActionStopCallback = (user, userData, callback) => {}
 module.exports.register = (stopCallback) => {
     ActionStopCallback = stopCallback;
     return {
-        start: startAction,
-        stop: stopAction
+        [ACTION_NAME]: {
+            start: startAction,
+            stop: stopAction
+        }
     };
 }
 
