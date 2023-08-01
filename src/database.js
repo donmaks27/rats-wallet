@@ -410,6 +410,13 @@ function currency_delete(code, callback) {
             return;
         }
         cached_data.currencies[code] = null;
+        const accountIDs = Object.getOwnPropertyNames(cached_data.accounts);
+        for (var i = 0; i < accountIDs.length; i++) {
+            const accountID = Number.parseInt(accountIDs[i]);
+            if (cached_data.accounts[accountID]?.currency_code == code) {
+                delete cached_data.accounts[accountID];
+            }
+        }
     }
     db.run(query_deleteCurrency(code), callback ? (error) => {
         if (error) {

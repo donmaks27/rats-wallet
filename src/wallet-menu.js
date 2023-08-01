@@ -25,20 +25,21 @@ var bot = require('./telegram-bot');
 var walletCommon = require('./wallet-common');
 
 /**
- * @typedef {'main'|'settings'|'wallet'|'accounts'|'account'|'createAccount'|'deleteAccount'|'currencies'|'currency'} menu_type
+ * @typedef {'main'|'settings'|'wallet'|'accounts'|'account'|'createAccount'|'deleteAccount'|'currencies'|'currency'|'deleteCurrency'} menu_type
  */
 
 /** @type {{ [type: string]: (user: bot.user_data, userData: db.user_data, args: walletCommon.args_data, callback: (menuData: menu_data) => any) => void }} */
 const WalletMenuConstructors = {
-    main:          createMenuData_main,
-    settings:      createMenuData_settings,
-    wallet:        createMenuData_wallet,
-    accounts:      createMenuData_accounts,
-    account:       createMenuData_account,
-    createAccount: createMenuData_createAccount,
-    deleteAccount: createMenuData_deleteAccount,
-    currencies:    createMenuData_currencies,
-    currency:      createMenuData_currency
+    main:           createMenuData_main,
+    settings:       createMenuData_settings,
+    wallet:         createMenuData_wallet,
+    accounts:       createMenuData_accounts,
+    account:        createMenuData_account,
+    createAccount:  createMenuData_createAccount,
+    deleteAccount:  createMenuData_deleteAccount,
+    currencies:     createMenuData_currencies,
+    currency:       createMenuData_currency,
+    deleteCurrency: createMenuData_deleteCurrency
 };
 
 /**
@@ -56,43 +57,7 @@ module.exports.changeMenuMessage = changeMenuMessage;
  * @param {(message: bot.message_data | null, error?: string) => any} [callback] 
  */
 function sendMenuMessage(menu, args, user, userData, callback) {
-    const userID = user.id;
-    log.info(userID, `sending menu message "${menu}"...`);
-
-    const menuConstructor = WalletMenuConstructors[menu];
-    if (!menuConstructor) {
-        log.warning(userID, `invalid menu type "${menu}"`);
-        if (callback) {
-            callback(null, `invalid menu type "${menu}"`);
-        }
-        return;
-    }
-
-    walletCommon.setUserMenu(userID, menu, args);
-    menuConstructor(user, userData, args, (menuData) => {
-        bot.sendMessage({
-            chatID: userID,
-            text: menuData.text,
-            parseMode: menuData.parseMode,
-            protect: true,
-            inlineKeyboard: {
-                inline_keyboard: menuData.keyboard
-            }
-        }, (message, error) => {
-            if (error || !message) {
-                log.error(userID, `failed to send menu message (${error})`);
-                if (callback) {
-                    callback(null, `failed to send menu message: ` + error);
-                }
-            } else {
-                log.info(userID, `menu message created`);
-                walletCommon.setUserMenuMessageID(userID, message.message_id);
-                if (callback) {
-                    callback(message);
-                }
-            }
-        });
-    });
+    changeMenuMessage(0, menu, args, user, userData, callback);
 }
 /**
  * @param {number} menuMessageID 
@@ -105,11 +70,6 @@ function sendMenuMessage(menu, args, user, userData, callback) {
 function changeMenuMessage(menuMessageID, menu, args, user, userData, callback) {
     const userID = user.id;
     log.info(userID, `changing menu message ${menuMessageID} to menu "${menu}"...`);
-    if (menuMessageID == 0) {
-        log.info(userID, `invalid message ID ${menuMessageID}, sending new menu "${menu}"...`);
-        sendMenuMessage(menu, args, user, userData, callback);
-        return;
-    }
 
     const menuConstructor = WalletMenuConstructors[menu];
     if (!menuConstructor) {
@@ -571,6 +531,11 @@ function createMenuData_currency(user, userData, args, callback) {
                         text: currencyData.is_active ? `Archive currency` : `Unarchive currency`, 
                         callback_data: makeActionButton('archiveCurrency', { currency: currencyCode, archive: currencyData.is_active })
                     }
+                ], [
+                    {
+                        text: `Delete currency`,
+                        callback_data: makeMenuButton('deleteCurrency', { currency: currencyCode })
+                    }
                 ]);
             }
             menuDataKeyboard.push([
@@ -583,6 +548,40 @@ function createMenuData_currency(user, userData, args, callback) {
                 text: menuText + `\nChoose what you want to do:`,
                 parseMode: 'MarkdownV2',
                 keyboard: menuDataKeyboard
+            });
+        }
+    });
+}
+/**
+ * @param {bot.user_data} user 
+ * @param {db.user_data} userData 
+ * @param {walletCommon.args_data} args 
+ * @param {(menuData: menu_data) => any} callback 
+ */
+function createMenuData_deleteCurrency(user, userData, args, callback) {
+    const userID = user.id;
+    const currencyCode = typeof args.currency === 'string' ? args.currency : '';
+    db.currency_get(currencyCode, (currencyData, error) => {
+        if (error || !currencyData) {
+            log.error(userID, `[deleteCurrency] failed to get data of currency ${currencyCode} (${error})`);
+            callback({
+                text: `_${bot.escapeMarkdown(`Hmm, something wrong...`)}_`, parseMode: 'MarkdownV2',
+                keyboard: [[{ text: `<< Back to Currencies`, callback_data: makeMenuButton('currencies') }]]
+            });
+        } else {
+            callback({ 
+                text: makeMenuMessageTitle(`Deleting currency`) + `\nYou are going to delete currency *${bot.escapeMarkdown(currencyCode)}*` + bot.escapeMarkdown(`. Are you sure?`), 
+                parseMode: 'MarkdownV2', 
+                keyboard: [[
+                    {
+                        text: 'No',
+                        callback_data: makeMenuButton('currency', { currency: currencyCode })
+                    },
+                    {
+                        text: 'Yes',
+                        callback_data: makeActionButton('currency', { currency: currencyCode })
+                    }
+                ]] 
             });
         }
     });
