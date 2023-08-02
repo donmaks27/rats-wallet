@@ -1196,8 +1196,8 @@ function query_getLabel(id) {
 function query_getLabelsForUser(userID) {
     return `SELECT labels.*, COUNT(record_labels.record_id) AS usesNumber
     FROM labels
-        INNER JOIN record_labels ON labels.id = record_labels.label_id
-    WHERE labels.user_id = ${userID}
+        LEFT JOIN record_labels ON labels.id = record_labels.label_id
+    WHERE labels.user_id = ${userID} OR labels.user_id = NULL
     GROUP BY labels.id
     ORDER BY labels.is_active DESC, usesNumber DESC, labels.create_date DESC, labels.id ASC;`;
 }
