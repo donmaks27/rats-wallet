@@ -16,7 +16,8 @@ const log = {
 module.exports.get = () => {
     return {
         labels: createMenuData_labels,
-        label: createMenuData_label
+        label: createMenuData_label,
+        deleteLabel: createMenuData_deleteLabel
     };
 }
 
@@ -42,8 +43,9 @@ function createMenuData_labels(user, userData, args, callback) {
                         continue;
                     }
                 }
+                const isGlobal = labelsData[i].user_id == db.invalid_id;
                 menuDataKeyboardRow.push({
-                    text: (labelsData[i].is_active ? '🟢 ' : '🟡 ') + labelsData[i].name,
+                    text: (labelsData[i].is_active ? (isGlobal ? '🟣' : '🟢') : '🟡') + ' ' + labelsData[i].name,
                     callback_data: menuBase.makeMenuButton('label', { labelID: labelsData[i].id })
                 });
                 if (menuDataKeyboardRow.length == 3) {
@@ -85,36 +87,71 @@ function createMenuData_label(user, userData, args, callback) {
                 keyboard: [[{ text: `<< Back to Labels`, callback_data: menuBase.makeMenuButton('labels') }]]
             });
         } else {
+            const isGlobal = labelData.user_id == db.invalid_id;
             /** @type {string[]} */
-            var textLines = [];
-            textLines.push((labelData.is_active ? '🟢' : '🟡') + ` Label *${bot.escapeMarkdown(labelData.name)}*`);
-            if (!labelData.is_active) {
-                textLines[0] += ` _\\[archived\\]_`;
+            var textLines = [
+                ` Label *${bot.escapeMarkdown(labelData.name)}*`,
+                `Choose what you want to do:`
+            ];
+            if (labelData.is_active) {
+                textLines[0] = (!isGlobal ? '🟢' : '🟣') + textLines[0];
+            } else {
+                textLines[0] = '🟡' + textLines[0] + ` _\\[archived\\]_`;
             }
-            textLines.push(`Choose what you want to do:`);
+            /** @type {bot.keyboard_button_inline_data[][]} */
+            var menuKeyboard = [];
+            if (!isGlobal || (userID == bot.getOwnerUserID())) {
+                menuKeyboard.push([
+                    { 
+                        text: labelData.is_active ? `Archive label` : `Unarchive label`, 
+                        callback_data: menuBase.makeActionButton('archiveLabel', { labelID: labelID, archive: labelData.is_active })
+                    },
+                    {
+                        text: `Delete label`,
+                        callback_data: menuBase.makeMenuButton('deleteLabel', { labelID: labelID })
+                    }
+                ]);
+            }
+            menuKeyboard.push([{ 
+                text: `<< Back to Labels`, 
+                callback_data: menuBase.makeMenuButton('labels') 
+            }]);
             callback({
                 text: textLines.join('\n'),
                 parseMode: 'MarkdownV2',
-                keyboard: [
-                    [
-                        { 
-                            text: labelData.is_active ? `Archive label` : `Unarchive label`, 
-                            callback_data: menuBase.makeActionButton('archiveLabel', { labelID: labelID, archive: labelData.is_active })
-                        }
-                    ],
-                    /*[
-                        {
-                            text: `Delete account`,
-                            callback_data: menuBase.makeMenuButton('deleteAccount', { accountID: accountID })
-                        }
-                    ],*/
-                    [
-                        { 
-                            text: `<< Back to Labels`, 
-                            callback_data: menuBase.makeMenuButton('labels') 
-                        }
-                    ]
-                ]
+                keyboard: menuKeyboard
+            });
+        }
+    });
+}
+
+/**
+ * @type {menuBase.menu_create_func}
+ */
+function createMenuData_deleteLabel(user, userData, args, callback) {
+    const userID = user.id;
+    const labelID = typeof args.labelID === 'number' ? args.labelID : db.invalid_id;
+    db.label_get(labelID, (labelData, error) => {
+        if (error || !labelData) {
+            log.error(userID, `[deleteLabel] failed to get data of label ${labelID} (${error})`);
+            callback({
+                text: `_${bot.escapeMarkdown(`Hmm, something wrong...`)}_`, parseMode: 'MarkdownV2',
+                keyboard: [[{ text: `<< Back to Labels`, callback_data: menuBase.makeMenuButton('labels') }]]
+            });
+        } else {
+            callback({ 
+                text: menuBase.makeMenuMessageTitle(`Deleting label`) + `\nYou are going to delete label *${bot.escapeMarkdown(labelData.name)}*` + bot.escapeMarkdown(`. Are you sure?`), 
+                parseMode: 'MarkdownV2', 
+                keyboard: [[
+                    {
+                        text: 'No',
+                        callback_data: menuBase.makeMenuButton('label', { labelID: labelID })
+                    },
+                    {
+                        text: 'Yes',
+                        callback_data: menuBase.makeActionButton('deleteLabel', { labelID: labelID })
+                    }
+                ]] 
             });
         }
     });

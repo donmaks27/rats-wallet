@@ -5,7 +5,7 @@ var walletCommon = require('../wallet-common');
 var walletMenu = require('../wallet-menu');
 var actionBase = require('./wallet-action-base');
 
-const ACTION_NAME = 'deleteCurrency';
+const ACTION_NAME = 'deleteLabel';
 
 const log = {
     /**
@@ -45,15 +45,15 @@ module.exports.register = (stopCallback) => {
  */
 function startAction(user, userData, args, callback) {
     const userID = user.id;
-    const currencyCode = args.currency;
-    if (typeof currencyCode !== 'string') {
-        log.warning(userID, `invalid argument "currency"`);
+    const labelID = args.labelID;
+    if (typeof labelID !== 'number') {
+        log.warning(userID, `invalid argument "labelID"`);
         callback(false);
         return;
     }
-    db.currency_delete(currencyCode, (error) => {
+    db.label_delete(labelID, (error) => {
         if (error) {
-            log.error(userID, `failed to delete currency ${currencyCode} (${error})`);
+            log.error(userID, `failed to delete label ${labelID} (${error})`);
         }
         ActionStopCallback(user, userData, callback);
     });
@@ -63,12 +63,12 @@ function startAction(user, userData, args, callback) {
  */
 function stopAction(user, userData, args, callback) {
     const userID = user.id;
-    log.info(userID, `switching to currencies menu...`);
-    walletMenu.changeMenuMessage(walletCommon.getUserMenuMessageID(userID), 'currencies', {}, user, userData, (message, error) => {
+    log.info(userID, `switching to labels menu...`);
+    walletMenu.changeMenuMessage(walletCommon.getUserMenuMessageID(userID), 'labels', {}, user, userData, (message, error) => {
         if (error) {
-            log.error(userID, `failed to switch to currencies menu (${error})`);
+            log.error(userID, `failed to switch to labels menu (${error})`);
         } else {
-            log.info(userID, `switched to currencies menu`);
+            log.info(userID, `switched to labels menu`);
         }
         callback(true);
     });
