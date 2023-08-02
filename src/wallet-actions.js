@@ -33,6 +33,7 @@ const WalletActionsHandlers = {
     ...require('./actions/createCurrency').register(stopUserAction),
     ...require('./actions/deleteCurrency').register(stopUserAction),
     ...require('./actions/archiveLabel').register(stopUserAction),
+    ...require('./actions/createLabel').register(stopUserAction),
 };
 
 module.exports.startUserAction = startUserAction;

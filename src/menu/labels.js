@@ -63,7 +63,7 @@ function createMenuData_labels(user, userData, args, callback) {
                 callback_data: menuBase.makeMenuButton('labels', { showAll: !shouldShowArchived }) 
             }]);
         }
-        //menuDataKeyboard.push([{ text: `Create new label >>`, callback_data: menuBase.makeMenuButton('createLabel') }]);
+        menuDataKeyboard.push([{ text: `Create new label >>`, callback_data: menuBase.makeActionButton('createLabel') }]);
         menuDataKeyboard.push([{ text: `<< Back to Wallet`, callback_data: menuBase.makeMenuButton('wallet') }]);
         callback({
             text: menuBase.makeMenuMessageTitle(`Labels`) + `\nChoose a label:`,
@@ -105,7 +105,8 @@ function createMenuData_label(user, userData, args, callback) {
                     { 
                         text: labelData.is_active ? `Archive label` : `Unarchive label`, 
                         callback_data: menuBase.makeActionButton('archiveLabel', { labelID: labelID, archive: labelData.is_active })
-                    },
+                    }
+                ], [
                     {
                         text: `Delete label`,
                         callback_data: menuBase.makeMenuButton('deleteLabel', { labelID: labelID })
