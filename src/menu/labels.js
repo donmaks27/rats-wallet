@@ -91,19 +91,18 @@ function createMenuData_label(user, userData, args, callback) {
             if (!labelData.is_active) {
                 textLines[0] += ` _\\[archived\\]_`;
             }
-            //textLines.push(`_Current ballance: ${bot.escapeMarkdown(`${Math.round(accountData.start_amount + ballance) / 100}`)}_`);
             textLines.push(`Choose what you want to do:`);
             callback({
                 text: textLines.join('\n'),
                 parseMode: 'MarkdownV2',
                 keyboard: [
-                    /*[
+                    [
                         { 
-                            text: accountData.is_active ? `Archive account` : `Unarchive account`, 
-                            callback_data: menuBase.makeActionButton('archiveAccount', { accountID: accountID, archive: accountData.is_active })
+                            text: labelData.is_active ? `Archive label` : `Unarchive label`, 
+                            callback_data: menuBase.makeActionButton('archiveLabel', { labelID: labelID, archive: labelData.is_active })
                         }
                     ],
-                    [
+                    /*[
                         {
                             text: `Delete account`,
                             callback_data: menuBase.makeMenuButton('deleteAccount', { accountID: accountID })
