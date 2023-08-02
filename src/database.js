@@ -9,7 +9,8 @@ var log = require('./log');
  * @typedef {{ users: user_data[], currencies: currency_data[], labels: label_data[], categories: category_data[], accounts: account_data[], records: record_data[], record_labels: record_label_data[], user_invites: user_invite_data[] }} full_data
  * @typedef {{ id: number, name: string, create_date: Date }} user_data
  * @typedef {{ code: string, name: string | null, is_active: boolean, create_date: Date }} currency_data
- * @typedef {{ id: number, user_id: number, name: string, is_active: boolean, create_date: Date }} label_data
+ * @typedef {'red'|'orange'|'yellow'|'green'|'blue'|'purple'|'black'|'white'|'brown'|null} label_color_type
+ * @typedef {{ id: number, user_id: number, name: string, color: label_color_type, is_active: boolean, create_date: Date }} label_data
  * @typedef {{ id: number, user_id: number, parent_id: number, name: string, is_active: boolean, create_date: Date }} category_data
  * @typedef {{ id: number, user_id: number, currency_code: string, name: string, start_amount: number, is_active: boolean, create_date: Date }} account_data
  * @typedef {{ id: number, src_account_id: number, src_amount: number, dst_account_id: number, dst_amount: number, category_id: number, date: Date, create_date: Date }} record_data
@@ -33,12 +34,14 @@ module.exports.user_edit = user_edit;
 module.exports.currency_create = currency_create;
 module.exports.currency_get = currency_get;
 module.exports.currency_getAll = currency_getAll;
+module.exports.currency_getAllForUser = currency_getAllForUser;
 module.exports.currency_edit = currency_edit;
 module.exports.currency_delete = currency_delete;
 
 module.exports.label_create = label_create;
 module.exports.label_get = label_get;
 module.exports.label_getAll = label_getAll;
+module.exports.label_getAllForUser = label_getAllForUser;
 module.exports.label_edit = label_edit;
 module.exports.label_delete = label_delete;
 
@@ -153,7 +156,7 @@ function getAllData(callback) {
                 return;
             }
             result.currencies = data;
-            label_getAll(invalid_id, (data, error) => {
+            label_getAll((data, error) => {
                 if (error) {
                     callback(null, error);
                     return;
@@ -380,6 +383,34 @@ function currency_getAll(callback) {
     });
 }
 /**
+ * @param {number} userID 
+ * @param {(data: (currency_data & { usesNumber: number })[], error?: string) => any} callback 
+ */
+function currency_getAllForUser(userID, callback) {
+    db.all(query_getCurrenciesForUser(userID), (error, rows) => {
+        if (error) {
+            callback([], `failed to get currencies list: ` + error);
+        } else {
+            /** @type {(currency_data & { usesNumber: number })[]} */
+            var data = [];
+            for (var i = 0; i < rows.length; i++) {
+                var rowData = {
+                    code: rows[i].code,
+                    name: rows[i].name,
+                    is_active: rows[i].is_active != 0,
+                    create_date: new Date(rows[i].create_date)
+                };
+                cached_data.currencies[rowData.code] = rowData;
+                data.push({
+                    ...rowData,
+                    usesNumber: rows[i].usesNumber
+                });
+            }
+            callback(data);
+        }
+    });
+}
+/**
  * @param {string} code 
  * @param {{ name?: string | null, is_active?: boolean }} params 
  * @param {(data: currency_data | null, error?: string) => any} [callback] 
@@ -429,7 +460,7 @@ function currency_delete(code, callback) {
 }
 
 /**
- * @param {{ user_id?: number, name: string }} params 
+ * @param {{ user_id?: number, name: string, color?: label_color_type }} params 
  * @param {(data: label_data | null, error?: string) => any} [callback] 
  */
 function label_create(params, callback) {
@@ -466,6 +497,7 @@ function label_get(id, callback) {
                 id: row.id,
                 user_id: row.user_id ? row.user_id : invalid_id,
                 name: row.name,
+                color: row.color,
                 is_active: row.is_active != 0,
                 create_date: new Date(row.create_date)
             };
@@ -475,11 +507,10 @@ function label_get(id, callback) {
     });
 }
 /**
- * @param {number} user_id 
  * @param {(data: label_data[], error?: string) => any} callback 
  */
-function label_getAll(user_id, callback) {
-    db.all(query_getAllLabels(user_id), (error, rows) => {
+function label_getAll(callback) {
+    db.all(query_getAllLabels(), (error, rows) => {
         if (error) {
             callback([], `failed to get labels list: ` + error);
         } else {
@@ -490,6 +521,7 @@ function label_getAll(user_id, callback) {
                     id: rows[i].id,
                     user_id: rows[i].user_id ? rows[i].user_id : invalid_id,
                     name: rows[i].name,
+                    color: rows[i].color,
                     is_active: rows[i].is_active != 0,
                     create_date: new Date(rows[i].create_date)
                 };
@@ -501,8 +533,38 @@ function label_getAll(user_id, callback) {
     });
 }
 /**
+ * @param {number} userID 
+ * @param {(data: (label_data & { usesNumber: number })[], error?: string) => any} callback 
+ */
+function label_getAllForUser(userID, callback) {
+    db.all(query_getLabelsForUser(userID), (error, rows) => {
+        if (error) {
+            callback([], `failed to get labels list: ` + error);
+        } else {
+            /** @type {(label_data & { usesNumber: number })[]} */
+            var data = [];
+            for (var i = 0; i < rows.length; i++) {
+                var rowData = {
+                    id: rows[i].id,
+                    user_id: rows[i].user_id ? rows[i].user_id : invalid_id,
+                    name: rows[i].name,
+                    color: rows[i].color,
+                    is_active: rows[i].is_active != 0,
+                    create_date: new Date(rows[i].create_date)
+                };
+                cached_data.labels[rowData.id] = rowData;
+                data.push({
+                    ...rowData,
+                    usesNumber: rows[i].usesNumber
+                });
+            }
+            callback(data);
+        }
+    });
+}
+/**
  * @param {number} id 
- * @param {{ name?: string, is_active?: boolean }} params 
+ * @param {{ name?: string, color?: label_color_type, is_active?: boolean }} params 
  * @param {(data: label_data | null, error?: string) => any} [callback] 
  */
 function label_edit(id, params, callback) {
@@ -1008,14 +1070,8 @@ function query_getAllUsers() {
 function query_getAllCurrencies() {
     return `SELECT * FROM currencies;`;
 }
-/**
- * @param {number} user_id 
- */
-function query_getAllLabels(user_id) {
-    if (user_id == invalid_id) {
-        return `SELECT * FROM labels;`;
-    }
-    return `SELECT * FROM labels WHERE user_id = NULL OR user_id = ${user_id};`;
+function query_getAllLabels() {
+    return `SELECT * FROM labels;`;
 }
 /**
  * @param {number} user_id
@@ -1033,7 +1089,10 @@ function query_getAllAccounts(user_id) {
     if (user_id == invalid_id) {
         return `SELECT * FROM accounts;`;
     }
-    return `SELECT * FROM accounts WHERE user_id = NULL OR user_id = ${user_id};`;
+    return `SELECT *
+    FROM accounts 
+    WHERE user_id = ${user_id}
+    ORDER BY is_active DESC, id DESC;`;
 }
 function query_getAllRecords() {
     return `SELECT * FROM records;`;
@@ -1078,6 +1137,20 @@ function query_getCurrency(code) {
     return `SELECT * FROM currencies WHERE code = '${query_handle_string(code)}' LIMIT 1;`;
 }
 /**
+ * @param {number} userID 
+ */
+function query_getCurrenciesForUser(userID) {
+    return `SELECT currencies.*, COUNT(userAccounts.id) AS usesNumber
+    FROM currencies
+        LEFT JOIN (
+            SELECT *
+            FROM accounts
+            WHERE user_id = ${userID}
+        ) userAccounts ON userAccounts.currency_code = currencies.code
+    GROUP BY currencies.code
+    ORDER BY currencies.is_active DESC, usesNumber DESC, currencies.create_date DESC;`;
+}
+/**
  * @param {string} code 
  * @param {{ name?: string | null, is_active?: boolean }} params 
  */
@@ -1104,11 +1177,11 @@ function query_deleteCurrency(code) {
 }
 
 /**
- * @param {{ user_id?: number, name: string }} params 
+ * @param {{ user_id?: number, name: string, color?: label_color_type }} params 
  */
 function query_createLabel(params) {
-    return `INSERT INTO labels(user_id, name, is_active, create_date) VALUES (
-        ${params.user_id ? params.user_id : 'NULL'}, '${query_handle_string(params.name)}', 1, ${Date.now()}
+    return `INSERT INTO labels(user_id, name, color, is_active, create_date) VALUES (
+        ${params.user_id ? params.user_id : 'NULL'}, '${query_handle_string(params.name)}', ${params.color ? `'${params.color}'` : 'NULL'}, 1, ${Date.now()}
     );`;
 }
 /**
@@ -1118,14 +1191,32 @@ function query_getLabel(id) {
     return `SELECT * FROM labels WHERE id = ${id} LIMIT 1;`;
 }
 /**
+ * @param {number} userID 
+ */
+function query_getLabelsForUser(userID) {
+    return `SELECT labels.*, COUNT(record_labels.record_id) AS usesNumber
+    FROM labels
+        INNER JOIN record_labels ON labels.id = record_labels.label_id
+    WHERE labels.user_id = ${userID}
+    GROUP BY labels.id
+    ORDER BY labels.is_active DESC, usesNumber DESC, labels.create_date DESC, labels.id ASC;`;
+}
+/**
  * @param {number} id 
- * @param {{ name?: string, is_active?: boolean }} params 
+ * @param {{ name?: string, color?: label_color_type, is_active?: boolean }} params 
  */
 function query_updateLabel(id, params) {
     var statements = [];
     const properties = Object.getOwnPropertyNames(params);
     if (properties.includes('name')) {
         statements.push(`name = '${query_handle_string(params.name)}'`);
+    }
+    if (properties.includes('color')) {
+        if (params.color) {
+            statements.push(`color = '${query_handle_string(params.color)}'`);
+        } else {
+            statements.push(`color = NULL`);
+        }
     }
     if (properties.includes('is_active')) {
         statements.push(`is_active = ${params.is_active ? 1 : 0}`);

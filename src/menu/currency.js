@@ -27,22 +27,13 @@ module.exports.get = () => {
 function createMenuData_currencies(user, userData, args, callback) {
     const userID = user.id;
     const shouldShowArchived = args.showAll ? true : false;
-    db.currency_getAll((currenciesData, error) => {
+    db.currency_getAllForUser(userID, (currenciesData, error) => {
         /** @type {bot.keyboard_button_inline_data[][]} */
         var menuDataKeyboard = [];
         if (error) {
             log.error(userID, `[currencies] failed to get currencies list (${error})`);
         } else {
             var archivedAmount = 0;
-            currenciesData.sort((v1, v2) => {
-                if (v1.is_active != v2.is_active) {
-                    return v1.is_active ? -1 : 1;
-                }
-                if (v1.create_date != v2.create_date) {
-                    return v1.create_date < v2.create_date ? -1 : 1;
-                }
-                return 0;
-            });
             /** @type {bot.keyboard_button_inline_data[]} */
             var menuDataKeyboardRow = [];
             for (var i = 0; i < currenciesData.length; i++) {
@@ -54,7 +45,7 @@ function createMenuData_currencies(user, userData, args, callback) {
                 }
                 var currencyTitle = currenciesData[i].name ? `${currenciesData[i].name} (${currenciesData[i].code})` : currenciesData[i].code;
                 menuDataKeyboardRow.push({
-                    text: (currenciesData[i].is_active ? '🟢' : '🟡') + currencyTitle,
+                    text: (currenciesData[i].is_active ? '🟢 ' : '🟡 ') + currencyTitle,
                     callback_data: menuBase.makeMenuButton('currency', { currency: currenciesData[i].code })
                 });
                 if (menuDataKeyboardRow.length == 2) {

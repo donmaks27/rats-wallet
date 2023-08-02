@@ -27,6 +27,7 @@ const WalletMenuConstructors = {
     ...require('./menu/main').get(),
     ...require('./menu/account').get(),
     ...require('./menu/currency').get(),
+    ...require('./menu/labels').get(),
 };
 
 module.exports.sendMenuMessage = sendMenuMessage;

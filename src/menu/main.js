@@ -90,11 +90,11 @@ function createMenuData_wallet(user, userData, args, callback) {
                 },
                 {
                     text: 'Labels >>',
-                    callback_data: menuBase.makeMenuButton('wallet')
+                    callback_data: menuBase.makeMenuButton('labels')
                 },
                 {
                     text: 'Categories >>',
-                    callback_data: menuBase.makeMenuButton('wallet')
+                    callback_data: menuBase.makeMenuButton('labels')
                 }
             ],
             [

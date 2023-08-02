@@ -37,15 +37,6 @@ function createMenuData_accounts(user, userData, args, callback) {
         } else {
             /** @type {bot.keyboard_button_inline_data[]} */
             var menuDataKeyboardRow = [];
-            accounts.sort((v1, v2) => { 
-                if (v1.is_active != v2.is_active) {
-                    return v1.is_active ? -1 : 1;
-                }
-                if (v1.create_date != v2.create_date) {
-                    return v1.create_date > v2.create_date ? -1 : 1;
-                }
-                return v1.name.localeCompare(v2.name);
-            });
             for (var i = 0; i < accounts.length; i++) {
                 if (!accounts[i].is_active) {
                     archivedAmount++;
@@ -54,7 +45,7 @@ function createMenuData_accounts(user, userData, args, callback) {
                     }
                 }
                 menuDataKeyboardRow.push({
-                    text: (accounts[i].is_active ? '🟢' : '🟡') + accounts[i].name,
+                    text: (accounts[i].is_active ? '🟢 ' : '🟡 ') + accounts[i].name,
                     callback_data: menuBase.makeMenuButton('account', { accountID: accounts[i].id })
                 });
                 if (menuDataKeyboardRow.length == 3) {
@@ -142,7 +133,7 @@ function createMenuData_account(user, userData, args, callback) {
  */
 function createMenuData_createAccount(user, userData, args, callback) {
     const userID = user.id;
-    db.currency_getAll((currenciesData, error) => {
+    db.currency_getAllForUser(userID, (currenciesData, error) => {
         /** @type {menuBase.menu_data} */
         var menuData = { text: menuBase.makeMenuMessageTitle(`Creating new account`) + `\nChoose currency for the new account:`, parseMode: 'MarkdownV2', keyboard: [] };
         if (error) {
