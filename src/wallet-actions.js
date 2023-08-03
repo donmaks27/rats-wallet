@@ -35,6 +35,7 @@ const WalletActionsHandlers = {
     ...require('./actions/archiveLabel').register(stopUserAction),
     ...require('./actions/createLabel').register(stopUserAction),
     ...require('./actions/deleteLabel').register(stopUserAction),
+    ...require('./actions/makeLabelGlobal').register(stopUserAction),
 };
 
 module.exports.startUserAction = startUserAction;

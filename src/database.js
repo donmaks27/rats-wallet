@@ -578,7 +578,7 @@ function label_getAllForUser(userID, callback) {
 }
 /**
  * @param {number} id 
- * @param {{ name?: string, color?: label_color_type, is_active?: boolean }} params 
+ * @param {{ name?: string, color?: label_color_type, is_active?: boolean, user_id?: number | null }} params 
  * @param {(data: label_data | null, error?: string) => any} [callback] 
  */
 function label_edit(id, params, callback) {
@@ -1233,7 +1233,7 @@ function query_getLabelsForUser(userID) {
 }
 /**
  * @param {number} id 
- * @param {{ name?: string, color?: label_color_type, is_active?: boolean }} params 
+ * @param {{ name?: string, color?: label_color_type, is_active?: boolean, user_id?: number | null }} params 
  */
 function query_updateLabel(id, params) {
     var statements = [];
@@ -1250,6 +1250,9 @@ function query_updateLabel(id, params) {
     }
     if (properties.includes('is_active')) {
         statements.push(`is_active = ${params.is_active ? 1 : 0}`);
+    }
+    if (properties.includes('user_id')) {
+        statements.push(`user_id = ${params.user_id ? params.user_id : 'NULL'}`);
     }
     return `UPDATE labels SET ${statements.join(', ')} WHERE id = ${id};`;
 }

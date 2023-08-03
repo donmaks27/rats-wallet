@@ -17,7 +17,8 @@ module.exports.get = () => {
     return {
         labels: createMenuData_labels,
         label: createMenuData_label,
-        deleteLabel: createMenuData_deleteLabel
+        deleteLabel: createMenuData_deleteLabel,
+        makeLabelGlobal: createMenuData_makeLabelGlobal
     };
 }
 
@@ -101,6 +102,14 @@ function createMenuData_label(user, userData, args, callback) {
             /** @type {bot.keyboard_button_inline_data[][]} */
             var menuKeyboard = [];
             if (!isGlobal || (userID == bot.getOwnerUserID())) {
+                if (!isGlobal && (userID == bot.getOwnerUserID())) {
+                    menuKeyboard.push([
+                        {
+                            text: `Make global`,
+                            callback_data: menuBase.makeMenuButton('makeLabelGlobal', { labelID: labelID })
+                        }
+                    ]);
+                }
                 menuKeyboard.push([
                     { 
                         text: labelData.is_active ? `Archive label` : `Unarchive label`, 
@@ -151,6 +160,46 @@ function createMenuData_deleteLabel(user, userData, args, callback) {
                     {
                         text: 'Yes',
                         callback_data: menuBase.makeActionButton('deleteLabel', { labelID: labelID })
+                    }
+                ]] 
+            });
+        }
+    });
+}
+
+/**
+ * @type {menuBase.menu_create_func}
+ */
+function createMenuData_makeLabelGlobal(user, userData, args, callback) {
+    const userID = user.id;
+    if (bot.getOwnerUserID() != userID) {
+        callback({
+            text: `🛑`, parseMode: 'MarkdownV2',
+            keyboard: [[{ text: `<< Back to Labels`, callback_data: menuBase.makeMenuButton('labels') }]]
+        });
+        return;
+    }
+
+    const labelID = typeof args.labelID === 'number' ? args.labelID : db.invalid_id;
+    db.label_get(labelID, (labelData, error) => {
+        if (error || !labelData) {
+            log.error(userID, `[deleteLabel] failed to get data of label ${labelID} (${error})`);
+            callback({
+                text: `_${bot.escapeMarkdown(`Hmm, something wrong...`)}_`, parseMode: 'MarkdownV2',
+                keyboard: [[{ text: `<< Back to Labels`, callback_data: menuBase.makeMenuButton('labels') }]]
+            });
+        } else {
+            callback({ 
+                text: menuBase.makeMenuMessageTitle(`Making label global`) + `\nYou are going to make label *${bot.escapeMarkdown(labelData.name)}* global` + bot.escapeMarkdown(`. This action is irreversible, are you sure?`), 
+                parseMode: 'MarkdownV2', 
+                keyboard: [[
+                    {
+                        text: 'No',
+                        callback_data: menuBase.makeMenuButton('label', { labelID: labelID })
+                    },
+                    {
+                        text: 'Yes',
+                        callback_data: menuBase.makeActionButton('makeLabelGlobal', { labelID: labelID })
                     }
                 ]] 
             });
