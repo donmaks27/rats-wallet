@@ -308,7 +308,9 @@ function user_edit(id, params, callback) {
         } else {
             debug_log(`updated user ${id}: ` + JSON.stringify(params));
             delete cached_data.users[id];
-            user_get(id, callback ? callback : function(){});
+            if (callback) {
+                user_get(id, callback);
+            }
         }
     });
 }
@@ -318,14 +320,19 @@ function user_edit(id, params, callback) {
  * @param {(data: currency_data | null, error?: string) => any} [callback] 
  */
 function currency_create(params, callback) {
-    db.run(query_createCurrency(params), callback ? (error) => {
+    db.run(query_createCurrency(params), (error) => {
         if (error) {
-            callback(null, `failed to create currency (${JSON.stringify(params)}): ` + error);
+            if (callback) {
+                callback(null, `failed to create currency (${JSON.stringify(params)}): ` + error);
+            }
         } else {
             debug_log('created currency: ' + JSON.stringify(params));
-            currency_get(params.code, callback);
+            delete cached_data.currencies[params.code];
+            if (callback) {
+                currency_get(params.code, callback);
+            }
         }
-    } : undefined);
+    });
 }
 /**
  * @param {string} code 
@@ -424,7 +431,9 @@ function currency_edit(code, params, callback) {
         } else {
             debug_log(`updated currency "${code}": ` + JSON.stringify(params));
             delete cached_data.currencies[code];
-            currency_get(code, callback ? callback : function(){});
+            if (callback) {
+                currency_get(code, callback);
+            }
         }
     });
 }
@@ -464,14 +473,19 @@ function currency_delete(code, callback) {
  * @param {(data: label_data | null, error?: string) => any} [callback] 
  */
 function label_create(params, callback) {
-    db.run(query_createLabel(params), callback ? function(error) {
+    db.run(query_createLabel(params), function(error) {
         if (error) {
-            callback(null, `failed to create label (${JSON.stringify(params)}): ` + error);
+            if (callback) {
+                callback(null, `failed to create label (${JSON.stringify(params)}): ` + error);
+            }
         } else {
             debug_log(`created label: ` + JSON.stringify(params));
-            label_get(this.lastID, callback);
+            delete cached_data.labels[this.lastID];
+            if (callback) {
+                label_get(this.lastID, callback);
+            }
         }
-    } : undefined);
+    });
 }
 /**
  * @param {number} id 
@@ -576,7 +590,9 @@ function label_edit(id, params, callback) {
         } else {
             debug_log(`updated label ${id}: ` + JSON.stringify(params));
             delete cached_data.labels[id];
-            label_get(id, callback ? callback : function(){});
+            if (callback) {
+                label_get(id, callback);
+            }
         }
     });
 }
@@ -609,14 +625,19 @@ function label_delete(id, callback) {
  * @param {(data: category_data | null, error?: string) => any} [callback] 
  */
 function category_create(params, callback) {
-    db.run(query_createCategory(params), callback ? function(error) {
+    db.run(query_createCategory(params), function(error) {
         if (error) {
-            callback(null, `failed to create category (${JSON.stringify(params)}): ` + error);
+            if (callback) {
+                callback(null, `failed to create category (${JSON.stringify(params)}): ` + error);
+            }
         } else {
             debug_log(`created category: ` + JSON.stringify(params));
-            category_get(this.lastID, callback);
+            delete cached_data.categories[this.lastID];
+            if (callback) {
+                category_get(this.lastID, callback);
+            }
         }
-    } : undefined);
+    });
 }
 /**
  * @param {number} id 
@@ -692,7 +713,9 @@ function category_edit(id, params, callback) {
         } else {
             debug_log(`updated category ${id}: ` + JSON.stringify(params));
             delete cached_data.categories[id];
-            category_get(id, callback ? callback : function(){});
+            if (callback) {
+                category_get(id, callback);
+            }
         }
     });
 }
@@ -725,14 +748,19 @@ function category_delete(id, callback) {
  * @param {(data: account_data | null, error?: string) => any} [callback] 
  */
 function account_create(params, callback) {
-    db.run(query_createAccount(params), callback ? function(error) {
+    db.run(query_createAccount(params), function(error) {
         if (error) {
-            callback(null, `failed to create account (${JSON.stringify(params)}): ` + error);
+            if (callback) {
+                callback(null, `failed to create account (${JSON.stringify(params)}): ` + error);
+            }
         } else {
             debug_log(`created account: ` + JSON.stringify(params));
-            account_get(this.lastID, callback);
+            delete cached_data.accounts[this.lastID];
+            if (callback) {
+                account_get(this.lastID, callback);
+            }
         }
-    } : undefined);
+    });
 }
 /**
  * @param {number} id 
@@ -810,7 +838,9 @@ function account_edit(id, params, callback) {
         } else {
             debug_log(`updated account ${id}: ` + JSON.stringify(params));
             delete cached_data.accounts[id];
-            account_get(id, callback ? callback : function(){});
+            if (callback) {
+                account_get(id, callback);
+            }
         }
     });
 }

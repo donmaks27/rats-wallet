@@ -1,6 +1,7 @@
 // @ts-check
 
 var db  = require('../database');
+var bot = require('../telegram-bot');
 var walletCommon = require('../wallet-common');
 var walletMenu = require('../wallet-menu');
 var actionBase = require('./wallet-action-base');
@@ -55,7 +56,9 @@ function startAction(user, userData, args, callback) {
         if (error) {
             log.error(userID, `failed to delete label ${labelID} (${error})`);
         }
-        ActionStopCallback(user, userData, callback);
+        bot.sendMessage({ chatID: userID, text: error ? `_Something went wrong, failed to delete_` : `_Label deleted_`, parseMode: 'MarkdownV2' }, () => {
+            ActionStopCallback(user, userData, callback);
+        });
     });
 }
 /**

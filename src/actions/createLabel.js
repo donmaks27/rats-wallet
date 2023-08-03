@@ -76,13 +76,13 @@ function onUserMessage(message, userData, args, callback) {
         return;
     }
     const labelName = message.text;
-    log.info(userID, `creating new label ${labelName}...`);
+    log.info(userID, `creating new label "${labelName}"...`);
     db.label_create({ user_id: userID, name: labelName }, (labelData, error) => {
         if (error || !labelData) {
-            log.error(userID, `failed to create new label ${labelName} (${error})`);
+            log.error(userID, `failed to create new label "${labelName}" (${error})`);
             ActionStopCallback(message.from, userData, () => { callback(false); });
         } else {
-            log.info(userID, `created new label ${labelName}`);
+            log.info(userID, `created new label "${labelName}"`);
             args.labelID = labelData.id;
             walletCommon.setUserActionArgs(userID, args);
             ActionStopCallback(message.from, userData, callback);
