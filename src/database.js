@@ -1110,7 +1110,7 @@ function query_getAllCategories(user_id) {
     if (user_id == invalid_id) {
         return `SELECT * FROM categories;`;
     }
-    return `SELECT * FROM categories WHERE user_id = NULL OR user_id = ${user_id};`;
+    return `SELECT * FROM categories WHERE user_id IS NULL OR user_id = ${user_id};`;
 }
 /**
  * @param {number} user_id
@@ -1227,7 +1227,7 @@ function query_getLabelsForUser(userID) {
     return `SELECT labels.*, COUNT(record_labels.record_id) AS usesNumber
     FROM labels
         LEFT JOIN record_labels ON labels.id = record_labels.label_id
-    WHERE labels.user_id = ${userID} OR labels.user_id = NULL
+    WHERE labels.user_id = ${userID} OR labels.user_id IS NULL
     GROUP BY labels.id
     ORDER BY labels.is_active DESC, usesNumber DESC, labels.create_date DESC, labels.id ASC;`;
 }
@@ -1384,19 +1384,31 @@ function query_updateRecord(id, params) {
     var statements = [];
     const properties = Object.getOwnPropertyNames(params);
     if (properties.includes('src_account_id')) {
-        statements.push(`src_account_id = ${params.src_account_id ? params.src_account_id : 'NULL'}`);
+        if (params.src_account_id) {
+            statements.push(`src_account_id = ${params.src_account_id}`);
+        } else {
+            statements.push(`src_account_id IS NULL`);
+        }
     }
     if (properties.includes('src_amount')) {
         statements.push(`src_amount = ${params.src_amount ? params.src_amount : 0}`);
     }
     if (properties.includes('dst_account_id')) {
-        statements.push(`dst_account_id = ${params.dst_account_id ? params.dst_account_id : 'NULL'}`);
+        if (params.dst_account_id) {
+            statements.push(`dst_account_id = ${params.dst_account_id}`);
+        } else {
+            statements.push(`dst_account_id IS NULL`);
+        }
     }
     if (properties.includes('dst_amount')) {
         statements.push(`dst_amount = ${params.dst_amount ? params.dst_amount : 0}`);
     }
     if (properties.includes('category_id')) {
-        statements.push(`category_id = ${params.category_id ? params.category_id : 'NULL'}`);
+        if (params.category_id) {
+            statements.push(`category_id = ${params.category_id}`);
+        } else {
+            statements.push(`category_id IS NULL`);
+        }
     }
     if (properties.includes('date')) {
         statements.push(`date = ${params.date ? params.date.valueOf() : 0}`);
