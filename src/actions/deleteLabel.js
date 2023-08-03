@@ -56,7 +56,14 @@ function startAction(user, userData, args, callback) {
         if (error) {
             log.error(userID, `failed to delete label ${labelID} (${error})`);
         }
-        bot.sendMessage({ chatID: userID, text: error ? `_Something went wrong, failed to delete_` : `_Label deleted_`, parseMode: 'MarkdownV2' }, () => {
+        const menuMessageID = walletCommon.getUserMenuMessageID(userID);
+        walletCommon.setUserMenuMessageID(userID, 0);
+        bot.editMessage({ 
+            message: { chatID: userID, id: menuMessageID }, 
+            text: error ? `_Something went wrong, failed to delete label_` : `_Label deleted_`,
+            parseMode: 'MarkdownV2',
+            inlineKeyboard: { inline_keyboard: [] }
+        }, () => {
             ActionStopCallback(user, userData, callback);
         });
     });

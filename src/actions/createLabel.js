@@ -80,7 +80,9 @@ function onUserMessage(message, userData, args, callback) {
     db.label_create({ user_id: userID, name: labelName }, (labelData, error) => {
         if (error || !labelData) {
             log.error(userID, `failed to create new label "${labelName}" (${error})`);
-            ActionStopCallback(message.from, userData, () => { callback(false); });
+            bot.sendMessage({ chatID: userID, text: `_Something went wrong, failed to create label_` }, () => {
+                ActionStopCallback(message.from, userData, () => { callback(false); });
+            });
         } else {
             log.info(userID, `created new label "${labelName}"`);
             args.labelID = labelData.id;

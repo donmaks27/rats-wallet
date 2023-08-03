@@ -87,7 +87,9 @@ function onUserMessage(message, userData, args, callback) {
             db.currency_create({ code: currencyCode }, (currencyData, error) => {
                 if (error) {
                     log.error(userID, `failed to create currency ${currencyCode} (${error})`);
-                    ActionStopCallback(message.from, userData, () => callback(false));
+                    bot.sendMessage({ chatID: userID, text: `_Something went wrong, failed to create currency_` }, () => {
+                        ActionStopCallback(message.from, userData, () => { callback(false); });
+                    });
                 } else {
                     log.info(userID, `created currency ${currencyCode}`);
                     args.currency = currencyCode;

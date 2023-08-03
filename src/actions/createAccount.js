@@ -132,7 +132,9 @@ function onUserMessage(userMessage, userData, args, callback) {
                             if (error) {
                                 log.error(userID, `failed to send an apology (${error})`);
                             }
-                            ActionStopCallback(userMessage.from, userData, () => { callback(false); });
+                            bot.sendMessage({ chatID: userID, text: `_Something went wrong, failed to create account_` }, () => {
+                                ActionStopCallback(userMessage.from, userData, () => { callback(false); });
+                            });
                         });
                     } else {
                         log.info(userID, `account created`);
