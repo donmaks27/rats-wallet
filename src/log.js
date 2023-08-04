@@ -4,11 +4,9 @@ var fs = require('fs');
 
 var dateFormat = require('./date-format');
 
-const log_filename = 'debug.log';
-var log_stream = fs.createWriteStream(log_filename, {
-    flags: 'a',
-    encoding: 'utf8'
-});
+var logFileDate = new Date(0);
+/** @type {fs.WriteStream | null} */
+var logFileStream = null;
 
 module.exports.error = log_error;
 module.exports.warning = log_warn;
@@ -41,8 +39,33 @@ function log_info(msg, logToScreen) {
  */
 function log_msg(msg, log_to_screen) {
     const str = `[${dateFormat.to_string(new Date())}] ${msg}`;
-    log_stream.write(str + '\n');
+    getLogFileStream().write(str + '\n');
     if (log_to_screen) {
         console.log(str);
     }
+}
+
+/**
+ * @returns {fs.WriteStream}
+ */
+function getLogFileStream() {
+    var currentDate = new Date();
+    currentDate.setUTCHours(0, 0, 0, 0);
+    if (logFileStream && (currentDate > logFileDate)) {
+        logFileStream.close();
+        logFileStream = null;
+    }
+
+    if (logFileStream) {
+        return logFileStream;
+    }
+    logFileDate = currentDate;
+    if (!fs.existsSync(`log/`)) {
+        fs.mkdirSync(`log`);
+    }
+    logFileStream = fs.createWriteStream(`log/debug_${dateFormat.to_string_short(logFileDate)}.log`, {
+        flags: 'a',
+        encoding: 'utf-8' 
+    });
+    return logFileStream;
 }

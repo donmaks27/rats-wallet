@@ -53,21 +53,29 @@ function startAction(user, userData, args, callback) {
         callback(false);
         return;
     }
-    log.info(userID, `changing name of account ${accountID}...`);
-    const menuMessageID = walletCommon.getUserMenuMessageID(userID);
-    walletCommon.setUserMenuMessageID(userID, 0);
-    bot.editMessage({ 
-        message: { chatID: userID, id: menuMessageID }, 
-        text: `*Renaming account*\nPlease, enter new name`, 
-        parseMode: 'MarkdownV2',
-        inlineKeyboard: { inline_keyboard:[] } 
-    }, (message, error) => {
-        if (error) {
-            log.error(userID, `failed to send message about changing name of account ${accountID} (${error})`);
+    log.info(userID, `getting data of account ${accountID}...`);
+    db.account_get(accountID, (accountData, error) => {
+        if (error || !accountData) {
+            log.error(userID, `failed to get data of account ${accountID} (${error})`);
             callback(false);
         } else {
-            log.info(userID, `sent message about changing name of account ${accountID}`);
-            callback(true);
+            log.info(userID, `changing name of account ${accountID}...`);
+            const menuMessageID = walletCommon.getUserMenuMessageID(userID);
+            walletCommon.setUserMenuMessageID(userID, 0);
+            bot.editMessage({ 
+                message: { chatID: userID, id: menuMessageID }, 
+                text: `*Renaming account*\nAccount *${bot.escapeMarkdown(accountData.name)}*\\. Please, enter new name`, 
+                parseMode: 'MarkdownV2',
+                inlineKeyboard: { inline_keyboard:[] } 
+            }, (message, error) => {
+                if (error) {
+                    log.error(userID, `failed to send message about changing name of account ${accountID} (${error})`);
+                    callback(false);
+                } else {
+                    log.info(userID, `sent message about changing name of account ${accountID}`);
+                    callback(true);
+                }
+            });
         }
     });
 }

@@ -53,21 +53,29 @@ function startAction(user, userData, args, callback) {
         callback(false);
         return;
     }
-    log.info(userID, `changing name of label ${labelID}...`);
-    const menuMessageID = walletCommon.getUserMenuMessageID(userID);
-    walletCommon.setUserMenuMessageID(userID, 0);
-    bot.editMessage({ 
-        message: { chatID: userID, id: menuMessageID }, 
-        text: `*Renaming label*\nPlease, enter new name`, 
-        parseMode: 'MarkdownV2',
-        inlineKeyboard: { inline_keyboard:[] } 
-    }, (message, error) => {
-        if (error) {
-            log.error(userID, `failed to send message about changing name of label ${labelID} (${error})`);
+    log.info(userID, `getting data of label ${labelID}...`);
+    db.label_get(labelID, (labelData, error) => {
+        if (error || !labelData) {
+            log.error(userID, `failed to get data of label ${labelID} (${error})`);
             callback(false);
         } else {
-            log.info(userID, `sent message about changing name of label ${labelID}`);
-            callback(true);
+            log.info(userID, `changing name of label ${labelID}...`);
+            const menuMessageID = walletCommon.getUserMenuMessageID(userID);
+            walletCommon.setUserMenuMessageID(userID, 0);
+            bot.editMessage({ 
+                message: { chatID: userID, id: menuMessageID }, 
+                text: `*Renaming label*\nLabel *${labelData.name}*\\. Please, enter new name`, 
+                parseMode: 'MarkdownV2',
+                inlineKeyboard: { inline_keyboard:[] } 
+            }, (message, error) => {
+                if (error) {
+                    log.error(userID, `failed to send message about changing name of label ${labelID} (${error})`);
+                    callback(false);
+                } else {
+                    log.info(userID, `sent message about changing name of label ${labelID}`);
+                    callback(true);
+                }
+            });
         }
     });
 }

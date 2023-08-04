@@ -66,21 +66,29 @@ function startAction(user, userData, args, callback) {
             }
         });
     } else {
-        log.info(userID, `changing name of currency ${currencyCode}...`);
-        const menuMessageID = walletCommon.getUserMenuMessageID(userID);
-        walletCommon.setUserMenuMessageID(userID, 0);
-        bot.editMessage({ 
-            message: { chatID: userID, id: menuMessageID }, 
-            text: `*Renaming currency ${bot.escapeMarkdown(currencyCode)}*\nPlease, enter new name`, 
-            parseMode: 'MarkdownV2',
-            inlineKeyboard: { inline_keyboard:[] } 
-        }, (message, error) => {
-            if (error) {
-                log.error(userID, `failed to send message about changing name of currency ${currencyCode} (${error})`);
+        log.info(userID, `getting data of currency ${currencyCode}...`);
+        db.currency_get(currencyCode, (currencyData, error) => {
+            if (error || !currencyData) {
+                log.error(userID, `failed to get data of currency ${currencyCode} (${error})`);
                 callback(false);
             } else {
-                log.info(userID, `sent message about changing name of currency ${currencyCode}`);
-                callback(true);
+                log.info(userID, `changing name of currency ${currencyCode}...`);
+                const menuMessageID = walletCommon.getUserMenuMessageID(userID);
+                walletCommon.setUserMenuMessageID(userID, 0);
+                bot.editMessage({ 
+                    message: { chatID: userID, id: menuMessageID }, 
+                    text: `*Renaming currency*\nCurrency *${bot.escapeMarkdown(currencyData.name ? `${currencyData.name} (${currencyCode})` : currencyCode)}*\\. Please, enter new name`, 
+                    parseMode: 'MarkdownV2',
+                    inlineKeyboard: { inline_keyboard:[] } 
+                }, (message, error) => {
+                    if (error) {
+                        log.error(userID, `failed to send message about changing name of currency ${currencyCode} (${error})`);
+                        callback(false);
+                    } else {
+                        log.info(userID, `sent message about changing name of currency ${currencyCode}`);
+                        callback(true);
+                    }
+                });
             }
         });
     }

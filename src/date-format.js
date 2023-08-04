@@ -2,6 +2,7 @@
 
 module.exports.duration_to_string = duration_to_string;
 module.exports.to_string = date_to_string;
+module.exports.to_string_short = date_to_string_short;
 module.exports.from_string = string_to_date;
 
 /**
@@ -20,6 +21,17 @@ function date_to_string(date) {
     const milliseconds = date.getUTCMilliseconds() >= 100 ? date.getUTCMilliseconds() : 
         date.getUTCMilliseconds() >= 10 ? '0' + date.getUTCMilliseconds() : '00' + date.getUTCMilliseconds();
     return `${date.getUTCFullYear()}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds}`;
+}/**
+ * @param {Date} [date] 
+ * @returns {string}
+ */
+function date_to_string_short(date) {
+    if (!date) {
+        return date_to_string_short(new Date(0));
+    }
+    const month   = date.getUTCMonth() >= 9    ? (date.getUTCMonth() + 1) : '0' + (date.getUTCMonth() + 1);
+    const day     = date.getUTCDate() >= 10    ? date.getUTCDate()        : '0' + date.getUTCDate();
+    return `${date.getUTCFullYear()}-${month}-${day}`;
 }
 
 /**
