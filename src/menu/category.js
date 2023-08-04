@@ -102,6 +102,11 @@ function createMenuData_categoriesForCategory(user, userData, categoryData, pare
                 text: `<< Back to category ${getColorMark(parentCategoryData)} ${parentCategoryData.name}`,
                 callback_data: menuBase.makeMenuButton('categories', { categoryID: parentCategoryData.id })
             }]);
+        } else if (categoryData) {
+            menuKeyboard.push([{
+                text: `<< Back to base categories`,
+                callback_data: menuBase.makeMenuButton('categories')
+            }]);
         }
         menuKeyboard.push([{
             text: `<< Back to Wallet`,
