@@ -12,7 +12,8 @@ var db = require('./database');
  * @typedef {'main'|'settings'|'wallet'|
  *           'accounts'|'account'|'createAccount'|'deleteAccount'|
  *           'currencies'|'currency'|'deleteCurrency'|
- *           'labels'|'label'|'deleteLabel'|'makeLabelGlobal'
+ *           'labels'|'label'|'deleteLabel'|'makeLabelGlobal'|
+ *           'categories'
  *          } menu_type
  */
 

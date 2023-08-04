@@ -23,10 +23,9 @@ module.exports.get = () => {
 }
 
 /**
- * @param {db.user_data} userData 
  * @param {db.label_data} labelData 
  */
-function getLabelColorMark(userData, labelData) {
+function getColorMark(labelData) {
     const isGlobal = labelData.user_id == db.invalid_id;
     if (labelData.is_active) {
         return !isGlobal ? '🟢' : '🟣';
@@ -57,7 +56,7 @@ function createMenuData_labels(user, userData, args, callback) {
                     }
                 }
                 menuDataKeyboardRow.push({
-                    text: getLabelColorMark(userData, labelsData[i]) + ' ' + labelsData[i].name,
+                    text: getColorMark(labelsData[i]) + ' ' + labelsData[i].name,
                     callback_data: menuBase.makeMenuButton('label', { labelID: labelsData[i].id })
                 });
                 if (menuDataKeyboardRow.length == 3) {
@@ -102,7 +101,7 @@ function createMenuData_label(user, userData, args, callback) {
             const isGlobal = labelData.user_id == db.invalid_id;
             /** @type {string[]} */
             var textLines = [
-                `${getLabelColorMark(userData, labelData)} Label *${bot.escapeMarkdown(labelData.name)}*` + (!labelData.is_active ? ` _\\[archived\\]_` : ''),
+                `${getColorMark(labelData)} Label *${bot.escapeMarkdown(labelData.name)}*` + (!labelData.is_active ? ` _\\[archived\\]_` : ''),
                 `Choose what you want to do:`
             ];
             /** @type {bot.keyboard_button_inline_data[][]} */

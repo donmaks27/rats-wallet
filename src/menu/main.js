@@ -94,7 +94,7 @@ function createMenuData_wallet(user, userData, args, callback) {
                 },
                 {
                     text: 'Categories >>',
-                    callback_data: menuBase.makeMenuButton('labels')
+                    callback_data: menuBase.makeMenuButton('categories')
                 }
             ],
             [

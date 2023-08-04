@@ -47,6 +47,7 @@ module.exports.label_delete = label_delete;
 
 module.exports.category_create = category_create;
 module.exports.category_get = category_get;
+module.exports.category_getList = category_getList;
 module.exports.category_getAll = category_getAll;
 module.exports.category_edit = category_edit;
 module.exports.category_delete = category_delete;
@@ -674,6 +675,34 @@ function category_get(id, callback) {
 }
 /**
  * @param {number} user_id 
+ * @param {number} parent_category_id 
+ * @param {(data: category_data[], error?: string) => any} callback 
+ */
+function category_getList(user_id, parent_category_id, callback) {
+    db.all(query_getCategoriesList(user_id, parent_category_id), (error, rows) => {
+        if (error) {
+            callback([], `failed to get categories list with parent ${parent_category_id} for user ${user_id} (${error})`);
+        } else {
+            /** @type {category_data[]} */
+            var data = [];
+            for (var i = 0; i < rows.length; i++) {
+                var rowData = {
+                    id: rows[i].id,
+                    user_id: rows[i].user_id ? rows[i].user_id : invalid_id,
+                    parent_id: rows[i].parent_id ? rows[i].parent_id : invalid_id,
+                    name: rows[i].name,
+                    is_active: rows[i].is_active != 0,
+                    create_date: new Date(rows[i].create_date)
+                };
+                cached_data.categories[rowData.id] = rowData;
+                data.push(rowData);
+            }
+            callback(data);
+        }
+    });
+}
+/**
+ * @param {number} user_id 
  * @param {(data: category_data[], error?: string) => any} callback 
  */
 function category_getAll(user_id, callback) {
@@ -1276,6 +1305,16 @@ function query_createCategory(params) {
  */
 function query_getCategory(id) {
     return `SELECT * FROM categories WHERE id = ${id} LIMIT 1;`;
+}
+/**
+ * @param {number} user_id 
+ * @param {number} parent_category_id 
+ */
+function query_getCategoriesList(user_id, parent_category_id) {
+    return `SELECT *
+    FROM categories
+    WHERE (user_id = ${user_id} OR user_id IS NULL) AND parent_id ${parent_category_id != invalid_id ? `= ${parent_category_id}` : `IS NULL`}
+    ORDER BY is_active DESC, id ASC;`;
 }
 /**
  * @param {number} id 
