@@ -25,18 +25,22 @@ const log = {
 const WalletActionsHandlers = {
     ...require('./actions/invite').register(stopUserAction),
     ...require('./actions/renameUser').register(stopUserAction),
+
+    ...require('./actions/renameAccount').register(stopUserAction),
     ...require('./actions/archiveAccount').register(stopUserAction),
-    ...require('./actions/deleteAccount').register(stopUserAction),
     ...require('./actions/createAccount').register(stopUserAction),
-    ...require('./actions/archiveCurrency').register(stopUserAction),
+    ...require('./actions/deleteAccount').register(stopUserAction),
+
     ...require('./actions/renameCurrency').register(stopUserAction),
+    ...require('./actions/archiveCurrency').register(stopUserAction),
     ...require('./actions/createCurrency').register(stopUserAction),
     ...require('./actions/deleteCurrency').register(stopUserAction),
+
+    ...require('./actions/renameLabel').register(stopUserAction),
     ...require('./actions/archiveLabel').register(stopUserAction),
     ...require('./actions/createLabel').register(stopUserAction),
     ...require('./actions/deleteLabel').register(stopUserAction),
     ...require('./actions/makeLabelGlobal').register(stopUserAction),
-    ...require('./actions/renameLabel').register(stopUserAction),
 };
 
 module.exports.startUserAction = startUserAction;

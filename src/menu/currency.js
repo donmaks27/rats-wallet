@@ -108,14 +108,13 @@ function createMenuData_currency(user, userData, args, callback) {
                     callback_data: menuBase.makeActionButton('renameCurrency', { currency: currencyCode, clearName: false })
                 });
                 menuDataKeyboard.push(menuDataKeyboeardRenameButtons, [
-                    { 
-                        text: currencyData.is_active ? `Archive currency` : `Unarchive currency`, 
-                        callback_data: menuBase.makeActionButton('archiveCurrency', { currency: currencyCode, archive: currencyData.is_active })
-                    }
-                ], [
                     {
-                        text: `Delete currency`,
+                        text: `Delete`,
                         callback_data: menuBase.makeMenuButton('deleteCurrency', { currency: currencyCode })
+                    },
+                    { 
+                        text: currencyData.is_active ? `Archive` : `Unarchive`, 
+                        callback_data: menuBase.makeActionButton('archiveCurrency', { currency: currencyCode, archive: currencyData.is_active })
                     }
                 ]);
             }

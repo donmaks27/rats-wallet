@@ -104,15 +104,19 @@ function createMenuData_account(user, userData, args, callback) {
                     parseMode: 'MarkdownV2',
                     keyboard: [
                         [
-                            { 
-                                text: accountData.is_active ? `Archive account` : `Unarchive account`, 
-                                callback_data: menuBase.makeActionButton('archiveAccount', { accountID: accountID, archive: accountData.is_active })
+                            {
+                                text: `Rename`,
+                                callback_data: menuBase.makeActionButton('renameAccount', { accountID: accountID })
                             }
                         ],
                         [
                             {
-                                text: `Delete account`,
+                                text: `Delete`,
                                 callback_data: menuBase.makeMenuButton('deleteAccount', { accountID: accountID })
+                            },
+                            { 
+                                text: accountData.is_active ? `Archive` : `Unarchive`, 
+                                callback_data: menuBase.makeActionButton('archiveAccount', { accountID: accountID, archive: accountData.is_active })
                             }
                         ],
                         [

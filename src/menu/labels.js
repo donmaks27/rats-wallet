@@ -118,18 +118,17 @@ function createMenuData_label(user, userData, args, callback) {
                 }
                 menuKeyboard.push([
                     {
-                        text: `Rename label`,
+                        text: `Rename`,
                         callback_data: menuBase.makeActionButton('renameLabel', { labelID: labelID })
                     }
                 ],[
-                    { 
-                        text: labelData.is_active ? `Archive label` : `Unarchive label`, 
-                        callback_data: menuBase.makeActionButton('archiveLabel', { labelID: labelID, archive: labelData.is_active })
-                    }
-                ], [
                     {
-                        text: `Delete label`,
+                        text: `Delete`,
                         callback_data: menuBase.makeMenuButton('deleteLabel', { labelID: labelID })
+                    },
+                    { 
+                        text: labelData.is_active ? `Archive` : `Unarchive`, 
+                        callback_data: menuBase.makeActionButton('archiveLabel', { labelID: labelID, archive: labelData.is_active })
                     }
                 ]);
             }

@@ -6,7 +6,7 @@ var walletCommon = require('../wallet-common');
 var walletMenu = require('../wallet-menu');
 var actionBase = require('./wallet-action-base');
 
-const ACTION_NAME = 'renameLabel';
+const ACTION_NAME = 'renameAccount';
 
 const log = {
     /**
@@ -47,26 +47,26 @@ module.exports.register = (stopCallback) => {
  */
 function startAction(user, userData, args, callback) {
     const userID = user.id;
-    const labelID = args.labelID;
-    if (typeof labelID !== 'number') {
-        log.error(userID, `invalid argument "labelID"`);
+    const accountID = args.accountID;
+    if (typeof accountID !== 'number') {
+        log.error(userID, `invalid argument "accountID"`);
         callback(false);
         return;
     }
-    log.info(userID, `changing name of label ${labelID}...`);
+    log.info(userID, `changing name of account ${accountID}...`);
     const menuMessageID = walletCommon.getUserMenuMessageID(userID);
     walletCommon.setUserMenuMessageID(userID, 0);
     bot.editMessage({ 
         message: { chatID: userID, id: menuMessageID }, 
-        text: `*Renaming label*\nPlease, enter new name`, 
+        text: `*Renaming account*\nPlease, enter new name`, 
         parseMode: 'MarkdownV2',
         inlineKeyboard: { inline_keyboard:[] } 
     }, (message, error) => {
         if (error) {
-            log.error(userID, `failed to send message about changing name of label ${labelID} (${error})`);
+            log.error(userID, `failed to send message about changing name of account ${accountID} (${error})`);
             callback(false);
         } else {
-            log.info(userID, `sent message about changing name of label ${labelID}`);
+            log.info(userID, `sent message about changing name of account ${accountID}`);
             callback(true);
         }
     });
@@ -81,13 +81,13 @@ function onUserMessage(message, userData, args, callback) {
         callback(true);
         return;
     }
-    const labelID = typeof args.labelID === 'number' ? args.labelID : db.invalid_id;
-    db.label_edit(labelID, { name: message.text }, (currencyData, error) => {
-        if (error || !currencyData) {
-            log.error(userID, `failed to change name of label ${labelID} (${error})`);
+    const accountID = typeof args.accountID === 'number' ? args.accountID : db.invalid_id;
+    db.account_edit(accountID, { name: message.text }, (accountData, error) => {
+        if (error || !accountData) {
+            log.error(userID, `failed to change name of account ${accountID} (${error})`);
             callback(false);
         } else {
-            log.info(userID, `changed name of label ${labelID} (${currencyData.name})`);
+            log.info(userID, `changed name of account ${accountID} (${accountData.name})`);
             ActionStopCallback(message.from, userData, callback);
         }
     });
@@ -97,13 +97,13 @@ function onUserMessage(message, userData, args, callback) {
  */
 function stopAction(user, userData, args, callback) {
     const userID = user.id;
-    const labelID = args.labelID;
-    log.info(userID, `returning to label ${labelID} menu`);
-    walletMenu.changeMenuMessage(walletCommon.getUserMenuMessageID(userID), 'label', { labelID: labelID }, user, userData, (message, error) => {
+    const accountID = args.accountID;
+    log.info(userID, `returning to account ${accountID} menu`);
+    walletMenu.changeMenuMessage(walletCommon.getUserMenuMessageID(userID), 'account', { accountID: accountID }, user, userData, (message, error) => {
         if (error) {
-            log.error(userID, `failed to return to label ${labelID} menu (${error})`);
+            log.error(userID, `failed to return to account ${accountID} menu (${error})`);
         } else {
-            log.info(userID, `returned to label ${labelID} menu`);
+            log.info(userID, `returned to account ${accountID} menu`);
         }
         callback(true);
     });
