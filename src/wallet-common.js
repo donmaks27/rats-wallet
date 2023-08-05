@@ -13,7 +13,7 @@ var db = require('./database');
  *           'accounts'|'account'|'createAccount'|'deleteAccount'|
  *           'currencies'|'currency'|'deleteCurrency'|
  *           'labels'|'label'|'deleteLabel'|'makeLabelGlobal'|
- *           'categories'
+ *           'categories'|'category'
  *          } menu_type
  */
 
