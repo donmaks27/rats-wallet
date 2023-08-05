@@ -70,7 +70,7 @@ function createMenuData_categoriesPrivate(user, userData, categoryData, parentCa
 
         var text = `*Categories*\n`;
         if (categoryData) {
-            text += `Category *${bot.escapeMarkdown(categoryData.name)}*\n`
+            text += `Category ${getColorMark(categoryData)} *${bot.escapeMarkdown(categoryData.name)}*\n`
         }
         text += `Choose a category:`;
 
@@ -152,6 +152,13 @@ function createMenuData_category(user, userData, args, callback) {
             ];
             /** @type {bot.keyboard_button_inline_data[][]} */
             var menuKeyboard = [];
+            // Make global
+            // Rename
+            // Delete; Archive
+            menuKeyboard.push([{
+                text: categoryData.is_active ? `Archive` : `Unarchive`, 
+                callback_data: menuBase.makeActionButton('archiveCategory', { categoryID: categoryID, archive: categoryData.is_active })
+            }]);
             menuKeyboard.push([{
                 text: '<< Back to Currencies',
                 callback_data: menuBase.makeMenuButton('categories', { categoryID: categoryID })
