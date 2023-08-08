@@ -43,6 +43,7 @@ const WalletActionsHandlers = {
     ...require('./actions/makeLabelGlobal').register(stopUserAction),
 
     ...require('./actions/archiveCategory').register(stopUserAction),
+    ...require('./actions/createCategory').register(stopUserAction),
 };
 
 module.exports.startUserAction = startUserAction;

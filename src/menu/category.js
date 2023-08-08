@@ -77,9 +77,20 @@ function createMenuData_categoriesPrivate(user, userData, categoryData, parentCa
         /** @type {bot.keyboard_button_inline_data[][]} */
         var menuKeyboard = [];
         if (categoryData) {
+            menuKeyboard.push([
+                {
+                    text: 'Edit',
+                    callback_data: menuBase.makeMenuButton('category', { categoryID: categoryID })
+                },
+                {
+                    text: 'Create',
+                    callback_data: menuBase.makeActionButton('createCategory', { parentCategoryID: categoryID })
+                }
+            ]);
+        } else {
             menuKeyboard.push([{
-                text: 'Edit',
-                callback_data: menuBase.makeMenuButton('category', { categoryID: categoryID })
+                text: 'Create',
+                callback_data: menuBase.makeActionButton('createCategory', { parentCategoryID: categoryID })
             }]);
         }
 
