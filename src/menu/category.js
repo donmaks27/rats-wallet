@@ -174,44 +174,46 @@ function createMenuData_category(user, userData, args, callback) {
                 keyboard: [[{ text: `<< Back to Categories`, callback_data: menuBase.makeMenuButton('categories', { categoryID: categoryID }) }]]
             });
         } else {
-            /** @type {string[]} */
-            var textLines = [
-                `${getColorMark(categoryData)} Category *${bot.escapeMarkdown(categoryData.name)}*` + (!categoryData.is_active ? ` _\\[archived\\]_` : ''),
-                `Choose what you want to do:`
-            ];
-            /** @type {bot.keyboard_button_inline_data[][]} */
-            var menuKeyboard = [];
-            if (categoryData.user_id != db.invalid_id) {
+            db.category_get(categoryData.parent_id, (parentCategoryData, error) => {
+                /** @type {string[]} */
+                var textLines = [
+                    `${getColorMark(categoryData)} Category *${bot.escapeMarkdown(categoryData.name)}*` + (!categoryData.is_active ? ` _\\[archived\\]_` : ''),
+                    `Choose what you want to do:`
+                ];
+                /** @type {bot.keyboard_button_inline_data[][]} */
+                var menuKeyboard = [];
+                if ((categoryData.user_id != db.invalid_id) && (!parentCategoryData || (parentCategoryData.user_id == db.invalid_id))) {
+                    menuKeyboard.push([
+                        {
+                            text: 'Make global',
+                            callback_data: menuBase.makeActionButton('makeCategoryGlobal', { categoryID: categoryID })
+                        }
+                    ]);
+                }
                 menuKeyboard.push([
                     {
-                        text: 'Make global',
-                        callback_data: menuBase.makeActionButton('makeCategoryGlobal', { categoryID: categoryID })
+                        text: 'Rename',
+                        callback_data: menuBase.makeActionButton('renameCategory', { categoryID: categoryID })
                     }
                 ]);
-            }
-            menuKeyboard.push([
-                {
-                    text: 'Rename',
-                    callback_data: menuBase.makeActionButton('renameCategory', { categoryID: categoryID })
-                }
-            ]);
-            menuKeyboard.push([
-                {
-                    text: 'Delete',
-                    callback_data: menuBase.makeMenuButton('deleteCategory', { categoryID: categoryID })
-                },
-                {
-                    text: categoryData.is_active ? `Archive` : `Unarchive`, 
-                    callback_data: menuBase.makeActionButton('archiveCategory', { categoryID: categoryID, archive: categoryData.is_active })
-                }
-            ]);
-            menuKeyboard.push([{
-                text: '<< Back to Categories',
-                callback_data: menuBase.makeMenuButton('categories', { categoryID: categoryID })
-            }]);
-            callback({
-                text: textLines.join('\n'), parseMode: 'MarkdownV2',
-                keyboard: menuKeyboard
+                menuKeyboard.push([
+                    {
+                        text: 'Delete',
+                        callback_data: menuBase.makeMenuButton('deleteCategory', { categoryID: categoryID })
+                    },
+                    {
+                        text: categoryData.is_active ? `Archive` : `Unarchive`, 
+                        callback_data: menuBase.makeActionButton('archiveCategory', { categoryID: categoryID, archive: categoryData.is_active })
+                    }
+                ]);
+                menuKeyboard.push([{
+                    text: '<< Back to Categories',
+                    callback_data: menuBase.makeMenuButton('categories', { categoryID: categoryID })
+                }]);
+                callback({
+                    text: textLines.join('\n'), parseMode: 'MarkdownV2',
+                    keyboard: menuKeyboard
+                });
             });
         }
     });
