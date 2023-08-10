@@ -8,7 +8,7 @@ var db = require('./database');
  *           'renameAccount'|'archiveAccount'|'createAccount'|'deleteAccount'|
  *           'renameCurrency'|'archiveCurrency'|'createCurrency'|'deleteCurrency'|
  *           'renameLabel'|'archiveLabel'|'createLabel'|'deleteLabel'|'makeLabelGlobal'|
- *           'archiveCategory'|'createCategory'|'deleteCategory'
+ *           'renameCategory'|'archiveCategory'|'createCategory'|'deleteCategory'|'makeCategoryGlobal'
  *          } action_type
  * @typedef {'main'|'settings'|'wallet'|
  *           'accounts'|'account'|'createAccount'|'deleteAccount'|

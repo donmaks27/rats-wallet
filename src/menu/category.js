@@ -181,8 +181,20 @@ function createMenuData_category(user, userData, args, callback) {
             ];
             /** @type {bot.keyboard_button_inline_data[][]} */
             var menuKeyboard = [];
-            // Make global
-            // Rename
+            if (categoryData.user_id != db.invalid_id) {
+                menuKeyboard.push([
+                    {
+                        text: 'Make global',
+                        callback_data: menuBase.makeActionButton('makeCategoryGlobal', { categoryID: categoryID })
+                    }
+                ]);
+            }
+            menuKeyboard.push([
+                {
+                    text: 'Rename',
+                    callback_data: menuBase.makeActionButton('renameCategory', { categoryID: categoryID })
+                }
+            ]);
             menuKeyboard.push([
                 {
                     text: 'Delete',
@@ -229,7 +241,7 @@ function createMenuData_deleteCategory(user, userData, args, callback) {
                     },
                     {
                         text: 'Yes',
-                        callback_data: menuBase.makeActionButton('deleteCategory', { categoryID: categoryID })
+                        callback_data: menuBase.makeActionButton('deleteCategory', { categoryID: categoryID, parentCategoryID: categoryData.parent_id })
                     }
                 ]] 
             });

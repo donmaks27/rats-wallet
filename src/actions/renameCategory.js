@@ -6,7 +6,7 @@ var walletCommon = require('../wallet-common');
 var walletMenu = require('../wallet-menu');
 var actionBase = require('./wallet-action-base');
 
-const ACTION_NAME = 'renameLabel';
+const ACTION_NAME = 'renameCategory';
 
 const log = {
     /**
@@ -47,32 +47,32 @@ module.exports.register = (stopCallback) => {
  */
 function startAction(user, userData, args, callback) {
     const userID = user.id;
-    const labelID = args.labelID;
-    if (typeof labelID !== 'number') {
-        log.error(userID, `invalid argument "labelID"`);
+    const categoryID = args.categoryID;
+    if (typeof categoryID !== 'number') {
+        log.error(userID, `invalid argument "categoryID"`);
         callback(false);
         return;
     }
-    log.info(userID, `getting data of label ${labelID}...`);
-    db.label_get(labelID, (labelData, error) => {
-        if (error || !labelData) {
-            log.error(userID, `failed to get data of label ${labelID} (${error})`);
+    log.info(userID, `getting data of category ${categoryID}...`);
+    db.category_get(categoryID, (categoryData, error) => {
+        if (error || !categoryData) {
+            log.error(userID, `failed to get data of category ${categoryID} (${error})`);
             callback(false);
         } else {
-            log.info(userID, `changing name of label ${labelID}...`);
+            log.info(userID, `changing name of category ${categoryID}...`);
             const menuMessageID = walletCommon.getUserMenuMessageID(userID);
             walletCommon.setUserMenuMessageID(userID, 0);
             bot.editMessage({ 
                 message: { chatID: userID, id: menuMessageID }, 
-                text: `*Renaming label*\nLabel *${labelData.name}*\\. Please, enter new name`, 
+                text: `*Renaming category*\nCategory *${categoryData.name}*\\. Please, enter new name`, 
                 parseMode: 'MarkdownV2',
                 inlineKeyboard: { inline_keyboard:[] } 
             }, (message, error) => {
                 if (error) {
-                    log.error(userID, `failed to send message about changing name of label ${labelID} (${error})`);
+                    log.error(userID, `failed to send message about changing name of category ${categoryID} (${error})`);
                     callback(false);
                 } else {
-                    log.info(userID, `sent message about changing name of label ${labelID}`);
+                    log.info(userID, `sent message about changing name of category ${categoryID}`);
                     callback(true);
                 }
             });
@@ -89,13 +89,13 @@ function onUserMessage(message, userData, args, callback) {
         callback(true);
         return;
     }
-    const labelID = typeof args.labelID === 'number' ? args.labelID : db.invalid_id;
-    db.label_edit(labelID, { name: message.text }, (labelData, error) => {
-        if (error || !labelData) {
-            log.error(userID, `failed to change name of label ${labelID} (${error})`);
+    const categoryID = typeof args.categoryID === 'number' ? args.categoryID : db.invalid_id;
+    db.category_edit(categoryID, { name: message.text }, (categoryData, error) => {
+        if (error || !categoryData) {
+            log.error(userID, `failed to change name of category ${categoryID} (${error})`);
             callback(false);
         } else {
-            log.info(userID, `changed name of label ${labelID} (${labelData.name})`);
+            log.info(userID, `changed name of category ${categoryID} (${categoryData.name})`);
             ActionStopCallback(message.from, userData, callback);
         }
     });
@@ -105,13 +105,13 @@ function onUserMessage(message, userData, args, callback) {
  */
 function stopAction(user, userData, args, callback) {
     const userID = user.id;
-    const labelID = args.labelID;
-    log.info(userID, `returning to label ${labelID} menu`);
-    walletMenu.changeMenuMessage(walletCommon.getUserMenuMessageID(userID), 'label', { labelID: labelID }, user, userData, (message, error) => {
+    const categoryID = args.categoryID;
+    log.info(userID, `returning to category ${categoryID} menu`);
+    walletMenu.changeMenuMessage(walletCommon.getUserMenuMessageID(userID), 'category', { categoryID: categoryID }, user, userData, (message, error) => {
         if (error) {
-            log.error(userID, `failed to return to label ${labelID} menu (${error})`);
+            log.error(userID, `failed to return to category ${categoryID} menu (${error})`);
         } else {
-            log.info(userID, `returned to label ${labelID} menu`);
+            log.info(userID, `returned to category ${categoryID} menu`);
         }
         callback(true);
     });

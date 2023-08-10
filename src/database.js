@@ -730,7 +730,7 @@ function category_getAll(user_id, callback) {
 }
 /**
  * @param {number} id 
- * @param {{ parent_id?: number, name?: string, is_active?: boolean }} params 
+ * @param {{ parent_id?: number, name?: string, is_active?: boolean, user_id?: number | null }} params 
  * @param {(data: category_data | null, error?: string) => any} [callback] 
  */
 function category_edit(id, params, callback) {
@@ -1318,7 +1318,7 @@ function query_getCategoriesList(user_id, parent_category_id) {
 }
 /**
  * @param {number} id 
- * @param {{ parent_id?: number, name?: string, is_active?: boolean }} params 
+ * @param {{ parent_id?: number, name?: string, is_active?: boolean, user_id?: number | null }} params 
  */
 function query_updateCategory(id, params) {
     var statements = [];
@@ -1331,6 +1331,9 @@ function query_updateCategory(id, params) {
     }
     if (properties.includes('is_active')) {
         statements.push(`is_active = ${params.is_active ? 1 : 0}`);
+    }
+    if (properties.includes('user_id')) {
+        statements.push(`user_id = ${params.user_id ? params.user_id : 'NULL'}`);
     }
     return `UPDATE categories SET ${statements.join(', ')} WHERE id = ${id};`;
 }
