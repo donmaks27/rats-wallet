@@ -17,7 +17,8 @@ const log = {
 module.exports.get = () => {
     return {
         categories: createMenuData_categories,
-        category: createMenuData_category
+        category: createMenuData_category,
+        deleteCategory: createMenuData_deleteCategory
     };
 }
 
@@ -30,6 +31,17 @@ function getColorMark(categoryData) {
         return !isGlobal ? '🟢' : '🟣';
     }
     return !isGlobal ? '🟡' : '🟠';
+}
+
+/**
+ * @param {db.category_data} categoryData 
+ * @param {db.user_data} userData 
+ */
+function isEditAvailable(categoryData, userData) {
+    if (categoryData.user_id != db.invalid_id) {
+        return categoryData.user_id == userData.id;
+    }
+    return bot.getOwnerUserID() == userData.id;
 }
 
 /**
@@ -76,7 +88,7 @@ function createMenuData_categoriesPrivate(user, userData, categoryData, parentCa
 
         /** @type {bot.keyboard_button_inline_data[][]} */
         var menuKeyboard = [];
-        if (categoryData) {
+        if (categoryData && isEditAvailable(categoryData, userData)) {
             menuKeyboard.push([
                 {
                     text: 'Edit',
@@ -155,6 +167,12 @@ function createMenuData_category(user, userData, args, callback) {
                 text: `_${bot.escapeMarkdown(`Hmm, something wrong...`)}_`, parseMode: 'MarkdownV2',
                 keyboard: [[{ text: `<< Back to Categories`, callback_data: menuBase.makeMenuButton('categories', { categoryID: categoryID }) }]]
             });
+        } else if (!isEditAvailable(categoryData, userData)) {
+            log.warning(userID, `[category] user ${userID} can't edit category ${categoryID}`);
+            callback({
+                text: `🛑`,
+                keyboard: [[{ text: `<< Back to Categories`, callback_data: menuBase.makeMenuButton('categories', { categoryID: categoryID }) }]]
+            });
         } else {
             /** @type {string[]} */
             var textLines = [
@@ -165,18 +183,55 @@ function createMenuData_category(user, userData, args, callback) {
             var menuKeyboard = [];
             // Make global
             // Rename
-            // Delete; Archive
+            menuKeyboard.push([
+                {
+                    text: 'Delete',
+                    callback_data: menuBase.makeMenuButton('deleteCategory', { categoryID: categoryID })
+                },
+                {
+                    text: categoryData.is_active ? `Archive` : `Unarchive`, 
+                    callback_data: menuBase.makeActionButton('archiveCategory', { categoryID: categoryID, archive: categoryData.is_active })
+                }
+            ]);
             menuKeyboard.push([{
-                text: categoryData.is_active ? `Archive` : `Unarchive`, 
-                callback_data: menuBase.makeActionButton('archiveCategory', { categoryID: categoryID, archive: categoryData.is_active })
-            }]);
-            menuKeyboard.push([{
-                text: '<< Back to Currencies',
+                text: '<< Back to Categories',
                 callback_data: menuBase.makeMenuButton('categories', { categoryID: categoryID })
             }]);
             callback({
                 text: textLines.join('\n'), parseMode: 'MarkdownV2',
                 keyboard: menuKeyboard
+            });
+        }
+    });
+}
+
+/**
+ * @type {menuBase.menu_create_func}
+ */
+function createMenuData_deleteCategory(user, userData, args, callback) {
+    const userID = user.id;
+    const categoryID = typeof args.categoryID === 'number' ? args.categoryID : db.invalid_id;
+    db.category_get(categoryID, (categoryData, error) => {
+        if (error || !categoryData) {
+            log.error(userID, `[deleteCategory] failed to get data of category ${categoryID} (${error})`);
+            callback({
+                text: `_${bot.escapeMarkdown(`Hmm, something wrong...`)}_`, parseMode: 'MarkdownV2',
+                keyboard: [[{ text: `<< Back to Categories`, callback_data: menuBase.makeMenuButton('categories', { categoryID: categoryID }) }]]
+            });
+        } else {
+            callback({ 
+                text: menuBase.makeMenuMessageTitle(`Deleting category`) + `\nYou are going to delete category *${bot.escapeMarkdown(categoryData.name)}*` + bot.escapeMarkdown(`. Are you sure?`), 
+                parseMode: 'MarkdownV2', 
+                keyboard: [[
+                    {
+                        text: 'No',
+                        callback_data: menuBase.makeMenuButton('category', { categoryID: categoryID })
+                    },
+                    {
+                        text: 'Yes',
+                        callback_data: menuBase.makeActionButton('deleteCategory', { categoryID: categoryID })
+                    }
+                ]] 
             });
         }
     });

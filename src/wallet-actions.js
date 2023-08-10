@@ -44,6 +44,7 @@ const WalletActionsHandlers = {
 
     ...require('./actions/archiveCategory').register(stopUserAction),
     ...require('./actions/createCategory').register(stopUserAction),
+    ...require('./actions/deleteCategory').register(stopUserAction),
 };
 
 module.exports.startUserAction = startUserAction;

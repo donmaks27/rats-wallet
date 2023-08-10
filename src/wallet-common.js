@@ -8,13 +8,13 @@ var db = require('./database');
  *           'renameAccount'|'archiveAccount'|'createAccount'|'deleteAccount'|
  *           'renameCurrency'|'archiveCurrency'|'createCurrency'|'deleteCurrency'|
  *           'renameLabel'|'archiveLabel'|'createLabel'|'deleteLabel'|'makeLabelGlobal'|
- *           'archiveCategory'|'createCategory'
+ *           'archiveCategory'|'createCategory'|'deleteCategory'
  *          } action_type
  * @typedef {'main'|'settings'|'wallet'|
  *           'accounts'|'account'|'createAccount'|'deleteAccount'|
  *           'currencies'|'currency'|'deleteCurrency'|
  *           'labels'|'label'|'deleteLabel'|'makeLabelGlobal'|
- *           'categories'|'category'
+ *           'categories'|'category'|'deleteCategory'
  *          } menu_type
  */
 
