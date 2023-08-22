@@ -51,6 +51,8 @@ function startAction(user, userData, args, callback) {
         changeLabelColor(user, userData, args, args.labelID, color, callback);
     } else if (typeof args.categoryID === 'number') {
         changeCategoryColor(user, userData, args, args.categoryID, color, callback);
+    } else if (typeof args.accountID === 'number') {
+        changeAccountColor(user, userData, args, args.accountID, color, callback);
     } else {
         log.error(userID, `don't have any ID in the args`);
         callback(false);
@@ -98,6 +100,27 @@ function changeCategoryColor(user, userData, args, categoryID, color, callback) 
         }
     });
 }
+/**
+ * @param {bot.user_data} user 
+ * @param {db.user_data} userData 
+ * @param {walletCommon.args_data} args 
+ * @param {number} accountID 
+ * @param {db.color_type} color 
+ * @param {(success: boolean) => any} callback 
+ */
+function changeAccountColor(user, userData, args, accountID, color, callback) {
+    const userID = user.id;
+    log.info(userID, `changing color of account ${accountID} to '${color}'...`);
+    db.account_edit(accountID, { color: color }, (labelData, error) => {
+        if (error || !labelData) {
+            log.error(userID, `failed to change color of account ${accountID} to '${color}' (${error})`);
+            callback(false);
+        } else {
+            log.info(userID, `changed color of account ${accountID} to '${color}'`);
+            ActionStopCallback(user, userData, callback);
+        }
+    });
+}
 
 /**
  * @type {actionBase.action_stop_func}
@@ -114,6 +137,9 @@ function stopAction(user, userData, args, callback) {
     } else if (typeof args.categoryID === 'number') {
         menu = 'category';
         menuArgs = { categoryID: args.categoryID };
+    } else if (typeof args.accountID === 'number') {
+        menu = 'account';
+        menuArgs = { accountID: args.accountID };
     }
     log.info(userID, `updating menu...`);
     walletMenu.changeMenuMessage(walletCommon.getUserMenuMessageID(userID), menu, menuArgs, user, userData, (message, error) => {

@@ -127,6 +127,9 @@ function createMenuData_changeColor(user, userData, args, callback) {
     } else if (typeof args.categoryID === 'number') {
         text = `*Category color*\nPlease, choose the color:`;
         backButton = { text: `<< Back to category`, callback_data: menuBase.makeMenuButton('category', { categoryID: args.categoryID }) };
+    } else if (typeof args.accountID === 'number') {
+        text = `*Account color*\nPlease, choose the color:`;
+        backButton = { text: `<< Back to account`, callback_data: menuBase.makeMenuButton('account', { accountID: args.accountID }) };
     } else {
         callback({
             text: `_${bot.escapeMarkdown(`Hmm, something wrong...`)}_`, parseMode: 'MarkdownV2',

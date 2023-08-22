@@ -25,7 +25,7 @@ module.exports.get = () => {
 /**
  * @param {db.category_data} categoryData 
  */
-function getCategorylName(categoryData) {
+function getCategoryName(categoryData) {
     return `${walletCommon.getColorMarker(categoryData.color)} ${categoryData.name}`;
 }
 /**
@@ -77,7 +77,7 @@ function createMenuData_categoriesPrivate(user, userData, categoryData, parentCa
 
         var text = `*Categories*\n`;
         if (categoryData) {
-            text += `${walletCommon.getCategoryStatus(categoryData)} Category *${bot.escapeMarkdown(getCategorylName(categoryData))}*\n`
+            text += `${walletCommon.getCategoryStatus(categoryData)} Category *${bot.escapeMarkdown(getCategoryName(categoryData))}*\n`
         }
         text += `Choose a category:`;
 
@@ -112,7 +112,7 @@ function createMenuData_categoriesPrivate(user, userData, categoryData, parentCa
                 }
             }
             menuDataKeyboardRow.push({
-                text: `${walletCommon.getCategoryStatus(categoriesData[i])} ${getCategorylName(categoriesData[i])}`,
+                text: `${walletCommon.getCategoryStatus(categoriesData[i])} ${getCategoryName(categoriesData[i])}`,
                 callback_data: menuBase.makeMenuButton('categories', { categoryID: categoriesData[i].id })
             });
             if (menuDataKeyboardRow.length == 3) {
@@ -131,7 +131,7 @@ function createMenuData_categoriesPrivate(user, userData, categoryData, parentCa
         }
         if (parentCategoryData) {
             menuKeyboard.push([{
-                text: `<< Back to category ${walletCommon.getCategoryStatus(parentCategoryData)} ${getCategorylName(parentCategoryData)}`,
+                text: `<< Back to category ${walletCommon.getCategoryStatus(parentCategoryData)} ${getCategoryName(parentCategoryData)}`,
                 callback_data: menuBase.makeMenuButton('categories', { categoryID: parentCategoryData.id })
             }]);
         } else if (categoryData) {
@@ -172,7 +172,7 @@ function createMenuData_category(user, userData, args, callback) {
             db.category_get(categoryData.parent_id, (parentCategoryData, error) => {
                 /** @type {string[]} */
                 var textLines = [
-                    `${walletCommon.getCategoryStatus(categoryData)} Category *${bot.escapeMarkdown(getCategorylName(categoryData))}*` + (!categoryData.is_active ? ` _\\[archived\\]_` : ''),
+                    `${walletCommon.getCategoryStatus(categoryData)} Category *${bot.escapeMarkdown(getCategoryName(categoryData))}*` + (!categoryData.is_active ? ` _\\[archived\\]_` : ''),
                     `Choose what you want to do:`
                 ];
                 /** @type {bot.keyboard_button_inline_data[][]} */

@@ -24,6 +24,13 @@ module.exports.get = () => {
 }
 
 /**
+ * @param {db.account_data} accountData 
+ */
+function getAccountName(accountData) {
+    return `${walletCommon.getColorMarker(accountData.color)} ${accountData.name}`;
+}
+
+/**
  * @type {menuBase.menu_create_func}
  */
 function createMenuData_accounts(user, userData, args, callback) {
@@ -46,7 +53,7 @@ function createMenuData_accounts(user, userData, args, callback) {
                     }
                 }
                 menuDataKeyboardRow.push({
-                    text: walletCommon.getAccountStatus(accounts[i]) + accounts[i].name,
+                    text: `${walletCommon.getAccountStatus(accounts[i])} ${getAccountName(accounts[i])}`,
                     callback_data: menuBase.makeMenuButton('account', { accountID: accounts[i].id })
                 });
                 if (menuDataKeyboardRow.length == 3) {
@@ -93,7 +100,7 @@ function createMenuData_account(user, userData, args, callback) {
                 }
                 /** @type {string[]} */
                 var textLines = [];
-                textLines.push(walletCommon.getAccountStatus(accountData) + ` Account *${bot.escapeMarkdown(accountData.name)}* ${bot.escapeMarkdown(`(${accountData.currency_code})`)}`);
+                textLines.push(`${walletCommon.getAccountStatus(accountData)} Account *${bot.escapeMarkdown(getAccountName(accountData))}* ${bot.escapeMarkdown(`(${accountData.currency_code})`)}`);
                 if (!accountData.is_active) {
                     textLines[0] += ` _\\[archived\\]_`;
                 }
@@ -105,6 +112,10 @@ function createMenuData_account(user, userData, args, callback) {
                     parseMode: 'MarkdownV2',
                     keyboard: [
                         [
+                            {
+                                text: `Change color`,
+                                callback_data: menuBase.makeMenuButton('changeColor', { accountID: accountID })
+                            },
                             {
                                 text: `Rename`,
                                 callback_data: menuBase.makeActionButton('renameAccount', { accountID: accountID })
@@ -178,7 +189,7 @@ function createMenuData_deleteAccount(user, userData, args, callback) {
             });
         } else {
             callback({ 
-                text: menuBase.makeMenuMessageTitle(`Deleting account`) + `\nYou are going to delete account *${bot.escapeMarkdown(accountData.name)}*` + bot.escapeMarkdown(`. Are you sure?`), 
+                text: menuBase.makeMenuMessageTitle(`Deleting account`) + `\nYou are going to delete account *${bot.escapeMarkdown(getAccountName(accountData))}*` + bot.escapeMarkdown(`. Are you sure?`), 
                 parseMode: 'MarkdownV2', 
                 keyboard: [[
                     {
