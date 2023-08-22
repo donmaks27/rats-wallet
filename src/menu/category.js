@@ -188,7 +188,7 @@ function createMenuData_category(user, userData, args, callback) {
                 menuKeyboard.push([
                     {
                         text: 'Change color',
-                        callback_data: menuBase.makeActionButton('changeColor', { categoryID: categoryID })
+                        callback_data: menuBase.makeMenuButton('changeColor', { categoryID: categoryID })
                     },
                     {
                         text: 'Rename',
