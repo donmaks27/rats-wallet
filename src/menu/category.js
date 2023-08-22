@@ -24,6 +24,12 @@ module.exports.get = () => {
 
 /**
  * @param {db.category_data} categoryData 
+ */
+function getCategorylName(categoryData) {
+    return `${walletCommon.getColorMarker(categoryData.color)} ${categoryData.name}`;
+}
+/**
+ * @param {db.category_data} categoryData 
  * @param {db.user_data} userData 
  */
 function isEditAvailable(categoryData, userData) {
@@ -71,7 +77,7 @@ function createMenuData_categoriesPrivate(user, userData, categoryData, parentCa
 
         var text = `*Categories*\n`;
         if (categoryData) {
-            text += `Category ${walletCommon.getCategoryStatus(categoryData)} *${bot.escapeMarkdown(categoryData.name)}*\n`
+            text += `${walletCommon.getCategoryStatus(categoryData)} Category *${bot.escapeMarkdown(getCategorylName(categoryData))}*\n`
         }
         text += `Choose a category:`;
 
@@ -106,7 +112,7 @@ function createMenuData_categoriesPrivate(user, userData, categoryData, parentCa
                 }
             }
             menuDataKeyboardRow.push({
-                text: `${walletCommon.getCategoryStatus(categoriesData[i])} ${categoriesData[i].name}`,
+                text: `${walletCommon.getCategoryStatus(categoriesData[i])} ${getCategorylName(categoriesData[i])}`,
                 callback_data: menuBase.makeMenuButton('categories', { categoryID: categoriesData[i].id })
             });
             if (menuDataKeyboardRow.length == 3) {
@@ -125,7 +131,7 @@ function createMenuData_categoriesPrivate(user, userData, categoryData, parentCa
         }
         if (parentCategoryData) {
             menuKeyboard.push([{
-                text: `<< Back to category ${walletCommon.getCategoryStatus(parentCategoryData)} ${parentCategoryData.name}`,
+                text: `<< Back to category ${walletCommon.getCategoryStatus(parentCategoryData)} ${getCategorylName(parentCategoryData)}`,
                 callback_data: menuBase.makeMenuButton('categories', { categoryID: parentCategoryData.id })
             }]);
         } else if (categoryData) {
@@ -166,7 +172,7 @@ function createMenuData_category(user, userData, args, callback) {
             db.category_get(categoryData.parent_id, (parentCategoryData, error) => {
                 /** @type {string[]} */
                 var textLines = [
-                    `${walletCommon.getCategoryStatus(categoryData)} Category *${bot.escapeMarkdown(categoryData.name)}*` + (!categoryData.is_active ? ` _\\[archived\\]_` : ''),
+                    `${walletCommon.getCategoryStatus(categoryData)} Category *${bot.escapeMarkdown(getCategorylName(categoryData))}*` + (!categoryData.is_active ? ` _\\[archived\\]_` : ''),
                     `Choose what you want to do:`
                 ];
                 /** @type {bot.keyboard_button_inline_data[][]} */
@@ -180,6 +186,10 @@ function createMenuData_category(user, userData, args, callback) {
                     ]);
                 }
                 menuKeyboard.push([
+                    {
+                        text: 'Change color',
+                        callback_data: menuBase.makeActionButton('changeColor', { categoryID: categoryID })
+                    },
                     {
                         text: 'Rename',
                         callback_data: menuBase.makeActionButton('renameCategory', { categoryID: categoryID })

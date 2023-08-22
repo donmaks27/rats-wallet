@@ -49,6 +49,8 @@ function startAction(user, userData, args, callback) {
     const color = db.parseColor(typeof args.color === 'string' ? args.color : '');
     if (typeof args.labelID === 'number') {
         changeLabelColor(user, userData, args, args.labelID, color, callback);
+    } else if (typeof args.categoryID === 'number') {
+        changeCategoryColor(user, userData, args, args.categoryID, color, callback);
     } else {
         log.error(userID, `don't have any ID in the args`);
         callback(false);
@@ -75,6 +77,27 @@ function changeLabelColor(user, userData, args, labelID, color, callback) {
         }
     });
 }
+/**
+ * @param {bot.user_data} user 
+ * @param {db.user_data} userData 
+ * @param {walletCommon.args_data} args 
+ * @param {number} categoryID 
+ * @param {db.color_type} color 
+ * @param {(success: boolean) => any} callback 
+ */
+function changeCategoryColor(user, userData, args, categoryID, color, callback) {
+    const userID = user.id;
+    log.info(userID, `changing color of category ${categoryID} to '${color}'...`);
+    db.category_edit(categoryID, { color: color }, (categoryData, error) => {
+        if (error || !categoryData) {
+            log.error(userID, `failed to change color of category ${categoryID} to '${color}' (${error})`);
+            callback(false);
+        } else {
+            log.info(userID, `changed color of category ${categoryID} to '${color}'`);
+            ActionStopCallback(user, userData, callback);
+        }
+    });
+}
 
 /**
  * @type {actionBase.action_stop_func}
@@ -88,6 +111,9 @@ function stopAction(user, userData, args, callback) {
     if (typeof args.labelID === 'number') {
         menu = 'label';
         menuArgs = { labelID: args.labelID };
+    } else if (typeof args.categoryID === 'number') {
+        menu = 'category';
+        menuArgs = { categoryID: args.categoryID };
     }
     log.info(userID, `updating menu...`);
     walletMenu.changeMenuMessage(walletCommon.getUserMenuMessageID(userID), menu, menuArgs, user, userData, (message, error) => {
