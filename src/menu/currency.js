@@ -3,6 +3,7 @@
 var db  = require('../database');
 var bot = require('../telegram-bot');
 var menuBase = require('./wallet-menu-base');
+var walletCommon = require('../wallet-common');
 
 const log = {
     info: menuBase.info,
@@ -45,7 +46,7 @@ function createMenuData_currencies(user, userData, args, callback) {
                 }
                 var currencyTitle = currenciesData[i].name ? `${currenciesData[i].name} (${currenciesData[i].code})` : currenciesData[i].code;
                 menuDataKeyboardRow.push({
-                    text: (currenciesData[i].is_active ? '🟢 ' : '🟡 ') + currencyTitle,
+                    text: walletCommon.getCurrencyStatus(currenciesData[i]) + currencyTitle,
                     callback_data: menuBase.makeMenuButton('currency', { currency: currenciesData[i].code })
                 });
                 if (menuDataKeyboardRow.length == 2) {
@@ -88,7 +89,7 @@ function createMenuData_currency(user, userData, args, callback) {
                 keyboard: [[{ text: `<< Back to Currencies`, callback_data: menuBase.makeMenuButton('currencies') }]]
             });
         } else {
-            var menuText = (currencyData.is_active ? '🟢' : '🟡') + ` Currency *${bot.escapeMarkdown(currencyData.name ? `${currencyData.name} (${currencyCode})` : `${currencyCode}`)}*`;
+            var menuText = walletCommon.getCurrencyStatus(currencyData) + ` Currency *${bot.escapeMarkdown(currencyData.name ? `${currencyData.name} (${currencyCode})` : `${currencyCode}`)}*`;
             if (!currencyData.is_active) {
                 menuText += ` _${bot.escapeMarkdown(`[archived]`)}_`;
             }

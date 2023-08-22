@@ -4,13 +4,13 @@ var db = require('./database');
 
 /**
  * @typedef {{ [key: string]: string|number|boolean|null }} args_data
- * @typedef {'invite'|'renameUser'|
+ * @typedef {'invite'|'renameUser'|'changeColor'|
  *           'renameAccount'|'archiveAccount'|'createAccount'|'deleteAccount'|
  *           'renameCurrency'|'archiveCurrency'|'createCurrency'|'deleteCurrency'|
  *           'renameLabel'|'archiveLabel'|'createLabel'|'deleteLabel'|'makeLabelGlobal'|
  *           'renameCategory'|'archiveCategory'|'createCategory'|'deleteCategory'|'makeCategoryGlobal'
  *          } action_type
- * @typedef {'main'|'settings'|'wallet'|
+ * @typedef {'main'|'settings'|'wallet'|'changeColor'|
  *           'accounts'|'account'|'createAccount'|'deleteAccount'|
  *           'currencies'|'currency'|'deleteCurrency'|
  *           'labels'|'label'|'deleteLabel'|'makeLabelGlobal'|
@@ -42,6 +42,12 @@ module.exports.encodeArgs = encodeArgs;
 module.exports.decodeArgs = decodeArgs;
 
 module.exports.findUserInvite = findUserInvite;
+
+module.exports.getCurrencyStatus = getCurrencyStatus;
+module.exports.getLabelStatus = getLabelStatus;
+module.exports.getCategoryStatus = getCategoryStatus;
+module.exports.getAccountStatus = getAccountStatus;
+module.exports.getColorMarker = getColorMarker;
 
 function checkUserState(userID) {
     if (!WalletUsersState[userID]) {
@@ -193,4 +199,71 @@ function findUserInvite(userID, callback) {
             callback(inviteData);
         }
     });
+}
+
+/**
+ * @param {db.currency_data} currencyData 
+ * @returns {string}
+ */
+function getCurrencyStatus(currencyData) {
+    if (!currencyData) {
+        return '';
+    }
+    return currencyData.is_active ? '🟣' : '🟠';
+}
+/**
+ * @param {db.label_data} labelData 
+ * @returns {string}
+ */
+function getLabelStatus(labelData) {
+    if (!labelData) {
+        return '';
+    }
+    if (labelData.user_id == db.invalid_id) {
+        return labelData.is_active ? '🟣' : '🟠';
+    }
+    return labelData.is_active ? '🟢' : '🟡';
+}
+/**
+ * @param {db.category_data} categoryData 
+ * @returns {string}
+ */
+function getCategoryStatus(categoryData) {
+    if (!categoryData) {
+        return '';
+    }
+    if (categoryData.user_id == db.invalid_id) {
+        return categoryData.is_active ? '🟣' : '🟠';
+    }
+    return categoryData.is_active ? '🟢' : '🟡';
+}
+/**
+ * @param {db.account_data} accountData 
+ * @returns {string}
+ */
+function getAccountStatus(accountData) {
+    if (!accountData) {
+        return '';
+    }
+    return accountData.is_active ? '🟢' : '🟡';
+}
+/**
+ * @param {db.color_type} color 
+ * @returns {string}
+ */
+function getColorMarker(color) {
+    switch (color) {
+    case 'red':    return '🟥';
+    case 'orange': return '🟧';
+    case 'yellow': return '🟨';
+    case 'green':  return '🟩';
+    case 'blue':   return '🟦';
+    case 'purple': return '🟪';
+    case 'black':  return '⬛️';
+    case 'white':  return '⬜️';
+    case 'brown':  return '🟫';
+    default: 
+        break;
+    }
+    return '';
 }

@@ -1,6 +1,8 @@
 // @ts-check
 
+var bot = require('../telegram-bot');
 var menuBase = require('./wallet-menu-base');
+var walletCommon = require('../wallet-common');
 
 const log = {
     info: menuBase.info,
@@ -15,7 +17,8 @@ module.exports.get = () => {
     return {
         main: createMenuData_main,
         settings: createMenuData_settings,
-        wallet: createMenuData_wallet
+        wallet: createMenuData_wallet,
+        changeColor: createMenuData_changeColor
     };
 }
 
@@ -81,6 +84,10 @@ function createMenuData_wallet(user, userData, args, callback) {
                 {
                     text: 'Accounts >>',
                     callback_data: menuBase.makeMenuButton('accounts')
+                },
+                {
+                    text: 'Records >>',
+                    callback_data: menuBase.makeMenuButton('accounts')
                 }
             ],
             [
@@ -103,6 +110,80 @@ function createMenuData_wallet(user, userData, args, callback) {
                     callback_data: menuBase.makeMenuButton('main')
                 }
             ]
+        ]
+    });
+}
+
+/**
+ * @type {menuBase.menu_create_func}
+ */
+function createMenuData_changeColor(user, userData, args, callback) {
+    var text  = '';
+    /** @type {bot.keyboard_button_inline_data} */
+    var backButton = { text: '', callback_data: '' };
+    if (typeof args.labelID === 'number') {
+        text = `*Label color*\nPlease, choose the color:`;
+        backButton = { text: `<< Back to label`, callback_data: menuBase.makeMenuButton('label', { labelID: args.labelID }) };
+    } else {
+        callback({
+            text: `_${bot.escapeMarkdown(`Hmm, something wrong...`)}_`, parseMode: 'MarkdownV2',
+            keyboard: [[{ text: `<< Back to Wallet`, callback_data: menuBase.makeMenuButton('wallet') }]]
+        });
+        return;
+    }
+    callback({
+        text: text, 
+        parseMode: 'MarkdownV2',
+        keyboard: [
+            [
+                {
+                    text: `${walletCommon.getColorMarker('red')} Red`,
+                    callback_data: menuBase.makeActionButton('changeColor', { ...args, color: 'red' })
+                },
+                {
+                    text: `${walletCommon.getColorMarker('orange')} Orange`,
+                    callback_data: menuBase.makeActionButton('changeColor', { ...args, color: 'orange' })
+                },
+                {
+                    text: `${walletCommon.getColorMarker('yellow')} Yellow`,
+                    callback_data: menuBase.makeActionButton('changeColor', { ...args, color: 'yellow' })
+                }
+            ],
+            [
+                {
+                    text: `${walletCommon.getColorMarker('green')} Green`,
+                    callback_data: menuBase.makeActionButton('changeColor', { ...args, color: 'green' })
+                },
+                {
+                    text: `${walletCommon.getColorMarker('blue')} Blue`,
+                    callback_data: menuBase.makeActionButton('changeColor', { ...args, color: 'blue' })
+                },
+                {
+                    text: `${walletCommon.getColorMarker('purple')} Purple`,
+                    callback_data: menuBase.makeActionButton('changeColor', { ...args, color: 'purple' })
+                }
+            ],
+            [
+                {
+                    text: `${walletCommon.getColorMarker('black')} Black`,
+                    callback_data: menuBase.makeActionButton('changeColor', { ...args, color: 'black' })
+                },
+                {
+                    text: `${walletCommon.getColorMarker('white')} White`,
+                    callback_data: menuBase.makeActionButton('changeColor', { ...args, color: 'white' })
+                },
+                {
+                    text: `${walletCommon.getColorMarker('brown')} Brown`,
+                    callback_data: menuBase.makeActionButton('changeColor', { ...args, color: 'brown' })
+                }
+            ],
+            [
+                {
+                    text: `None`,
+                    callback_data: menuBase.makeActionButton('changeColor', { ...args, color: null })
+                }
+            ],
+            [ backButton ]
         ]
     });
 }

@@ -3,6 +3,7 @@
 var db  = require('../database');
 var bot = require('../telegram-bot');
 var menuBase = require('./wallet-menu-base');
+var walletCommon = require('../wallet-common');
 
 const log = {
     info: menuBase.info,
@@ -45,7 +46,7 @@ function createMenuData_accounts(user, userData, args, callback) {
                     }
                 }
                 menuDataKeyboardRow.push({
-                    text: (accounts[i].is_active ? '🟢 ' : '🟡 ') + accounts[i].name,
+                    text: walletCommon.getAccountStatus(accounts[i]) + accounts[i].name,
                     callback_data: menuBase.makeMenuButton('account', { accountID: accounts[i].id })
                 });
                 if (menuDataKeyboardRow.length == 3) {
@@ -92,7 +93,7 @@ function createMenuData_account(user, userData, args, callback) {
                 }
                 /** @type {string[]} */
                 var textLines = [];
-                textLines.push((accountData.is_active ? '🟢' : '🟡') + ` Account *${bot.escapeMarkdown(accountData.name)}* ${bot.escapeMarkdown(`(${accountData.currency_code})`)}`);
+                textLines.push(walletCommon.getAccountStatus(accountData) + ` Account *${bot.escapeMarkdown(accountData.name)}* ${bot.escapeMarkdown(`(${accountData.currency_code})`)}`);
                 if (!accountData.is_active) {
                     textLines[0] += ` _\\[archived\\]_`;
                 }

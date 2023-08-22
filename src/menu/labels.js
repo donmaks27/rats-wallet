@@ -3,6 +3,7 @@
 var db  = require('../database');
 var bot = require('../telegram-bot');
 var menuBase = require('./wallet-menu-base');
+var walletCommon = require('../wallet-common');
 
 const log = {
     info: menuBase.info,
@@ -25,12 +26,8 @@ module.exports.get = () => {
 /**
  * @param {db.label_data} labelData 
  */
-function getColorMark(labelData) {
-    const isGlobal = labelData.user_id == db.invalid_id;
-    if (labelData.is_active) {
-        return !isGlobal ? '🟢' : '🟣';
-    }
-    return !isGlobal ? '🟡' : '🟠';
+function getLabelName(labelData) {
+    return `${walletCommon.getColorMarker(labelData.color)} ${labelData.name}`;
 }
 
 /**
@@ -56,7 +53,7 @@ function createMenuData_labels(user, userData, args, callback) {
                     }
                 }
                 menuDataKeyboardRow.push({
-                    text: getColorMark(labelsData[i]) + ' ' + labelsData[i].name,
+                    text: `${walletCommon.getLabelStatus(labelsData[i])} ${getLabelName(labelsData[i])}`,
                     callback_data: menuBase.makeMenuButton('label', { labelID: labelsData[i].id })
                 });
                 if (menuDataKeyboardRow.length == 3) {
@@ -101,7 +98,7 @@ function createMenuData_label(user, userData, args, callback) {
             const isGlobal = labelData.user_id == db.invalid_id;
             /** @type {string[]} */
             var textLines = [
-                `${getColorMark(labelData)} Label *${bot.escapeMarkdown(labelData.name)}*` + (!labelData.is_active ? ` _\\[archived\\]_` : ''),
+                `${walletCommon.getLabelStatus(labelData)} Label *${bot.escapeMarkdown(getLabelName(labelData))}*` + (!labelData.is_active ? ` _\\[archived\\]_` : ''),
                 `Choose what you want to do:`
             ];
             /** @type {bot.keyboard_button_inline_data[][]} */
@@ -116,6 +113,10 @@ function createMenuData_label(user, userData, args, callback) {
                     ]);
                 }
                 menuKeyboard.push([
+                    {
+                        text: 'Change color',
+                        callback_data: menuBase.makeMenuButton('changeColor', { labelID: labelID })
+                    },
                     {
                         text: `Rename`,
                         callback_data: menuBase.makeActionButton('renameLabel', { labelID: labelID })
@@ -159,7 +160,7 @@ function createMenuData_deleteLabel(user, userData, args, callback) {
             });
         } else {
             callback({ 
-                text: menuBase.makeMenuMessageTitle(`Deleting label`) + `\nYou are going to delete label *${bot.escapeMarkdown(labelData.name)}*` + bot.escapeMarkdown(`. Are you sure?`), 
+                text: menuBase.makeMenuMessageTitle(`Deleting label`) + `\nYou are going to delete label *${bot.escapeMarkdown(getLabelName(labelData))}*` + bot.escapeMarkdown(`. Are you sure?`), 
                 parseMode: 'MarkdownV2', 
                 keyboard: [[
                     {
@@ -200,7 +201,7 @@ function createMenuData_makeLabelGlobal(user, userData, args, callback) {
             });
         } else {
             callback({ 
-                text: menuBase.makeMenuMessageTitle(`Making label global`) + `\nYou are going to make label *${bot.escapeMarkdown(labelData.name)}* global` + bot.escapeMarkdown(`. This action is irreversible, are you sure?`), 
+                text: menuBase.makeMenuMessageTitle(`Making label global`) + `\nYou are going to make label *${bot.escapeMarkdown(getLabelName(labelData))}* global` + bot.escapeMarkdown(`. This action is irreversible, are you sure?`), 
                 parseMode: 'MarkdownV2', 
                 keyboard: [[
                     {

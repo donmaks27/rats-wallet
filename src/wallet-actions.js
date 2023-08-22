@@ -25,6 +25,7 @@ const log = {
 const WalletActionsHandlers = {
     ...require('./actions/invite').register(stopUserAction),
     ...require('./actions/renameUser').register(stopUserAction),
+    ...require('./actions/changeColor').register(stopUserAction),
 
     ...require('./actions/renameAccount').register(stopUserAction),
     ...require('./actions/archiveAccount').register(stopUserAction),

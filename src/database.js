@@ -9,10 +9,10 @@ var log = require('./log');
  * @typedef {{ users: user_data[], currencies: currency_data[], labels: label_data[], categories: category_data[], accounts: account_data[], records: record_data[], record_labels: record_label_data[], user_invites: user_invite_data[] }} full_data
  * @typedef {{ id: number, name: string, create_date: Date }} user_data
  * @typedef {{ code: string, name: string | null, is_active: boolean, create_date: Date }} currency_data
- * @typedef {'red'|'orange'|'yellow'|'green'|'blue'|'purple'|'black'|'white'|'brown'|null} label_color_type
- * @typedef {{ id: number, user_id: number, name: string, color: label_color_type, is_active: boolean, create_date: Date }} label_data
- * @typedef {{ id: number, user_id: number, parent_id: number, name: string, is_active: boolean, create_date: Date }} category_data
- * @typedef {{ id: number, user_id: number, currency_code: string, name: string, start_amount: number, is_active: boolean, create_date: Date }} account_data
+ * @typedef {'red'|'orange'|'yellow'|'green'|'blue'|'purple'|'black'|'white'|'brown'|null} color_type
+ * @typedef {{ id: number, user_id: number, name: string, color: color_type, is_active: boolean, create_date: Date }} label_data
+ * @typedef {{ id: number, user_id: number, parent_id: number, name: string, color: color_type, is_active: boolean, create_date: Date }} category_data
+ * @typedef {{ id: number, user_id: number, currency_code: string, name: string, start_amount: number, color: color_type, is_active: boolean, create_date: Date }} account_data
  * @typedef {{ id: number, src_account_id: number, src_amount: number, dst_account_id: number, dst_amount: number, category_id: number, date: Date, create_date: Date }} record_data
  * @typedef {{ record_id: number, label_id: number, create_date: Date }} record_label_data
  * @typedef {{ id: number, inviting_user_id: number, invite_date: Date, expire_date: Date }} user_invite_data
@@ -25,6 +25,7 @@ module.exports.invalid_id = invalid_id;
 module.exports.open = openDatabase;
 module.exports.close = closeDatabase;
 module.exports.getAllData = getAllData;
+module.exports.parseColor = parseColor;
 
 module.exports.user_create = user_create;
 module.exports.user_get = user_get;
@@ -81,6 +82,21 @@ var cached_data = getEmptyCachedData();
 
 function debug_log(msg) {
     log.info('[DB] ' + msg);
+}
+
+/**
+ * @param {string} str 
+ * @returns {color_type}
+ */
+function parseColor(str) {
+    if (str) {
+        switch (str) {
+        case 'red': case 'orange': case 'yellow': case 'green': case 'blue': case 'purple': case 'black': case 'white': case 'brown':
+            return str;
+        default: break;
+        }
+    }
+    return null;
 }
 
 /**
@@ -470,7 +486,7 @@ function currency_delete(code, callback) {
 }
 
 /**
- * @param {{ user_id?: number, name: string, color?: label_color_type }} params 
+ * @param {{ user_id?: number, name: string, color?: color_type }} params 
  * @param {(data: label_data | null, error?: string) => any} [callback] 
  */
 function label_create(params, callback) {
@@ -512,7 +528,7 @@ function label_get(id, callback) {
                 id: row.id,
                 user_id: row.user_id ? row.user_id : invalid_id,
                 name: row.name,
-                color: row.color,
+                color: parseColor(row.color),
                 is_active: row.is_active != 0,
                 create_date: new Date(row.create_date)
             };
@@ -536,7 +552,7 @@ function label_getAll(callback) {
                     id: rows[i].id,
                     user_id: rows[i].user_id ? rows[i].user_id : invalid_id,
                     name: rows[i].name,
-                    color: rows[i].color,
+                    color: parseColor(rows[i].color),
                     is_active: rows[i].is_active != 0,
                     create_date: new Date(rows[i].create_date)
                 };
@@ -563,7 +579,7 @@ function label_getAllForUser(userID, callback) {
                     id: rows[i].id,
                     user_id: rows[i].user_id ? rows[i].user_id : invalid_id,
                     name: rows[i].name,
-                    color: rows[i].color,
+                    color: parseColor(rows[i].color),
                     is_active: rows[i].is_active != 0,
                     create_date: new Date(rows[i].create_date)
                 };
@@ -579,7 +595,7 @@ function label_getAllForUser(userID, callback) {
 }
 /**
  * @param {number} id 
- * @param {{ name?: string, color?: label_color_type, is_active?: boolean, user_id?: number | null }} params 
+ * @param {{ name?: string, color?: color_type, is_active?: boolean, user_id?: number | null }} params 
  * @param {(data: label_data | null, error?: string) => any} [callback] 
  */
 function label_edit(id, params, callback) {
@@ -622,7 +638,7 @@ function label_delete(id, callback) {
 }
 
 /**
- * @param {{ user_id?: number, parent_id?: number, name: string }} params 
+ * @param {{ user_id?: number, parent_id?: number, name: string, color?: color_type }} params 
  * @param {(data: category_data | null, error?: string) => any} [callback] 
  */
 function category_create(params, callback) {
@@ -665,6 +681,7 @@ function category_get(id, callback) {
                 user_id: row.user_id ? row.user_id : invalid_id,
                 parent_id: row.parent_id ? row.parent_id : invalid_id,
                 name: row.name,
+                color: parseColor(row.color),
                 is_active: row.is_active != 0,
                 create_date: new Date(row.create_date)
             };
@@ -691,6 +708,7 @@ function category_getList(user_id, parent_category_id, callback) {
                     user_id: rows[i].user_id ? rows[i].user_id : invalid_id,
                     parent_id: rows[i].parent_id ? rows[i].parent_id : invalid_id,
                     name: rows[i].name,
+                    color: parseColor(rows[i].color),
                     is_active: rows[i].is_active != 0,
                     create_date: new Date(rows[i].create_date)
                 };
@@ -718,6 +736,7 @@ function category_getAll(user_id, callback) {
                     user_id: rows[i].user_id ? rows[i].user_id : invalid_id,
                     parent_id: rows[i].parent_id ? rows[i].parent_id : invalid_id,
                     name: rows[i].name,
+                    color: parseColor(rows[i].color),
                     is_active: rows[i].is_active != 0,
                     create_date: new Date(rows[i].create_date)
                 };
@@ -730,7 +749,7 @@ function category_getAll(user_id, callback) {
 }
 /**
  * @param {number} id 
- * @param {{ parent_id?: number, name?: string, is_active?: boolean, user_id?: number | null }} params 
+ * @param {{ parent_id?: number, name?: string, is_active?: boolean, user_id?: number | null, color?: color_type }} params 
  * @param {(data: category_data | null, error?: string) => any} [callback] 
  */
 function category_edit(id, params, callback) {
@@ -773,7 +792,7 @@ function category_delete(id, callback) {
 }
 
 /**
- * @param {{ user_id: number, currency_code: string, name: string, start_amount?: number }} params 
+ * @param {{ user_id: number, currency_code: string, name: string, start_amount?: number, color?: color_type }} params 
  * @param {(data: account_data | null, error?: string) => any} [callback] 
  */
 function account_create(params, callback) {
@@ -817,6 +836,7 @@ function account_get(id, callback) {
                 currency_code: row.currency_code,
                 name: row.name,
                 start_amount: row.start_amount,
+                color: parseColor(row.color),
                 is_active: row.is_active != 0,
                 create_date: new Date(row.create_date)
             };
@@ -843,6 +863,7 @@ function account_getAll(user_id, callback) {
                     currency_code: rows[i].currency_code,
                     name: rows[i].name,
                     start_amount: rows[i].start_amount,
+                    color: parseColor(rows[i].color),
                     is_active: rows[i].is_active != 0,
                     create_date: new Date(rows[i].create_date)
                 };
@@ -855,7 +876,7 @@ function account_getAll(user_id, callback) {
 }
 /**
  * @param {number} id 
- * @param {{ name?: string, start_amount?: number, is_active?: boolean }} params 
+ * @param {{ name?: string, start_amount?: number, is_active?: boolean, color?: color_type }} params 
  * @param {(data: account_data | null, error?: string) => any} [callback] 
  */
 function account_edit(id, params, callback) {
@@ -1236,7 +1257,7 @@ function query_deleteCurrency(code) {
 }
 
 /**
- * @param {{ user_id?: number, name: string, color?: label_color_type }} params 
+ * @param {{ user_id?: number, name: string, color?: color_type }} params 
  */
 function query_createLabel(params) {
     return `INSERT INTO labels(user_id, name, color, is_active, create_date) VALUES (
@@ -1262,7 +1283,7 @@ function query_getLabelsForUser(userID) {
 }
 /**
  * @param {number} id 
- * @param {{ name?: string, color?: label_color_type, is_active?: boolean, user_id?: number | null }} params 
+ * @param {{ name?: string, color?: color_type, is_active?: boolean, user_id?: number | null }} params 
  */
 function query_updateLabel(id, params) {
     var statements = [];
@@ -1272,7 +1293,7 @@ function query_updateLabel(id, params) {
     }
     if (properties.includes('color')) {
         if (params.color) {
-            statements.push(`color = '${query_handle_string(params.color)}'`);
+            statements.push(`color = '${params.color}'`);
         } else {
             statements.push(`color = NULL`);
         }
@@ -1293,11 +1314,11 @@ function query_deleteLabel(id) {
 }
 
 /**
- * @param {{ user_id?: number, parent_id?: number, name: string }} params
+ * @param {{ user_id?: number, parent_id?: number, name: string, color?: color_type }} params
  */
 function query_createCategory(params) {
-    return `INSERT INTO categories(user_id, parent_id, name, is_active, create_date) VALUES (
-        ${params.user_id ? params.user_id : 'NULL'}, ${params.parent_id ? params.parent_id : 'NULL'}, '${query_handle_string(params.name)}', 1, ${Date.now()}
+    return `INSERT INTO categories(user_id, parent_id, name, color, is_active, create_date) VALUES (
+        ${params.user_id ? params.user_id : 'NULL'}, ${params.parent_id ? params.parent_id : 'NULL'}, '${query_handle_string(params.name)}', ${params.color ? `'${params.color}'` : 'NULL'}, 1, ${Date.now()}
     );`;
 }
 /**
@@ -1318,7 +1339,7 @@ function query_getCategoriesList(user_id, parent_category_id) {
 }
 /**
  * @param {number} id 
- * @param {{ parent_id?: number, name?: string, is_active?: boolean, user_id?: number | null }} params 
+ * @param {{ parent_id?: number, name?: string, is_active?: boolean, user_id?: number | null, color?: color_type }} params 
  */
 function query_updateCategory(id, params) {
     var statements = [];
@@ -1328,6 +1349,13 @@ function query_updateCategory(id, params) {
     }
     if (properties.includes('name')) {
         statements.push(`name = '${query_handle_string(params.name)}'`);
+    }
+    if (properties.includes('color')) {
+        if (params.color) {
+            statements.push(`color = '${params.color}'`);
+        } else {
+            statements.push(`color = NULL`);
+        }
     }
     if (properties.includes('is_active')) {
         statements.push(`is_active = ${params.is_active ? 1 : 0}`);
@@ -1345,11 +1373,11 @@ function query_deleteCategory(id) {
 }
 
 /**
- * @param {{ user_id: number, currency_code: string, name: string, start_amount?: number }} params 
+ * @param {{ user_id: number, currency_code: string, name: string, start_amount?: number, color?: color_type }} params 
  */
 function query_createAccount(params) {
-    return `INSERT INTO accounts(user_id, currency_code, name, start_amount, is_active, create_date) VALUES (
-        ${params.user_id}, '${query_handle_string(params.currency_code)}', '${query_handle_string(params.name)}', ${params.start_amount ? params.start_amount : 0}, 1, ${Date.now()}
+    return `INSERT INTO accounts(user_id, currency_code, name, start_amount, color, is_active, create_date) VALUES (
+        ${params.user_id}, '${query_handle_string(params.currency_code)}', '${query_handle_string(params.name)}', ${params.start_amount ? params.start_amount : 0}, ${params.color ? `'${params.color}'` : 'NULL'}, 1, ${Date.now()}
     );`;
 }
 /**
@@ -1360,7 +1388,7 @@ function query_getAccount(id) {
 }
 /**
  * @param {number} id 
- * @param {{ name?: string, start_amount?: number, is_active?: boolean }} params 
+ * @param {{ name?: string, start_amount?: number, is_active?: boolean, color?: color_type }} params 
  */
 function query_updateAccount(id, params) {
     var statements = [];
@@ -1370,6 +1398,13 @@ function query_updateAccount(id, params) {
     }
     if (properties.includes('start_amount')) {
         statements.push(`start_amount = ${params.start_amount ? params.start_amount : 0}`);
+    }
+    if (properties.includes('color')) {
+        if (params.color) {
+            statements.push(`color = '${params.color}'`);
+        } else {
+            statements.push(`color = NULL`);
+        }
     }
     if (properties.includes('is_active')) {
         statements.push(`is_active = ${params.is_active ? 1 : 0}`);
