@@ -1538,7 +1538,8 @@ function query_getRecordsAmount(userID) {
     FROM records
         LEFT JOIN accounts AS src_account ON records.src_account_id = src_account.id
         LEFT JOIN accounts AS dst_account ON records.dst_account_id = dst_account.id
-    WHERE (src_account.id = ${userID}) OR (dst_account.id = ${userID});`;
+    WHERE (src_account.user_id = ${userID}) OR (dst_account.user_id = ${userID})
+    LIMIT 1;`;
 }
 /**
  * @param {number} userID 
@@ -1557,7 +1558,7 @@ function query_getRecordsList(userID, recordsPerPage, pageIndex) {
     FROM records
         LEFT JOIN accounts AS src_account ON records.src_account_id = src_account.id
         LEFT JOIN accounts AS dst_account ON records.dst_account_id = dst_account.id
-    WHERE (src_account.id = ${userID}) OR (dst_account.id = ${userID})
+    WHERE (src_account.user_id = ${userID}) OR (dst_account.user_id = ${userID})
     LIMIT ${pageIndex * recordsPerPage}, ${recordsPerPage};`;
 }
 /**
