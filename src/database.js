@@ -62,6 +62,8 @@ module.exports.account_getBallance = account_getBallance;
 
 module.exports.record_create = record_create;
 module.exports.record_get = record_get;
+module.exports.record_getAmount = record_getAmount;
+module.exports.record_getList = record_getList;
 module.exports.record_edit = record_edit;
 module.exports.record_delete = record_delete;
 
@@ -245,6 +247,137 @@ function getAllData(callback) {
 }
 
 /**
+ * @param {any} row 
+ * @param {string} [prefix] 
+ * @returns {user_data}
+ */
+function parseUserRow(row, prefix) {
+    if (!prefix) {
+        prefix = '';
+    }
+    return {
+        id: row[prefix + 'id'],
+        name: row[prefix + 'name'],
+        create_date: new Date(row[prefix + 'create_date'])
+    };
+}
+/**
+ * @param {any} row 
+ * @param {string} [prefix] 
+ * @returns {currency_data}
+ */
+function parseCurrencyRow(row, prefix) {
+    if (!prefix) {
+        prefix = '';
+    }
+    return {
+        code: row[prefix + 'code'],
+        name: row[prefix + 'name'],
+        is_active: row[prefix + 'is_active'] != 0,
+        create_date: new Date(row[prefix + 'create_date'])
+    };
+}
+/**
+ * @param {any} row 
+ * @param {string} [prefix] 
+ * @returns {label_data}
+ */
+function parseLabelRow(row, prefix) {
+    if (!prefix) {
+        prefix = '';
+    }
+    var data = {
+        id: row[prefix + 'id'],
+        user_id: row[prefix + 'user_id'],
+        name: row[prefix + 'name'],
+        color: parseColor(row[prefix + 'color']),
+        is_active: row[prefix + 'is_active'] != 0,
+        create_date: new Date(row[prefix + 'create_date'])
+    };
+    if (!data.user_id) {
+        data.user_id = invalid_id;
+    }
+    return data;
+}
+/**
+ * @param {any} row 
+ * @param {string} [prefix] 
+ * @returns {category_data}
+ */
+function parseCategoryRow(row, prefix) {
+    if (!prefix) {
+        prefix = '';
+    }
+    var data = {
+        id: row[prefix + 'id'],
+        user_id: row[prefix + 'user_id'],
+        parent_id: row[prefix + 'parent_id'],
+        name: row[prefix + 'name'],
+        color: parseColor(row[prefix + 'color']),
+        is_active: row[prefix + 'is_active'] != 0,
+        create_date: new Date(row[prefix + 'create_date'])
+    };
+    if (!data.user_id) {
+        data.user_id = invalid_id;
+    }
+    if (!data.parent_id) {
+        data.parent_id = invalid_id;
+    }
+    return data;
+}
+/**
+ * @param {any} row 
+ * @param {string} [prefix] 
+ * @returns {account_data}
+ */
+function parseAccountRow(row, prefix) {
+    if (!prefix) {
+        prefix = '';
+    }
+    var data = {
+        id: row[prefix + 'id'],
+        user_id: row[prefix + 'user_id'],
+        currency_code: row[prefix + 'currency_code'],
+        name: row[prefix + 'name'],
+        start_amount: row[prefix + 'start_amount'],
+        color: parseColor(row[prefix + 'color']),
+        is_active: row[prefix + 'is_active'] != 0,
+        create_date: new Date(row[prefix + 'create_date'])
+    };
+    return data;
+}
+/**
+ * @param {any} row 
+ * @param {string} [prefix] 
+ * @returns {record_data}
+ */
+function parseRecordRow(row, prefix) {
+    if (!prefix) {
+        prefix = '';
+    }
+    var data = {
+        id: row[prefix + 'id'],
+        src_account_id: row[prefix + 'src_account_id'],
+        src_amount: row[prefix + 'src_amount'],
+        dst_account_id: row[prefix + 'dst_account_id'],
+        dst_amount: row[prefix + 'dst_amount'],
+        category_id: row[prefix + 'category_id'],
+        date: new Date(row[prefix + 'date']),
+        create_date: new Date(row[prefix + 'create_date'])
+    };
+    if (!data.src_account_id) {
+        data.src_account_id = invalid_id;
+    }
+    if (!data.dst_account_id) {
+        data.dst_account_id = invalid_id;
+    }
+    if (!data.category_id) {
+        data.category_id = invalid_id;
+    }
+    return data;
+}
+
+/**
  * @param {{ id: number, name: string }} params 
  * @param {(data: user_data | null, error?: string) => any} [callback] 
  */
@@ -278,11 +411,7 @@ function user_get(id, callback) {
         } else if (!row) {
             callback(null, `can't find data of user ${id}`);
         } else {
-            var userData = {
-                id: row.id,
-                name: row.name,
-                create_date: new Date(row.create_date)
-            }
+            var userData = parseUserRow(row);
             cached_data.users[id] = userData;
             callback(userData);
         }
@@ -299,11 +428,7 @@ function user_getAll(callback) {
             /** @type {user_data[]} */
             var data = [];
             for (var i = 0; i < rows.length; i++) {
-                var userData = {
-                    id: rows[i].id,
-                    name: rows[i].name,
-                    create_date: new Date(rows[i].create_date)
-                };
+                var userData = parseUserRow(rows[i]);
                 cached_data.users[userData.id] = userData;
                 data.push(userData);
             }
@@ -371,12 +496,7 @@ function currency_get(code, callback) {
         } else if (!row) {
             callback(null, `can't find data of currency "${code}"`);
         } else {
-            var data = {
-                code: row.code,
-                name: row.name,
-                is_active: row.is_active != 0,
-                create_date: new Date(row.create_date)
-            };
+            var data = parseCurrencyRow(row);
             cached_data.currencies[code] = data;
             callback(data);
         }
@@ -393,12 +513,7 @@ function currency_getAll(callback) {
             /** @type {currency_data[]} */
             var data = [];
             for (var i = 0; i < rows.length; i++) {
-                var rowData = {
-                    code: rows[i].code,
-                    name: rows[i].name,
-                    is_active: rows[i].is_active != 0,
-                    create_date: new Date(rows[i].create_date)
-                };
+                var rowData = parseCurrencyRow(rows[i]);
                 cached_data.currencies[rowData.code] = rowData;
                 data.push(rowData);
             }
@@ -418,12 +533,7 @@ function currency_getAllForUser(userID, callback) {
             /** @type {(currency_data & { usesNumber: number })[]} */
             var data = [];
             for (var i = 0; i < rows.length; i++) {
-                var rowData = {
-                    code: rows[i].code,
-                    name: rows[i].name,
-                    is_active: rows[i].is_active != 0,
-                    create_date: new Date(rows[i].create_date)
-                };
+                var rowData = parseCurrencyRow(rows[i]);
                 cached_data.currencies[rowData.code] = rowData;
                 data.push({
                     ...rowData,
@@ -524,14 +634,7 @@ function label_get(id, callback) {
         } else if (!row) {
             callback(null, `can't find data of label ${id}`);
         } else {
-            var data = {
-                id: row.id,
-                user_id: row.user_id ? row.user_id : invalid_id,
-                name: row.name,
-                color: parseColor(row.color),
-                is_active: row.is_active != 0,
-                create_date: new Date(row.create_date)
-            };
+            var data = parseLabelRow(row);
             cached_data.labels[id] = data;
             callback(data);
         }
@@ -548,14 +651,7 @@ function label_getAll(callback) {
             /** @type {label_data[]} */
             var data = [];
             for (var i = 0; i < rows.length; i++) {
-                var rowData = {
-                    id: rows[i].id,
-                    user_id: rows[i].user_id ? rows[i].user_id : invalid_id,
-                    name: rows[i].name,
-                    color: parseColor(rows[i].color),
-                    is_active: rows[i].is_active != 0,
-                    create_date: new Date(rows[i].create_date)
-                };
+                var rowData = parseLabelRow(rows[i]);
                 cached_data.labels[rowData.id] = rowData;
                 data.push(rowData);
             }
@@ -575,14 +671,7 @@ function label_getAllForUser(userID, callback) {
             /** @type {(label_data & { usesNumber: number })[]} */
             var data = [];
             for (var i = 0; i < rows.length; i++) {
-                var rowData = {
-                    id: rows[i].id,
-                    user_id: rows[i].user_id ? rows[i].user_id : invalid_id,
-                    name: rows[i].name,
-                    color: parseColor(rows[i].color),
-                    is_active: rows[i].is_active != 0,
-                    create_date: new Date(rows[i].create_date)
-                };
+                var rowData = parseLabelRow(rows[i]);
                 cached_data.labels[rowData.id] = rowData;
                 data.push({
                     ...rowData,
@@ -676,15 +765,7 @@ function category_get(id, callback) {
         } else if (!row) {
             callback(null, `can't find data of category ${id}`);
         } else {
-            var data = {
-                id: row.id,
-                user_id: row.user_id ? row.user_id : invalid_id,
-                parent_id: row.parent_id ? row.parent_id : invalid_id,
-                name: row.name,
-                color: parseColor(row.color),
-                is_active: row.is_active != 0,
-                create_date: new Date(row.create_date)
-            };
+            var data = parseCategoryRow(row);
             cached_data.categories[id] = data;
             callback(data);
         }
@@ -703,15 +784,7 @@ function category_getList(user_id, parent_category_id, callback) {
             /** @type {category_data[]} */
             var data = [];
             for (var i = 0; i < rows.length; i++) {
-                var rowData = {
-                    id: rows[i].id,
-                    user_id: rows[i].user_id ? rows[i].user_id : invalid_id,
-                    parent_id: rows[i].parent_id ? rows[i].parent_id : invalid_id,
-                    name: rows[i].name,
-                    color: parseColor(rows[i].color),
-                    is_active: rows[i].is_active != 0,
-                    create_date: new Date(rows[i].create_date)
-                };
+                var rowData = parseCategoryRow(rows[i]);
                 cached_data.categories[rowData.id] = rowData;
                 data.push(rowData);
             }
@@ -731,15 +804,7 @@ function category_getAll(user_id, callback) {
             /** @type {category_data[]} */
             var data = [];
             for (var i = 0; i < rows.length; i++) {
-                var rowData = {
-                    id: rows[i].id,
-                    user_id: rows[i].user_id ? rows[i].user_id : invalid_id,
-                    parent_id: rows[i].parent_id ? rows[i].parent_id : invalid_id,
-                    name: rows[i].name,
-                    color: parseColor(rows[i].color),
-                    is_active: rows[i].is_active != 0,
-                    create_date: new Date(rows[i].create_date)
-                };
+                var rowData = parseCategoryRow(rows[i]);
                 cached_data.categories[rowData.id] = rowData;
                 data.push(rowData);
             }
@@ -830,16 +895,7 @@ function account_get(id, callback) {
         } else if (!row) {
             callback(null, `can't find data of account ${id}`);
         } else {
-            var data = {
-                id: row.id,
-                user_id: row.user_id,
-                currency_code: row.currency_code,
-                name: row.name,
-                start_amount: row.start_amount,
-                color: parseColor(row.color),
-                is_active: row.is_active != 0,
-                create_date: new Date(row.create_date)
-            };
+            var data = parseAccountRow(row);
             cached_data.accounts[id] = data;
             callback(data);
         }
@@ -857,16 +913,7 @@ function account_getAll(user_id, callback) {
             /** @type {account_data[]} */
             var data = [];
             for (var i = 0; i < rows.length; i++) {
-                var rowData = {
-                    id: rows[i].id,
-                    user_id: rows[i].user_id,
-                    currency_code: rows[i].currency_code,
-                    name: rows[i].name,
-                    start_amount: rows[i].start_amount,
-                    color: parseColor(rows[i].color),
-                    is_active: rows[i].is_active != 0,
-                    create_date: new Date(rows[i].create_date)
-                };
+                var rowData = parseAccountRow(rows[i]);
                 cached_data.accounts[rowData.id] = rowData;
                 data.push(rowData);
             }
@@ -957,21 +1004,51 @@ function record_get(id, callback) {
         } else if (!row) {
             callback(null, `can't find data of record ${id}`);
         } else {
-            callback({
-                id: row.id,
-                src_account_id: row.src_account_id ? row.src_account_id : invalid_id,
-                src_amount: row.src_amount,
-                dst_account_id: row.dst_account_id ? row.dst_account_id : invalid_id,
-                dst_amount: row.dst_amount,
-                category_id: row.category_id ? row.category_id : invalid_id,
-                date: new Date(row.date),
-                create_date: new Date(row.create_date)
-            });
+            callback(parseRecordRow(row));
         }
     });
 }
 /**
- * 
+ * @param {number} userID 
+ * @param {(amount: number, error?: string) => any} callback 
+ */
+function record_getAmount(userID, callback) {
+    db.get(query_getRecordsAmount(userID), (error, row) => {
+        if (error) {
+            callback(0, `failed to get amount of records: ` + error);
+        } else {
+            callback(row.amount);
+        }
+    });
+}
+/**
+ * @param {number} userID 
+ * @param {number} recordsPerPage 
+ * @param {number} pageIndex 
+ * @param {(records: (record_data & { src_account?: account_data } & { dst_account?: account_data })[], error?: string) => any} callback 
+ */
+function record_getList(userID, recordsPerPage, pageIndex, callback) {
+    db.all(query_getRecordsList(userID, recordsPerPage >= 1 ? recordsPerPage : 1, pageIndex > 0 ? pageIndex : 0), (error, rows) => {
+        if (error) {
+            callback([], `failed to get records list: ` + error);
+        } else {
+            var result = [];
+            for (var i = 0; i < rows.length; i++) {
+                /** @type {record_data & { src_account?: account_data } & { dst_account?: account_data }} */
+                var rowData = parseRecordRow(rows[i]);
+                if (rowData.src_account_id != invalid_id) {
+                    rowData.src_account = parseAccountRow(rows[i], 'src_account.');
+                }
+                if (rowData.dst_account_id != invalid_id) {
+                    rowData.dst_account = parseAccountRow(rows[i], 'dst_account.');
+                }
+                result.push(rowData);
+            }
+            callback(result);
+        }
+    });
+}
+/**
  * @param {number} id 
  * @param {{ src_account_id?: number, src_amount?: number, dst_account_id?: number, dst_amount?: number, category_id?: number, date?: Date }} params 
  * @param {(data: record_data | null, error?: string) => any} [callback] 
@@ -1452,6 +1529,36 @@ function query_createRecord(params) {
  */
 function query_getRecord(id) {
     return `SELECT * FROM records WHERE id = ${id} LIMIT 1;`;
+}
+/**
+ * @param {number} userID 
+ */
+function query_getRecordsAmount(userID) {
+    return `SELECT COUNT(records.id) AS amount
+    FROM records
+        LEFT JOIN accounts AS src_account ON records.src_account_id = src_account.id
+        LEFT JOIN accounts AS dst_account ON records.dst_account_id = dst_account.id
+    WHERE (src_account.id = ${userID}) OR (dst_account.id = ${userID});`;
+}
+/**
+ * @param {number} userID 
+ * @param {number} recordsPerPage 
+ * @param {number} pageIndex 
+ */
+function query_getRecordsList(userID, recordsPerPage, pageIndex) {
+    /** @type {string[]} */
+    var srcAccountColumns = [], dstAccountColumns = [];
+    var columns = Object.getOwnPropertyNames(parseAccountRow({}));
+    for (var i = 0; i < columns.length; i++) {
+        srcAccountColumns.push('src_account.' + columns[i]);
+        dstAccountColumns.push('dst_account.' + columns[i]);
+    }
+    return `SELECT records.*, ${srcAccountColumns.join(', ')}, ${dstAccountColumns.join(', ')}
+    FROM records
+        LEFT JOIN accounts AS src_account ON records.src_account_id = src_account.id
+        LEFT JOIN accounts AS dst_account ON records.dst_account_id = dst_account.id
+    WHERE (src_account.id = ${userID}) OR (dst_account.id = ${userID})
+    LIMIT ${pageIndex * recordsPerPage}, ${recordsPerPage};`;
 }
 /**
  * @param {number} id 

@@ -87,7 +87,7 @@ function createMenuData_wallet(user, userData, args, callback) {
                 },
                 {
                     text: 'Records >>',
-                    callback_data: menuBase.makeMenuButton('accounts')
+                    callback_data: menuBase.makeMenuButton('records')
                 }
             ],
             [
