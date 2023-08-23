@@ -1025,22 +1025,33 @@ function record_getAmount(userID, callback) {
  * @param {number} userID 
  * @param {number} recordsPerPage 
  * @param {number} pageIndex 
- * @param {(records: (record_data & { src_account?: account_data } & { dst_account?: account_data })[], error?: string) => any} callback 
+ * @param {(records: (record_data & { src_account?: account_data, dst_account?: account_data, category?: category_data, labels: label_data[] })[], error?: string) => any} callback 
  */
 function record_getList(userID, recordsPerPage, pageIndex, callback) {
+    log.info(query_getRecordsList(userID, recordsPerPage >= 1 ? recordsPerPage : 1, pageIndex > 0 ? pageIndex : 0));
     db.all(query_getRecordsList(userID, recordsPerPage >= 1 ? recordsPerPage : 1, pageIndex > 0 ? pageIndex : 0), (error, rows) => {
         if (error) {
             callback([], `failed to get records list: ` + error);
         } else {
             var result = [];
             for (var i = 0; i < rows.length; i++) {
-                /** @type {record_data & { src_account?: account_data } & { dst_account?: account_data }} */
-                var rowData = parseRecordRow(rows[i]);
+                /** @type {record_data & { src_account?: account_data, dst_account?: account_data, category?: category_data, labels: label_data[] }} */
+                var rowData = {
+                    ...parseRecordRow(rows[i]),
+                    labels: []
+                };
                 if (rowData.src_account_id != invalid_id) {
                     rowData.src_account = parseAccountRow(rows[i], 'src_account.');
                 }
                 if (rowData.dst_account_id != invalid_id) {
                     rowData.dst_account = parseAccountRow(rows[i], 'dst_account.');
+                }
+                if (rowData.category_id != invalid_id) {
+                    rowData.category = parseCategoryRow(rows[i], 'category.');
+                }
+                var labelsData = JSON.parse(rows[i].labels);
+                for (var j = 0; j < labelsData.length; j++) {
+                    rowData.labels.push(parseLabelRow(labelsData[j]));
                 }
                 result.push(rowData);
             }
@@ -1548,17 +1559,30 @@ function query_getRecordsAmount(userID) {
  */
 function query_getRecordsList(userID, recordsPerPage, pageIndex) {
     /** @type {string[]} */
-    var srcAccountColumns = [], dstAccountColumns = [];
-    var columns = Object.getOwnPropertyNames(parseAccountRow({}));
-    for (var i = 0; i < columns.length; i++) {
-        srcAccountColumns.push('src_account.' + columns[i]);
-        dstAccountColumns.push('dst_account.' + columns[i]);
+    var srcAccountColumns = [], dstAccountColumns = [], categoryColumns = [], labelColumns = [];
+    const accountColumnNames = Object.getOwnPropertyNames(parseAccountRow({}));
+    for (var i = 0; i < accountColumnNames.length; i++) {
+        srcAccountColumns.push(`src_account.${accountColumnNames[i]} AS 'src_account.${accountColumnNames[i]}'`);
+        dstAccountColumns.push(`dst_account.${accountColumnNames[i]} AS 'dst_account.${accountColumnNames[i]}'`);
     }
-    return `SELECT records.*, ${srcAccountColumns.join(', ')}, ${dstAccountColumns.join(', ')}
+    const categoryColumnNames = Object.getOwnPropertyNames(parseCategoryRow({}));
+    for (var i = 0; i < categoryColumnNames.length; i++) {
+        categoryColumns.push(`categories.${categoryColumnNames[i]} AS 'category.${categoryColumnNames[i]}'`);
+    }
+    const labelColumnNames = Object.getOwnPropertyNames(parseLabelRow({}));
+    for (var i = 0; i < labelColumnNames.length; i++) {
+        labelColumns.push(`'${labelColumnNames[i]}', labels.${labelColumnNames[i]}`);
+    }
+    return `SELECT records.*, ${srcAccountColumns.join(', ')}, ${dstAccountColumns.join(', ')}, ${categoryColumns.join(', ')}, 
+                   JSON_GROUP_ARRAY(JSON_OBJECT(${labelColumns.join(', ')})) AS labels
     FROM records
         LEFT JOIN accounts AS src_account ON records.src_account_id = src_account.id
         LEFT JOIN accounts AS dst_account ON records.dst_account_id = dst_account.id
+        LEFT JOIN categories ON records.category_id = categories.id
+        LEFT JOIN record_labels ON records.id = record_labels.record_id
+        LEFT JOIN labels ON record_labels.label_id = labels.id
     WHERE (src_account.user_id = ${userID}) OR (dst_account.user_id = ${userID})
+    GROUP BY records.id
     LIMIT ${pageIndex * recordsPerPage}, ${recordsPerPage};`;
 }
 /**
