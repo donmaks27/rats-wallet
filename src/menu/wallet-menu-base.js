@@ -41,6 +41,9 @@ module.exports.makeMenuButton = function(type, args) {
 module.exports.makeActionButton = function(action, args) {
     return makeButton(walletCommon.MENU_BUTTON_ACTION, action, args);
 }
+module.exports.makeDummyButton = function() {
+    return walletCommon.MENU_BUTTON_DUMMY;
+}
 /**
  * @param {string} str 
  */

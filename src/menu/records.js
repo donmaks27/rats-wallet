@@ -47,20 +47,30 @@ function createMenuData_records(user, userData, args, callback) {
             if (error) {
                 log.error(userID, `[records] failed to get records list (${error})`);
             }
+            const dummyButton = { text: ` `, callback_data: menuBase.makeDummyButton() };
             /** @type {bot.keyboard_button_inline_data[]} */
-            var controlButtons = [];
-            if (page > 1) {
-                controlButtons.push({ text: `<< 1`, callback_data: menuBase.makeMenuButton('records', { page: 0 }) });
-            }
-            if (page > 0) {
-                controlButtons.push({ text: `< ${page}`, callback_data: menuBase.makeMenuButton('records', { page: page - 1 }) });
-            }
-            if (page < pagesCount - 1) {
-                controlButtons.push({ text: `${page + 2} >`, callback_data: menuBase.makeMenuButton('records', { page: page + 1 }) });
-            }
-            if (page < pagesCount - 2) {
-                controlButtons.push({ text: `${pagesCount} >>`, callback_data: menuBase.makeMenuButton('records', { page: pagesCount - 1 }) });
-            }
+            var controlButtons = [
+                page > 1 ? { 
+                    text: `<< 1`, 
+                    callback_data: menuBase.makeMenuButton('records', { page: 0 }) 
+                } : dummyButton,
+                page > 0 ? { 
+                    text: `< ${page}`, 
+                    callback_data: menuBase.makeMenuButton('records', { page: page - 1 }) 
+                } : dummyButton,
+                { 
+                    text: `${page}`, 
+                    callback_data: menuBase.makeDummyButton() 
+                },
+                page < pagesCount - 1 ? { 
+                    text: `${page + 2} >`, 
+                    callback_data: menuBase.makeMenuButton('records', { page: page + 1 }) 
+                } : dummyButton,
+                page < pagesCount - 2 ? { 
+                    text: `${pagesCount} >>`, 
+                    callback_data: menuBase.makeMenuButton('records', { page: pagesCount - 1 }) 
+                } : dummyButton
+            ];
             callback({
                 text: `*Records*\nPage _${page + 1}_ of _${pagesCount}_\nAmount of records: *${records.length}*`, 
                 parseMode: 'MarkdownV2',

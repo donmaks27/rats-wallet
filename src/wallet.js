@@ -180,7 +180,7 @@ function handleMenuButton(callbackQuery) {
     db.user_get(callbackQuery.from.id, (userData, error) => {
         if (error || !userData) {
             log.warning(`[MENU BUTTON] can't find data for user ${callbackQuery.from.id} in database`);
-        } else {
+        } else if (callbackQuery.data != walletCommon.MENU_BUTTON_DUMMY) {
             log.info(`[MENU BUTTON] found data for user ${callbackQuery.from.id}, handling callback query "${callbackQuery.data}"...`);
             const buttonFirstSeparatorIndex = callbackQuery.data.indexOf(';');
             const buttonRef = callbackQuery.data.substring(0, buttonFirstSeparatorIndex != -1 ? buttonFirstSeparatorIndex : callbackQuery.data.length).split(':');
@@ -198,7 +198,7 @@ function handleMenuButton(callbackQuery) {
                     log.info(`[MENU BUTTON] starting action "${buttonRef[1]}" (args: ${JSON.stringify(buttonArgs)})...`);
                     walletActions.startUserAction(buttonRef[1], buttonArgs, callbackQuery.from, userData);
                     break;
-            
+
                 default:
                     log.error(`[MENU BUTTON] invalid button reference "${buttonRef[0]}"`);
                     break;

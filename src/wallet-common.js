@@ -21,6 +21,7 @@ var db = require('./database');
 
 const MENU_BUTTON_GOTO   = "m";
 const MENU_BUTTON_ACTION = "a";
+const MENU_BUTTON_DUMMY  = "d";
 
 const ACTION_INVALID = 'none';
 
@@ -29,6 +30,7 @@ var WalletUsersState = {};
 
 module.exports.MENU_BUTTON_GOTO   = MENU_BUTTON_GOTO;
 module.exports.MENU_BUTTON_ACTION = MENU_BUTTON_ACTION;
+module.exports.MENU_BUTTON_DUMMY = MENU_BUTTON_DUMMY;
 module.exports.ACTION_INVALID = ACTION_INVALID;
 module.exports.getUserMenu = getUserMenu;
 module.exports.setUserMenu = setUserMenu;
