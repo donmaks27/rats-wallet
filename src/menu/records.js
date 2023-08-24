@@ -59,10 +59,10 @@ function createMenuData_records(user, userData, args, callback) {
                     // TODO: Add currency symbol
                 } else if (record.src_account) {
                     messageText += `${walletCommon.getColorMarker(record.src_account.color, ' ')}*${bot.escapeMarkdown(record.src_account.name)}*\n`;
-                    messageText += `      **__-${bot.escapeMarkdown(`${record.src_amount / 100}`)}__**`;
+                    messageText += `      **__${bot.escapeMarkdown(`-${record.src_amount / 100}`)}__**`;
                 } else if (record.dst_account) {
                     messageText += `${walletCommon.getColorMarker(record.dst_account.color, ' ')}*${bot.escapeMarkdown(record.dst_account.name)}*\n`;
-                    messageText += `      **__+${bot.escapeMarkdown(`${record.dst_amount / 100}`)}__**`;
+                    messageText += `      **__${bot.escapeMarkdown(`+${record.dst_amount / 100}`)}__**`;
                 }
                 messageText += '\n';
                 if (record.category) {
