@@ -1051,7 +1051,9 @@ function record_getList(userID, recordsPerPage, pageIndex, callback) {
                 }
                 var labelsData = JSON.parse(rows[i].labels);
                 for (var j = 0; j < labelsData.length; j++) {
-                    rowData.labels.push(parseLabelRow(labelsData[j]));
+                    if (labelsData[j].id) {
+                        rowData.labels.push(parseLabelRow(labelsData[j]));
+                    }
                 }
                 result.push(rowData);
             }
