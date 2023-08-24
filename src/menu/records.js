@@ -47,6 +47,36 @@ function createMenuData_records(user, userData, args, callback) {
             if (error) {
                 log.error(userID, `[records] failed to get records list (${error})`);
             }
+            var messageText = '*Records*\n';
+            for (var i = 0; i < records.length; i++) {
+                const record = records[i];
+                messageText += `${i}.   `;
+                if (record.src_account && record.dst_account) {
+                    messageText += `${walletCommon.getColorMarker(record.src_account.color, ' ')}${bot.escapeMarkdown(record.src_account.name)} ➤ ` +
+                                   `${walletCommon.getColorMarker(record.dst_account.color, ' ')}${bot.escapeMarkdown(record.dst_account.name)}\n`;
+                    messageText += `      *__${bot.escapeMarkdown(`${record.src_amount / 100}`)}__*`;
+                    // TODO: Add both src and dst amount
+                    // TODO: Add currency symbol
+                } else if (record.src_account) {
+                    messageText += `${walletCommon.getColorMarker(record.src_account.color, ' ')}*${bot.escapeMarkdown(record.src_account.name)}*\n`;
+                    messageText += `      **__-${bot.escapeMarkdown(`${record.src_amount / 100}`)}__**`;
+                } else if (record.dst_account) {
+                    messageText += `${walletCommon.getColorMarker(record.dst_account.color, ' ')}*${bot.escapeMarkdown(record.dst_account.name)}*\n`;
+                    messageText += `      **__+${bot.escapeMarkdown(`${record.dst_amount / 100}`)}__**`;
+                }
+                messageText += '\n';
+                if (record.category) {
+                    messageText += `_Category:_ ${walletCommon.getColorMarkerCircle(record.category.color, ' ')}${bot.escapeMarkdown(record.category.name)}\n`;
+                }
+                if (record.labels.length > 0) {
+                    var labelsNames = [];
+                    for (var j = 0; j < record.labels.length; j++) {
+                        labelsNames.push(`${walletCommon.getColorMarkerCircle(record.labels[j].color, ' ')}_${bot.escapeMarkdown(record.labels[j].name)}_`);
+                    }
+                    messageText += `_Labels:_ ${labelsNames.join(', ')}\n`;
+                }
+            }
+            messageText += `Choose what you want to do:`
             const dummyButton = { text: ` `, callback_data: menuBase.makeDummyButton() };
             /** @type {bot.keyboard_button_inline_data[]} */
             var controlButtons = [
@@ -59,7 +89,7 @@ function createMenuData_records(user, userData, args, callback) {
                     callback_data: menuBase.makeMenuButton('records', { page: page - 1 }) 
                 } : dummyButton,
                 { 
-                    text: `${page}`, 
+                    text: `${page + 1}`, 
                     callback_data: menuBase.makeDummyButton() 
                 },
                 page < pagesCount - 1 ? { 
@@ -71,8 +101,9 @@ function createMenuData_records(user, userData, args, callback) {
                     callback_data: menuBase.makeMenuButton('records', { page: pagesCount - 1 }) 
                 } : dummyButton
             ];
+            // TODO: Add buttons for every record
             callback({
-                text: `*Records*\nPage _${page + 1}_ of _${pagesCount}_\nAmount of records: *${records.length}*`, 
+                text: messageText, 
                 parseMode: 'MarkdownV2',
                 keyboard: [ controlButtons, [
                     {

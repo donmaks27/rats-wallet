@@ -51,6 +51,7 @@ module.exports.getLabelStatus = getLabelStatus;
 module.exports.getCategoryStatus = getCategoryStatus;
 module.exports.getAccountStatus = getAccountStatus;
 module.exports.getColorMarker = getColorMarker;
+module.exports.getColorMarkerCircle = getColorMarkerCircle;
 
 function checkUserState(userID) {
     if (!WalletUsersState[userID]) {
@@ -252,19 +253,47 @@ function getAccountStatus(accountData) {
 }
 /**
  * @param {db.color_type} color 
+ * @param {string} [postfix] 
  * @returns {string}
  */
-function getColorMarker(color) {
+function getColorMarker(color, postfix) {
+    if (!postfix) {
+        postfix = '';
+    }
     switch (color) {
-    case 'red':    return '🟥';
-    case 'orange': return '🟧';
-    case 'yellow': return '🟨';
-    case 'green':  return '🟩';
-    case 'blue':   return '🟦';
-    case 'purple': return '🟪';
-    case 'black':  return '⬛️';
-    case 'white':  return '⬜️';
-    case 'brown':  return '🟫';
+    case 'red':    return '🟥' + postfix;
+    case 'orange': return '🟧' + postfix;
+    case 'yellow': return '🟨' + postfix;
+    case 'green':  return '🟩' + postfix;
+    case 'blue':   return '🟦' + postfix;
+    case 'purple': return '🟪' + postfix;
+    case 'black':  return '⬛️' + postfix;
+    case 'white':  return '⬜️' + postfix;
+    case 'brown':  return '🟫' + postfix;
+    default: 
+        break;
+    }
+    return '';
+}
+/**
+ * @param {db.color_type} color 
+ * @param {string} [postfix] 
+ * @returns {string}
+ */
+function getColorMarkerCircle(color, postfix) {
+    if (!postfix) {
+        postfix = '';
+    }
+    switch (color) {
+    case 'red':    return '🔴' + postfix;
+    case 'orange': return '🟠' + postfix;
+    case 'yellow': return '🟡' + postfix;
+    case 'green':  return '🟢' + postfix;
+    case 'blue':   return '🔵' + postfix;
+    case 'purple': return '🟣' + postfix;
+    case 'black':  return '⚫️' + postfix;
+    case 'white':  return '⚪️' + postfix;
+    case 'brown':  return '🟤' + postfix;
     default: 
         break;
     }
