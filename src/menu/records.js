@@ -50,7 +50,7 @@ function createMenuData_records(user, userData, args, callback) {
             var messageText = '*Records*\n';
             for (var i = 0; i < records.length; i++) {
                 const record = records[i];
-                messageText += `${i}.   `;
+                messageText += bot.escapeMarkdown(`${i}.   `);
                 if (record.src_account && record.dst_account) {
                     messageText += `${walletCommon.getColorMarker(record.src_account.color, ' ')}${bot.escapeMarkdown(record.src_account.name)} ➤ ` +
                                    `${walletCommon.getColorMarker(record.dst_account.color, ' ')}${bot.escapeMarkdown(record.dst_account.name)}\n`;
