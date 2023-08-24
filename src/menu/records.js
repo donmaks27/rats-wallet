@@ -66,14 +66,14 @@ function createMenuData_records(user, userData, args, callback) {
                 }
                 messageText += '\n';
                 if (record.category) {
-                    messageText += `_Category:_ ${walletCommon.getColorMarkerCircle(record.category.color, ' ')}${bot.escapeMarkdown(record.category.name)}\n`;
+                    messageText += `      _Category:_ ${walletCommon.getColorMarkerCircle(record.category.color, ' ')}${bot.escapeMarkdown(record.category.name)}\n`;
                 }
                 if (record.labels.length > 0) {
                     var labelsNames = [];
                     for (var j = 0; j < record.labels.length; j++) {
                         labelsNames.push(`${walletCommon.getColorMarkerCircle(record.labels[j].color, ' ')}_${bot.escapeMarkdown(record.labels[j].name)}_`);
                     }
-                    messageText += `_Labels:_ ${labelsNames.join(', ')}\n`;
+                    messageText += `      _Labels:_ ${labelsNames.join(', ')}\n`;
                 }
             }
             messageText += `Choose what you want to do:`
