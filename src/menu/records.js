@@ -47,41 +47,41 @@ function createMenuData_records(user, userData, args, callback) {
             if (error) {
                 log.error(userID, `[records] failed to get records list (${error})`);
             }
-            var messageTextHTML = `<b>Records</b><br /><table>`;
+            var messageText = '*Records*\n';
             for (var i = 0; i < records.length; i++) {
                 const record = records[i];
-                
-                var descriptionStrings = [];
+                messageText += bot.escapeMarkdown(`${i + 1}. `);
+                if (i >= 9) {
+                    messageText += '  ';
+                }
+                var accountsString = '';
                 var amountString = '';
                 if (record.src_account && record.dst_account) {
-                    descriptionStrings.push(`${walletCommon.getColorMarker(record.src_account.color, ' ')}${record.src_account.name} ➤ ` +
-                                            `${walletCommon.getColorMarker(record.dst_account.color, ' ')}${record.dst_account.name}`);
+                    accountsString = `${walletCommon.getColorMarker(record.src_account.color, ' ')}${record.src_account.name} ➤ ` +
+                                     `${walletCommon.getColorMarker(record.dst_account.color, ' ')}${record.dst_account.name}`;
                     amountString = `${record.src_amount / 100}`;
                     // TODO: Add both src and dst amount
                     // TODO: Add currency symbol
                 } else if (record.src_account) {
-                    descriptionStrings.push(`${walletCommon.getColorMarker(record.src_account.color, ' ')}${record.src_account.name}`);
+                    accountsString = `${walletCommon.getColorMarker(record.src_account.color, ' ')}${record.src_account.name}`;
                     amountString = `-${record.src_amount / 100}`;
                 } else if (record.dst_account) {
-                    descriptionStrings.push(`${walletCommon.getColorMarker(record.dst_account.color, ' ')}${record.dst_account.name}`);
+                    accountsString = `${walletCommon.getColorMarker(record.dst_account.color, ' ')}${record.dst_account.name}`;
                     amountString = `+${record.dst_amount / 100}`;
                 }
-
+                messageText += `${bot.escapeMarkdown(accountsString)}\n      *__${bot.escapeMarkdown(amountString)}__*\n`;
                 if (record.category) {
-                    descriptionStrings.push(`<i>Category:</i> ${walletCommon.getColorMarkerCircle(record.category.color, ' ')}${record.category.name}`);
+                    messageText += `      _Category:_ ${walletCommon.getColorMarkerCircle(record.category.color, ' ')}${bot.escapeMarkdown(record.category.name)}\n`;
                 }
-
                 if (record.labels.length > 0) {
                     var labelsNames = [];
                     for (var j = 0; j < record.labels.length; j++) {
-                        labelsNames.push(`${walletCommon.getColorMarkerCircle(record.labels[j].color, ' ')}<i>${record.labels[j].name}</i>`);
+                        labelsNames.push(`${walletCommon.getColorMarkerCircle(record.labels[j].color, ' ')}_${bot.escapeMarkdown(record.labels[j].name)}_`);
                     }
-                    descriptionStrings.push(`<i>Labels:</i> ${labelsNames.join(', ')}`);
+                    messageText += `      _Labels:_ ${labelsNames.join(', ')}\n`;
                 }
-
-                messageTextHTML += `<tr><th>${i + 1}. </th><th>${descriptionStrings.join('<br />')}</th><th>${amountString}</th></tr>`;
             }
-            messageTextHTML += `</table><br />Choose what you want to do:`;
+            messageText += `Choose what you want to do:`
             const dummyButton = { text: ` `, callback_data: menuBase.makeDummyButton() };
             /** @type {bot.keyboard_button_inline_data[]} */
             var controlButtons = [
@@ -108,8 +108,8 @@ function createMenuData_records(user, userData, args, callback) {
             ];
             // TODO: Add buttons for every record
             callback({
-                text: messageTextHTML, 
-                parseMode: 'HTML',
+                text: messageText, 
+                parseMode: 'MarkdownV2',
                 keyboard: [ controlButtons, [
                     {
                         text: '<< Back to Wallet',
