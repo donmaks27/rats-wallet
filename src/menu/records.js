@@ -47,39 +47,43 @@ function createMenuData_records(user, userData, args, callback) {
             if (error) {
                 log.error(userID, `[records] failed to get records list (${error})`);
             }
-            var messageText = '*Records*\n';
+            var messageText = '*Records*\n\n';
             for (var i = 0; i < records.length; i++) {
                 const record = records[i];
-                messageText += bot.escapeMarkdown(`${i + 1}. `);
-                if (i >= 9) {
-                    messageText += '  ';
+
+                if (i < 9) {
+                    messageText += `\`${bot.escapeMarkdown(`${i+1}.`)}  \``;
+                } else {
+                    messageText += `\`${bot.escapeMarkdown(`${i+1}.`)} \``;
                 }
-                var accountsString = '';
-                var amountString = '';
+
+                // TODO: Add both src and dst amount
+                // TODO: Add currency symbol
                 if (record.src_account && record.dst_account) {
-                    accountsString = `${walletCommon.getColorMarker(record.src_account.color, ' ')}${record.src_account.name} ➤ ` +
-                                     `${walletCommon.getColorMarker(record.dst_account.color, ' ')}${record.dst_account.name}`;
-                    amountString = `${record.src_amount / 100}`;
-                    // TODO: Add both src and dst amount
-                    // TODO: Add currency symbol
+                    messageText += `${walletCommon.getColorMarker(record.src_account.color, ' ')}${bot.escapeMarkdown(record.src_account.name)} ➤ `;
+                    messageText += `${walletCommon.getColorMarker(record.dst_account.color, ' ')}${bot.escapeMarkdown(record.dst_account.name)}\n`;
+                    messageText += `\`    \`*${bot.escapeMarkdown(`${record.src_amount / 100}`)}*\n`;
                 } else if (record.src_account) {
-                    accountsString = `${walletCommon.getColorMarker(record.src_account.color, ' ')}${record.src_account.name}`;
-                    amountString = `-${record.src_amount / 100}`;
+                    messageText += `${walletCommon.getColorMarker(record.src_account.color, ' ')}${bot.escapeMarkdown(record.src_account.name)}\n`;
+                    messageText += `\`    \`*${bot.escapeMarkdown(`-${record.src_amount / 100}`)}*\n`;
                 } else if (record.dst_account) {
-                    accountsString = `${walletCommon.getColorMarker(record.dst_account.color, ' ')}${record.dst_account.name}`;
-                    amountString = `+${record.dst_amount / 100}`;
+                    messageText += `${walletCommon.getColorMarker(record.dst_account.color, ' ')}${bot.escapeMarkdown(record.dst_account.name)}\n`;
+                    messageText += `\`    \`*${bot.escapeMarkdown(`+${record.dst_amount / 100}`)}*\n`;
                 }
-                messageText += `${bot.escapeMarkdown(accountsString)}\n      *__${bot.escapeMarkdown(amountString)}__*\n`;
+
                 if (record.category) {
-                    messageText += `      _Category:_ ${walletCommon.getColorMarkerCircle(record.category.color, ' ')}${bot.escapeMarkdown(record.category.name)}\n`;
+                    messageText += `\`    \`_Category:_ ${walletCommon.getColorMarkerCircle(record.category.color, ' ')}${bot.escapeMarkdown(record.category.name)}\n`;
                 }
+
                 if (record.labels.length > 0) {
                     var labelsNames = [];
                     for (var j = 0; j < record.labels.length; j++) {
                         labelsNames.push(`${walletCommon.getColorMarkerCircle(record.labels[j].color, ' ')}_${bot.escapeMarkdown(record.labels[j].name)}_`);
                     }
-                    messageText += `      _Labels:_ ${labelsNames.join(', ')}\n`;
+                    messageText += `\`    \`_Labels:_ ${labelsNames.join(', ')}\n`;
                 }
+
+                messageText += '\n';
             }
             messageText += `Choose what you want to do:`
             const dummyButton = { text: ` `, callback_data: menuBase.makeDummyButton() };
