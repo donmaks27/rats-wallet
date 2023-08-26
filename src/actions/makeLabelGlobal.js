@@ -7,6 +7,7 @@ var walletMenu = require('../wallet-menu');
 var actionBase = require('./wallet-action-base');
 
 const ACTION_NAME = 'makeLabelGlobal';
+const ACTION_SHORT_NAME = 'globLab';
 
 const log = {
     /**
@@ -35,6 +36,7 @@ module.exports.register = (stopCallback) => {
     ActionStopCallback = stopCallback;
     return {
         [ACTION_NAME]: {
+            shortName: ACTION_SHORT_NAME,
             start: startAction,
             stop: stopAction
         }

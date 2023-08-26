@@ -52,9 +52,9 @@ function createMenuData_records(user, userData, args, callback) {
                 const record = records[i];
 
                 if (i < 9) {
-                    messageText += `\`${bot.escapeMarkdown(`${i+1}.`)}  \``;
-                } else {
                     messageText += `\`${bot.escapeMarkdown(`${i+1}.`)} \``;
+                } else {
+                    messageText += `\`${bot.escapeMarkdown(`${i+1}.`)}\``;
                 }
 
                 // TODO: Add both src and dst amount
@@ -62,17 +62,17 @@ function createMenuData_records(user, userData, args, callback) {
                 if (record.src_account && record.dst_account) {
                     messageText += `${walletCommon.getColorMarker(record.src_account.color, ' ')}${bot.escapeMarkdown(record.src_account.name)} ➤ `;
                     messageText += `${walletCommon.getColorMarker(record.dst_account.color, ' ')}${bot.escapeMarkdown(record.dst_account.name)}\n`;
-                    messageText += `\`    \`*${bot.escapeMarkdown(`${record.src_amount / 100}`)}*\n`;
+                    messageText += `\`   \`*${bot.escapeMarkdown(`${record.src_amount / 100}`)}*\n`;
                 } else if (record.src_account) {
                     messageText += `${walletCommon.getColorMarker(record.src_account.color, ' ')}${bot.escapeMarkdown(record.src_account.name)}\n`;
-                    messageText += `\`    \`*${bot.escapeMarkdown(`-${record.src_amount / 100}`)}*\n`;
+                    messageText += `\`   \`*${bot.escapeMarkdown(`-${record.src_amount / 100}`)}*\n`;
                 } else if (record.dst_account) {
                     messageText += `${walletCommon.getColorMarker(record.dst_account.color, ' ')}${bot.escapeMarkdown(record.dst_account.name)}\n`;
-                    messageText += `\`    \`*${bot.escapeMarkdown(`+${record.dst_amount / 100}`)}*\n`;
+                    messageText += `\`   \`*${bot.escapeMarkdown(`+${record.dst_amount / 100}`)}*\n`;
                 }
 
                 if (record.category) {
-                    messageText += `\`    \`_Category:_ ${walletCommon.getColorMarkerCircle(record.category.color, ' ')}${bot.escapeMarkdown(record.category.name)}\n`;
+                    messageText += `\`   Category:\` ${walletCommon.getColorMarkerCircle(record.category.color, ' ')}${bot.escapeMarkdown(record.category.name)}\n`;
                 }
 
                 if (record.labels.length > 0) {
@@ -80,12 +80,10 @@ function createMenuData_records(user, userData, args, callback) {
                     for (var j = 0; j < record.labels.length; j++) {
                         labelsNames.push(`${walletCommon.getColorMarkerCircle(record.labels[j].color, ' ')}_${bot.escapeMarkdown(record.labels[j].name)}_`);
                     }
-                    messageText += `\`    \`_Labels:_ ${labelsNames.join(', ')}\n`;
+                    messageText += `\`   Labels:\` ${labelsNames.join(', ')}\n`;
                 }
-
-                messageText += '\n';
             }
-            messageText += `Choose what you want to do:`
+            messageText += `\nChoose what you want to do:`
             const dummyButton = { text: ` `, callback_data: menuBase.makeDummyButton() };
             /** @type {bot.keyboard_button_inline_data[]} */
             var controlButtons = [

@@ -4,6 +4,7 @@ var log = require('../log');
 var db  = require('../database');
 var bot = require('../telegram-bot');
 var walletCommon = require('../wallet-common');
+var walletActions = require('../wallet-actions');
 
 /**
  * @typedef {{ text: string, parseMode?: bot.message_parse_mode, keyboard: bot.keyboard_button_inline_data[][] }} menu_data
@@ -39,7 +40,7 @@ module.exports.makeMenuButton = function(type, args) {
  * @param {walletCommon.args_data} [args] 
  */
 module.exports.makeActionButton = function(action, args) {
-    return makeButton(walletCommon.MENU_BUTTON_ACTION, action, args);
+    return makeButton(walletCommon.MENU_BUTTON_ACTION, walletActions.getActionShortName(action), args);
 }
 module.exports.makeDummyButton = function() {
     return walletCommon.MENU_BUTTON_DUMMY;

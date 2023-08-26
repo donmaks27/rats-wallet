@@ -49,10 +49,35 @@ const WalletActionsHandlers = {
     ...require('./actions/deleteCategory').register(stopUserAction),
     ...require('./actions/makeCategoryGlobal').register(stopUserAction),
 };
+const WalletActionsMap = makeWalletActionsMap(WalletActionsHandlers);
 
+/**
+ * @param {string} action 
+ */
+module.exports.getActionShortName = function(action) {
+    const actionHandler = WalletActionsHandlers[action];
+    return actionHandler && actionHandler.shortName ? actionHandler.shortName : action;
+}
 module.exports.startUserAction = startUserAction;
 module.exports.handleUserActionMessage = handleUserActionMessage;
 module.exports.stopUserAction = stopUserAction;
+
+/**
+ * @param {{ [actionName: string]: { shortName?: string } }} actions 
+ */
+function makeWalletActionsMap(actions) {
+    /** @type {{ [shortName: string]: string }} */
+    var result = {};
+    const actionNames = Object.getOwnPropertyNames(actions);
+    for (var i = 0; i < actionNames.length; i++) {
+        const actionName = actionNames[i];
+        const shortName = actions[actionName].shortName;
+        if (shortName) {
+            result[shortName] = actionName;
+        }
+    }
+    return result;
+}
 
 /**
  * @param {string} action 
@@ -65,9 +90,13 @@ function startUserAction(action, args, user, userData, callback) {
     const userID = user.id;
     log.info(userID, `starting action "${action}"...`);
 
-    const actionHandlers = WalletActionsHandlers[action];
+    var actualActionName = WalletActionsMap[action];
+    if (!actualActionName) {
+        actualActionName = action;
+    }
+    const actionHandlers = WalletActionsHandlers[actualActionName];
     if (!actionHandlers) {
-        log.warning(userID, `invalid user action "${action}"`);
+        log.warning(userID, `invalid user action "${actualActionName}"`);
         if (callback) {
             callback(false);
         }
@@ -84,19 +113,19 @@ function startUserAction(action, args, user, userData, callback) {
                     callback(false);
                 }
             } else {
-                startUserAction(action, args, user, userData, callback);
+                startUserAction(actualActionName, args, user, userData, callback);
             }
         });
         return;
     }
 
-    walletCommon.setUserAction(userID, action, args);
+    walletCommon.setUserAction(userID, actualActionName, args);
     actionHandlers.start(user, userData, args, (success) => {
         if (!success) {
-            log.error(userID, `failed to start user action "${action}"`);
+            log.error(userID, `failed to start user action "${actualActionName}"`);
             walletCommon.clearUserAction(userID);
         } else {
-            log.info(userID, `user action "${action}" started`);
+            log.info(userID, `user action "${actualActionName}" started`);
         }
         if (callback) {
             callback(success);
