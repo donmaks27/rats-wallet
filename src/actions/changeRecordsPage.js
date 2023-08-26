@@ -60,7 +60,7 @@ function startAction(user, userData, args, callback) {
     bot.editMessage({
         message: { chatID: userID, id: walletCommon.getUserMenuMessageID(userID) },
         parseMode: 'MarkdownV2',
-        text: `*Records*\nPlease, enter the number of page (1-${maxPage}):`,
+        text: `*Records*\nPlease, enter the number of page ${bot.escapeMarkdown(`(1-${maxPage})`)}:`,
         inlineKeyboard: { inline_keyboard: [
             [
                 {
