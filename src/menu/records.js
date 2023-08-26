@@ -97,7 +97,7 @@ function createMenuData_records(user, userData, args, callback) {
                 } : dummyButton,
                 { 
                     text: `${page + 1}`, 
-                    callback_data: menuBase.makeDummyButton() 
+                    callback_data: menuBase.makeActionButton('changeRecordsPage', { page: page, maxPage: pagesCount })
                 },
                 page < pagesCount - 1 ? { 
                     text: `${page + 2} >`, 

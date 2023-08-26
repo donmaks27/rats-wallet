@@ -48,6 +48,8 @@ const WalletActionsHandlers = {
     ...require('./actions/createCategory').register(stopUserAction),
     ...require('./actions/deleteCategory').register(stopUserAction),
     ...require('./actions/makeCategoryGlobal').register(stopUserAction),
+
+    ...require('./actions/changeRecordsPage').register(stopUserAction),
 };
 const WalletActionsMap = makeWalletActionsMap(WalletActionsHandlers);
 

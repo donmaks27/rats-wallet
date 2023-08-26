@@ -8,7 +8,8 @@ var db = require('./database');
  *           'renameAccount'|'archiveAccount'|'createAccount'|'deleteAccount'|
  *           'renameCurrency'|'archiveCurrency'|'createCurrency'|'deleteCurrency'|
  *           'renameLabel'|'archiveLabel'|'createLabel'|'deleteLabel'|'makeLabelGlobal'|
- *           'renameCategory'|'archiveCategory'|'createCategory'|'deleteCategory'|'makeCategoryGlobal'
+ *           'renameCategory'|'archiveCategory'|'createCategory'|'deleteCategory'|'makeCategoryGlobal'|
+ *           'changeRecordsPage'
  *          } action_type
  * @typedef {'main'|'settings'|'wallet'|'changeColor'|
  *           'accounts'|'account'|'createAccount'|'deleteAccount'|
