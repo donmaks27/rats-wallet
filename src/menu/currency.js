@@ -38,16 +38,29 @@ function createMenuData_currencies(user, userData, args, callback) {
             /** @type {bot.keyboard_button_inline_data[]} */
             var menuDataKeyboardRow = [];
             for (var i = 0; i < currenciesData.length; i++) {
-                if (!currenciesData[i].is_active) {
+                const currencyData = currenciesData[i];
+                if (!currencyData.is_active) {
                     archivedAmount++;
                     if (!shouldShowArchived) {
                         continue;
                     }
                 }
-                var currencyTitle = currenciesData[i].name ? `${currenciesData[i].name} (${currenciesData[i].code})` : currenciesData[i].code;
+                var currencyTitle = '';
+                if (currencyData.name) {
+                    currencyTitle = currencyData.name;
+                    if (currencyData.symbol) {
+                        currencyTitle += `, ${currencyData.symbol}`;
+                    }
+                    currencyTitle += ` (${currencyData.code})`;
+                } else {
+                    currencyTitle = currencyData.code;
+                    if (currencyData.symbol) {
+                        currencyTitle += `, ${currencyData.symbol}`;
+                    }
+                }
                 menuDataKeyboardRow.push({
-                    text: walletCommon.getCurrencyStatus(currenciesData[i]) + currencyTitle,
-                    callback_data: menuBase.makeMenuButton('currency', { currency: currenciesData[i].code })
+                    text: walletCommon.getCurrencyStatus(currencyData) + currencyTitle,
+                    callback_data: menuBase.makeMenuButton('currency', { currency: currencyData.code })
                 });
                 if (menuDataKeyboardRow.length == 2) {
                     menuDataKeyboard.push(menuDataKeyboardRow);
@@ -92,6 +105,9 @@ function createMenuData_currency(user, userData, args, callback) {
             var menuText = walletCommon.getCurrencyStatus(currencyData) + ` Currency *${bot.escapeMarkdown(currencyData.name ? `${currencyData.name} (${currencyCode})` : `${currencyCode}`)}*`;
             if (!currencyData.is_active) {
                 menuText += ` _${bot.escapeMarkdown(`[archived]`)}_`;
+            }
+            if (currencyData.symbol) {
+                menuText += `\nSymbol: ${currencyData.symbol}`;
             }
             /** @type {bot.keyboard_button_inline_data[][]} */
             var menuDataKeyboard = [];

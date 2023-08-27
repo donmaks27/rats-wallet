@@ -8,7 +8,7 @@ var log = require('./log');
 /**
  * @typedef {{ users: user_data[], currencies: currency_data[], labels: label_data[], categories: category_data[], accounts: account_data[], records: record_data[], record_labels: record_label_data[], user_invites: user_invite_data[] }} full_data
  * @typedef {{ id: number, name: string, create_date: Date }} user_data
- * @typedef {{ code: string, name: string | null, is_active: boolean, create_date: Date }} currency_data
+ * @typedef {{ code: string, name: string | null, symbol: string | null, is_active: boolean, create_date: Date }} currency_data
  * @typedef {'red'|'orange'|'yellow'|'green'|'blue'|'purple'|'black'|'white'|'brown'|null} color_type
  * @typedef {{ id: number, user_id: number, name: string, color: color_type, is_active: boolean, create_date: Date }} label_data
  * @typedef {{ id: number, user_id: number, parent_id: number, name: string, color: color_type, is_active: boolean, create_date: Date }} category_data
@@ -273,6 +273,7 @@ function parseCurrencyRow(row, prefix) {
     return {
         code: row[prefix + 'code'],
         name: row[prefix + 'name'],
+        symbol: row[prefix + 'symbol'],
         is_active: row[prefix + 'is_active'] != 0,
         create_date: new Date(row[prefix + 'create_date'])
     };
@@ -458,7 +459,7 @@ function user_edit(id, params, callback) {
 }
 
 /**
- * @param {{ code: string, name?: string }} params 
+ * @param {{ code: string, name?: string, symbol?: string }} params 
  * @param {(data: currency_data | null, error?: string) => any} [callback] 
  */
 function currency_create(params, callback) {
@@ -546,7 +547,7 @@ function currency_getAllForUser(userID, callback) {
 }
 /**
  * @param {string} code 
- * @param {{ name?: string | null, is_active?: boolean }} params 
+ * @param {{ name?: string | null, symbol?: string | null, is_active?: boolean }} params 
  * @param {(data: currency_data | null, error?: string) => any} [callback] 
  */
 function currency_edit(code, params, callback) {
@@ -1028,7 +1029,6 @@ function record_getAmount(userID, callback) {
  * @param {(records: (record_data & { src_account?: account_data, dst_account?: account_data, category?: category_data, labels: label_data[] })[], error?: string) => any} callback 
  */
 function record_getList(userID, recordsPerPage, pageIndex, callback) {
-    log.info(query_getRecordsList(userID, recordsPerPage >= 1 ? recordsPerPage : 1, pageIndex > 0 ? pageIndex : 0));
     db.all(query_getRecordsList(userID, recordsPerPage >= 1 ? recordsPerPage : 1, pageIndex > 0 ? pageIndex : 0), (error, rows) => {
         if (error) {
             callback([], `failed to get records list: ` + error);
@@ -1295,10 +1295,12 @@ function query_updateUser(id, params) {
 }
 
 /**
- * @param {{ code: string, name?: string }} params 
+ * @param {{ code: string, name?: string, symbol?: string }} params 
  */
 function query_createCurrency(params) {
-    return `INSERT INTO currencies(code, name, is_active, create_date) VALUES ('${query_handle_string(params.code)}', ${params.name ? `'${query_handle_string(params.name)}'` : 'NULL'}, 1, ${Date.now()});`;
+    return `INSERT INTO currencies(code, name, symbol, is_active, create_date) VALUES ('${query_handle_string(params.code)}', ${
+        params.name ? `'${query_handle_string(params.name)}'` : `NULL`
+    }, ${params.symbol ? `'${query_handle_string(params.symbol)}'` : `NULL`}, 1, ${Date.now()});`;
 }
 /**
  * @param {string} code 
@@ -1322,7 +1324,7 @@ function query_getCurrenciesForUser(userID) {
 }
 /**
  * @param {string} code 
- * @param {{ name?: string | null, is_active?: boolean }} params 
+ * @param {{ name?: string | null, symbol?: string | null, is_active?: boolean }} params 
  */
 function query_updateCurrency(code, params) {
     var statements = [];
@@ -1332,6 +1334,13 @@ function query_updateCurrency(code, params) {
             statements.push(`name = '${query_handle_string(params.name)}'`);
         } else {
             statements.push(`name = NULL`);
+        }
+    }
+    if (properties.includes('symbol')) {
+        if (params.symbol) {
+            statements.push(`symbol = '${query_handle_string(params.symbol)}'`);
+        } else {
+            statements.push(`symbol = NULL`);
         }
     }
     if (properties.includes('is_active')) {

@@ -91,7 +91,7 @@ function onUserMessage(message, userData, args, callback) {
     }
 
     const maxPage = typeof args.maxPage === 'number' ? args.maxPage : 0;
-    if (message.text.match(/^\+{0,1}[0-9]+$/g) == null) {
+    if (message.text.match(/^(-\+){0,1}[0-9]+$/g) == null) {
         log.warning(userID, `invalid message text, it's not a number`);
         bot.sendMessage({ chatID: userID, text: `It doesn't look like a number... Let's try again` });
         callback(true);

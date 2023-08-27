@@ -8,7 +8,8 @@ var db = require('./database');
 const report_filepath = 'data/report.csv';
 
 /**
- * @typedef {{ currencies: string[], labels: label_data[], categories: category_data[], accounts: account_data[], records: record_data[] }} full_data
+ * @typedef {{ currencies: currency_data[], labels: label_data[], categories: category_data[], accounts: account_data[], records: record_data[] }} full_data
+ * @typedef {{ code: string, name?: string, symbol?: string }} currency_data
  * @typedef {{ name: string, global: boolean }} label_data
  * @typedef {{ name: string, parent: string, global: boolean }} category_data
  * @typedef {{ currency: string, name: string, start_amount: number, archived: boolean }} account_data
@@ -89,8 +90,10 @@ function parse_report_data(data) {
     for (var recordIndex = 0; recordIndex < recordsTable.length; recordIndex++) {
         const record = recordsTable[recordIndex];
 
-        if (!result.currencies.includes(record[columns.currency])) {
-            result.currencies.push(record[columns.currency]);
+        if (result.currencies.findIndex( v => v.code == record[columns.currency] ) == -1) {
+            result.currencies.push({
+                code: record[columns.currency]
+            });
         }
         if (result.accounts.findIndex( v => v.name == record[columns.account] ) == -1) {
             result.accounts.push({
@@ -258,13 +261,18 @@ function task_checkUserExists(user_id) {
     };
 }
 /**
- * @param {string} currency_code
+ * @param {currency_data} currency
  */
-function task_addCurrency(currency_code) {
+function task_addCurrency(currency) {
     return (callback) => {
-        db.currency_create({
-            code: currency_code
-        }, (data, error) => {
+        var params = { code: currency.code };
+        if (currency.name) {
+            params.name = currency.name;
+        }
+        if (currency.symbol) {
+            params.symbol = currency.symbol;
+        }
+        db.currency_create(params, (data, error) => {
             callback(error);
         });
     };
