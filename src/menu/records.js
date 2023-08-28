@@ -50,7 +50,7 @@ function createMenuData_records(user, userData, args, callback) {
             }
             /** @type {number[]} */
             var accountIDs = [];
-            var earliestDate = new Date();
+            var lastDate = new Date(0);
             for (var i = 0; i < records.length; i++) {
                 const record = records[i];
                 if ((record.src_account_id != db.invalid_id) && !accountIDs.includes(record.src_account_id)) {
@@ -59,12 +59,12 @@ function createMenuData_records(user, userData, args, callback) {
                 if ((record.dst_account_id != db.invalid_id) && !accountIDs.includes(record.dst_account_id)) {
                     accountIDs.push(record.dst_account_id);
                 }
-                if (record.date < earliestDate) {
+                if (record.date > lastDate) {
                     // TODO: Prevent creating several records with the same date (one record for each ms)
-                    earliestDate = record.date;
+                    lastDate = record.date;
                 }
             }
-            db.account_getBallance(accountIDs, { untilDate: new Date(earliestDate.valueOf() - 1) }, (ballances, error) => {
+            db.account_getBallance(accountIDs, { untilDate: lastDate }, (ballances, error) => {
                 if (error) {
                     log.error(userID, `[records] failed to get ballances for accounts (${error})`);
                 }
@@ -78,12 +78,6 @@ function createMenuData_records(user, userData, args, callback) {
                 var messageText = '*Records*\n\n';
                 for (var i = 0; i < records.length; i++) {
                     const record = records[i];
-                    if (record.src_account) {
-                        accountBallances[record.src_account_id] -= record.src_amount;
-                    }
-                    if (record.dst_account) {
-                        accountBallances[record.dst_account_id] += record.dst_amount;
-                    }
 
                     if (i < 9) {
                         messageText += `\`${bot.escapeMarkdown(`${i+1}.`)} \``;
@@ -122,6 +116,13 @@ function createMenuData_records(user, userData, args, callback) {
                     }
 
                     messageText += `\`   \`_Date_: __${bot.escapeMarkdown(dateFormat.to_readable_string(record.date, { date: true, time: true }))}__\n`;
+
+                    if (record.src_account) {
+                        accountBallances[record.src_account_id] += record.src_amount;
+                    }
+                    if (record.dst_account) {
+                        accountBallances[record.dst_account_id] -= record.dst_amount;
+                    }
                 }
                 messageText += `\nChoose what you want to do:`
                 const dummyButton = { text: ` `, callback_data: menuBase.makeDummyButton() };
