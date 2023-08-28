@@ -1026,7 +1026,7 @@ function record_getAmount(userID, callback) {
  * @param {number} userID 
  * @param {number} recordsPerPage 
  * @param {number} pageIndex 
- * @param {(records: (record_data & { src_account?: account_data, dst_account?: account_data, category?: category_data, labels: label_data[] })[], error?: string) => any} callback 
+ * @param {(records: (record_data & { src_account?: account_data, dst_account?: account_data, src_currency?: currency_data, dst_currency?: currency_data, category?: category_data, labels: label_data[] })[], error?: string) => any} callback 
  */
 function record_getList(userID, recordsPerPage, pageIndex, callback) {
     db.all(query_getRecordsList(userID, recordsPerPage >= 1 ? recordsPerPage : 1, pageIndex > 0 ? pageIndex : 0), (error, rows) => {
@@ -1035,16 +1035,18 @@ function record_getList(userID, recordsPerPage, pageIndex, callback) {
         } else {
             var result = [];
             for (var i = 0; i < rows.length; i++) {
-                /** @type {record_data & { src_account?: account_data, dst_account?: account_data, category?: category_data, labels: label_data[] }} */
+                /** @type {record_data & { src_account?: account_data, dst_account?: account_data, src_currency?: currency_data, dst_currency?: currency_data, category?: category_data, labels: label_data[] }} */
                 var rowData = {
                     ...parseRecordRow(rows[i]),
                     labels: []
                 };
                 if (rowData.src_account_id != invalid_id) {
                     rowData.src_account = parseAccountRow(rows[i], 'src_account.');
+                    rowData.src_currency = parseCurrencyRow(rows[i], 'src_currency.');
                 }
                 if (rowData.dst_account_id != invalid_id) {
                     rowData.dst_account = parseAccountRow(rows[i], 'dst_account.');
+                    rowData.dst_currency = parseCurrencyRow(rows[i], 'dst_currency.');
                 }
                 if (rowData.category_id != invalid_id) {
                     rowData.category = parseCategoryRow(rows[i], 'category.');
@@ -1570,11 +1572,16 @@ function query_getRecordsAmount(userID) {
  */
 function query_getRecordsList(userID, recordsPerPage, pageIndex) {
     /** @type {string[]} */
-    var srcAccountColumns = [], dstAccountColumns = [], categoryColumns = [], labelColumns = [];
+    var srcAccountColumns = [], dstAccountColumns = [], srcCurrencyColumns = [], dstCurrencyColumns = [], categoryColumns = [], labelColumns = [];
     const accountColumnNames = Object.getOwnPropertyNames(parseAccountRow({}));
     for (var i = 0; i < accountColumnNames.length; i++) {
         srcAccountColumns.push(`src_account.${accountColumnNames[i]} AS 'src_account.${accountColumnNames[i]}'`);
         dstAccountColumns.push(`dst_account.${accountColumnNames[i]} AS 'dst_account.${accountColumnNames[i]}'`);
+    }
+    const currencyColumnNames = Object.getOwnPropertyNames(parseCurrencyRow({}));
+    for (var i = 0; i < accountColumnNames.length; i++) {
+        srcCurrencyColumns.push(`src_currency.${currencyColumnNames[i]} AS 'src_currency.${currencyColumnNames[i]}'`);
+        dstCurrencyColumns.push(`dst_currency.${currencyColumnNames[i]} AS 'dst_currency.${currencyColumnNames[i]}'`);
     }
     const categoryColumnNames = Object.getOwnPropertyNames(parseCategoryRow({}));
     for (var i = 0; i < categoryColumnNames.length; i++) {
@@ -1584,11 +1591,14 @@ function query_getRecordsList(userID, recordsPerPage, pageIndex) {
     for (var i = 0; i < labelColumnNames.length; i++) {
         labelColumns.push(`'${labelColumnNames[i]}', labels.${labelColumnNames[i]}`);
     }
-    return `SELECT records.*, ${srcAccountColumns.join(', ')}, ${dstAccountColumns.join(', ')}, ${categoryColumns.join(', ')}, 
-                   JSON_GROUP_ARRAY(JSON_OBJECT(${labelColumns.join(', ')})) AS labels
+    return `SELECT records.*, ${srcAccountColumns.join(', ')}, ${dstAccountColumns.join(', ')}, 
+        ${srcCurrencyColumns.join(', ')}, ${dstCurrencyColumns.join(', ')}, ${categoryColumns.join(', ')}, 
+        JSON_GROUP_ARRAY(JSON_OBJECT(${labelColumns.join(', ')})) AS labels
     FROM records
         LEFT JOIN accounts AS src_account ON records.src_account_id = src_account.id
         LEFT JOIN accounts AS dst_account ON records.dst_account_id = dst_account.id
+        LEFT JOIN currencies AS src_currency ON src_account.currency_code = src_currency.code
+        LEFT JOIN currencies AS dst_currency ON dst_account.currency_code = dst_currency.code
         LEFT JOIN categories ON records.category_id = categories.id
         LEFT JOIN record_labels ON records.id = record_labels.record_id
         LEFT JOIN labels ON record_labels.label_id = labels.id

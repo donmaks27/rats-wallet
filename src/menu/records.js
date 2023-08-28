@@ -57,18 +57,25 @@ function createMenuData_records(user, userData, args, callback) {
                     messageText += `\`${bot.escapeMarkdown(`${i+1}.`)}\``;
                 }
 
-                // TODO: Add both src and dst amount
-                // TODO: Add currency symbol
                 if (record.src_account && record.dst_account) {
                     messageText += `${walletCommon.getColorMarker(record.src_account.color, ' ')}${bot.escapeMarkdown(record.src_account.name)} ➤ `;
                     messageText += `${walletCommon.getColorMarker(record.dst_account.color, ' ')}${bot.escapeMarkdown(record.dst_account.name)}\n`;
-                    messageText += `\`   \`*${bot.escapeMarkdown(`${record.src_amount / 100}`)}*\n`;
+                    if ((record.src_amount != record.dst_amount) || (record.src_account.currency_code != record.dst_account.currency_code)) {
+                        const src_symbol = record.src_currency?.symbol ? record.src_currency.symbol : record.src_account.currency_code;
+                        const dst_symbol = record.dst_currency?.symbol ? record.dst_currency.symbol : record.dst_account.currency_code;
+                        messageText += `\`   \`*${bot.escapeMarkdown(`${record.src_amount / 100} ${src_symbol} ➤ ${record.dst_amount / 100} ${dst_symbol}`)}*\n`;
+                    } else {
+                        const symbol = record.src_currency?.symbol ? record.src_currency.symbol : record.src_account.currency_code;
+                        messageText += `\`   \`*${bot.escapeMarkdown(`${record.src_amount / 100} ${symbol}`)}*\n`;
+                    }
                 } else if (record.src_account) {
                     messageText += `${walletCommon.getColorMarker(record.src_account.color, ' ')}${bot.escapeMarkdown(record.src_account.name)}\n`;
-                    messageText += `\`   \`*${bot.escapeMarkdown(`-${record.src_amount / 100}`)}*\n`;
+                    const symbol = record.src_currency?.symbol ? record.src_currency.symbol : record.src_account.currency_code;
+                    messageText += `\`   \`*${bot.escapeMarkdown(`-${record.src_amount / 100} ${symbol}`)}*\n`;
                 } else if (record.dst_account) {
                     messageText += `${walletCommon.getColorMarker(record.dst_account.color, ' ')}${bot.escapeMarkdown(record.dst_account.name)}\n`;
-                    messageText += `\`   \`*${bot.escapeMarkdown(`+${record.dst_amount / 100}`)}*\n`;
+                    const symbol = record.dst_currency?.symbol ? record.dst_currency.symbol : record.dst_account.currency_code;
+                    messageText += `\`   \`*${bot.escapeMarkdown(`+${record.dst_amount / 100} ${symbol}`)}*\n`;
                 }
 
                 if (record.category) {
