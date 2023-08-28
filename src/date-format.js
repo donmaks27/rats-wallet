@@ -2,6 +2,7 @@
 
 module.exports.duration_to_string = duration_to_string;
 module.exports.to_string = date_to_string;
+module.exports.to_readable_string = date_to_readable_string;
 module.exports.to_string_short = date_to_string_short;
 module.exports.from_string = string_to_date;
 
@@ -21,7 +22,33 @@ function date_to_string(date) {
     const milliseconds = date.getUTCMilliseconds() >= 100 ? date.getUTCMilliseconds() : 
         date.getUTCMilliseconds() >= 10 ? '0' + date.getUTCMilliseconds() : '00' + date.getUTCMilliseconds();
     return `${date.getUTCFullYear()}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds}`;
-}/**
+}
+/**
+ * @param {Date} [date] 
+ * @param {{ date?: boolean, time?: boolean }} [params] 
+ * @returns {string}
+ */
+function date_to_readable_string(date, params) {
+    if (!date) {
+        return date_to_readable_string(new Date(0), params);
+    }
+    var result = '';
+    if (!params || params.date) {
+        const month = date.getUTCMonth() >= 9 ? (date.getUTCMonth() + 1) : '0' + (date.getUTCMonth() + 1);
+        const day   = date.getUTCDate() >= 10 ? date.getUTCDate()        : '0' + date.getUTCDate();
+        result += `${day}-${month}-${date.getUTCFullYear()}`;
+    }
+    if (!params || params.time) {
+        const hours   = date.getUTCHours() >= 10   ? date.getUTCHours()   : '0' + date.getUTCHours();
+        const minutes = date.getUTCMinutes() >= 10 ? date.getUTCMinutes() : '0' + date.getUTCMinutes();
+        if (result.length != 0) {
+            result += ' ';
+        }
+        result += `${hours}:${minutes}`;
+    }
+    return result;
+}
+/**
  * @param {Date} [date] 
  * @returns {string}
  */

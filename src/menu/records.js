@@ -91,7 +91,7 @@ function createMenuData_records(user, userData, args, callback) {
                     messageText += `\`   \`_Labels_: ${labelsNames.join(', ')}\n`;
                 }
 
-                messageText += `\`   \`_Date_: ${bot.escapeMarkdown(dateFormat.to_string(record.date))}\n`;
+                messageText += `\`   \`_Date_: __${bot.escapeMarkdown(dateFormat.to_readable_string(record.date, { date: true }))}__ __${bot.escapeMarkdown(dateFormat.to_readable_string(record.date, { time: true }))}__\n`;
             }
             messageText += `\nChoose what you want to do:`
             const dummyButton = { text: ` `, callback_data: menuBase.makeDummyButton() };
