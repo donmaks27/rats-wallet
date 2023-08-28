@@ -1579,7 +1579,7 @@ function query_getRecordsList(userID, recordsPerPage, pageIndex) {
         dstAccountColumns.push(`dst_account.${accountColumnNames[i]} AS 'dst_account.${accountColumnNames[i]}'`);
     }
     const currencyColumnNames = Object.getOwnPropertyNames(parseCurrencyRow({}));
-    for (var i = 0; i < accountColumnNames.length; i++) {
+    for (var i = 0; i < currencyColumnNames.length; i++) {
         srcCurrencyColumns.push(`src_currency.${currencyColumnNames[i]} AS 'src_currency.${currencyColumnNames[i]}'`);
         dstCurrencyColumns.push(`dst_currency.${currencyColumnNames[i]} AS 'dst_currency.${currencyColumnNames[i]}'`);
     }
