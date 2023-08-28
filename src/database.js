@@ -966,16 +966,25 @@ function account_delete(id, callback) {
     } : undefined);
 }
 /**
- * @param {number} id 
- * @param {{ startDate?: Date, endDate?: Date }} params 
- * @param {(ballance: number, error?: string) => any} callback 
+ * @param {number[]} accountIDs 
+ * @param {{ untilDate?: Date }} params 
+ * @param {(ballances: { [accountID: number]: number }, error?: string) => any} callback 
  */
-function account_getBallance(id, params, callback) {
-    db.get(query_getAccountBallance(id, params), (error, row) => {
+function account_getBallance(accountIDs, params, callback) {
+    if (accountIDs.length == 0) {
+        callback({});
+        return;
+    }
+    db.all(query_getAccountBallance(accountIDs, params), (error, rows) => {
         if (error) {
-            callback(0, `failed to get account ballance: ` + error);
+            callback({}, `failed to get account ballance: ` + error);
         } else {
-            callback(row.ballance);
+            /** @type {{ [accountID: number]: number }} */
+            var result = {};
+            for (var i = 0; i < rows.length; i++) {
+                result[rows[i].account_id] = rows[i].ballance;
+            }
+            callback(result);
         }
     });
 }
@@ -1519,23 +1528,37 @@ function query_deleteAccount(id) {
     return `DELETE FROM accounts WHERE id = ${id};`;
 }
 /**
- * @param {number} id 
- * @param {{ startDate?: Date, endDate?: Date }} params 
+ * @param {number[]} accountIDs 
+ * @param {{ untilDate?: Date }} params 
  */
-function query_getAccountBallance(id, params) {
+function query_getAccountBallance(accountIDs, params) {
     /** @type {string[]} */
     var conditions = [];
-    if (params.startDate && params.startDate.valueOf() > 0) {
-        conditions.push(`date >= ${params.startDate.valueOf()}`);
+    if (params.untilDate && params.untilDate.valueOf() > 0) {
+        conditions.push(`date <= ${params.untilDate.valueOf()}`);
     }
-    if (params.endDate && params.endDate.valueOf() > 0) {
-        conditions.push(`date <= ${params.endDate.valueOf()}`);
+    var accountConditions = [];
+    for (var i = 0; i < accountIDs.length; i++) {
+        accountConditions.push(`account_id = ${accountIDs[i]}`);
     }
-    return `SELECT SUM(amount) AS ballance FROM (
-        SELECT SUM(dst_amount) amount, dst_account_id AS account_id FROM records WHERE ${conditions.concat(`dst_account_id = ${id}`).join(' AND ')}
-        UNION ALL
-        SELECT -SUM(src_amount) amount, src_account_id AS account_id FROM records WHERE ${conditions.concat(`src_account_id = ${id}`).join(' AND ')}
-    ) t;`;
+    const conditionsStr = conditions.concat(accountConditions).join(' AND ');
+    return `SELECT accounts.id AS account_id, accounts.start_amount + SUM(t.amount) AS ballance
+    FROM accounts
+        LEFT JOIN (
+            SELECT dst_account_id AS account_id, SUM(dst_amount) AS amount
+            FROM records
+            WHERE ${conditionsStr}
+            GROUP BY account_id
+
+            UNION ALL
+
+            SELECT src_account_id AS account_id, -SUM(src_amount) AS amount
+            FROM records
+            WHERE ${conditionsStr}
+            GROUP BY account_id
+        ) AS t ON accounts.id = t.account_id
+    WHERE ${accountConditions.join(' AND ')}
+    GROUP BY t.account_id;`;
 }
 
 /**

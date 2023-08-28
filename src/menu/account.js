@@ -94,8 +94,9 @@ function createMenuData_account(user, userData, args, callback) {
                 keyboard: [[{ text: `<< Back to Accounts`, callback_data: menuBase.makeMenuButton('accounts') }]]
             });
         } else {
-            db.account_getBallance(accountID, {}, (ballance, error) => {
-                if (error) {
+            db.account_getBallance([ accountID ], {}, (ballances, error) => {
+                const ballance = ballances[accountID];
+                if (error || (typeof ballance === 'undefined')) {
                     log.error(userID, `[account] failed to get ballance of account "${accountData.name}" (${error})`);
                 }
                 /** @type {string[]} */
@@ -104,7 +105,7 @@ function createMenuData_account(user, userData, args, callback) {
                 if (!accountData.is_active) {
                     textLines[0] += ` _\\[archived\\]_`;
                 }
-                textLines.push(`_Current ballance: ${bot.escapeMarkdown(`${Math.round(accountData.start_amount + ballance) / 100}`)}_`);
+                textLines.push(`_Current ballance: ${bot.escapeMarkdown(`${Math.round(ballance) / 100}`)}_`);
                 textLines.push(`Choose what you want to do:`);
 
                 callback({
