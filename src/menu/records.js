@@ -64,7 +64,7 @@ function createMenuData_records(user, userData, args, callback) {
                     if ((record.src_amount != record.dst_amount) || (record.src_account.currency_code != record.dst_account.currency_code)) {
                         const src_symbol = record.src_currency?.symbol ? record.src_currency.symbol : record.src_account.currency_code;
                         const dst_symbol = record.dst_currency?.symbol ? record.dst_currency.symbol : record.dst_account.currency_code;
-                        messageText += `\`   \`*${bot.escapeMarkdown(`${record.src_amount / 100} ${src_symbol}`)}* ➤ *${bot.escapeMarkdown(`${record.dst_amount / 100} ${dst_symbol}`)}*\n`;
+                        messageText += `\`   \`*${bot.escapeMarkdown(`${record.src_amount / 100} ${src_symbol}`)} ➤ ${bot.escapeMarkdown(`${record.dst_amount / 100} ${dst_symbol}`)}*\n`;
                     } else {
                         const symbol = record.src_currency?.symbol ? record.src_currency.symbol : record.src_account.currency_code;
                         messageText += `\`   \`*${bot.escapeMarkdown(`${record.src_amount / 100} ${symbol}`)}*\n`;
@@ -91,7 +91,7 @@ function createMenuData_records(user, userData, args, callback) {
                     messageText += `\`   \`_Labels_: ${labelsNames.join(', ')}\n`;
                 }
 
-                messageText += `\`   \`_Date_: __${bot.escapeMarkdown(dateFormat.to_readable_string(record.date, { date: true }))}__ __${bot.escapeMarkdown(dateFormat.to_readable_string(record.date, { time: true }))}__\n`;
+                messageText += `\`   \`_Date_: __${bot.escapeMarkdown(dateFormat.to_readable_string(record.date, { date: true, time: true }))}__\n`;
             }
             messageText += `\nChoose what you want to do:`
             const dummyButton = { text: ` `, callback_data: menuBase.makeDummyButton() };
