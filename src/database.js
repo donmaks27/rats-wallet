@@ -1532,16 +1532,19 @@ function query_deleteAccount(id) {
  * @param {{ untilDate?: Date }} params 
  */
 function query_getAccountBallance(accountIDs, params) {
-    /** @type {string[]} */
-    var conditions = [];
-    if (params.untilDate && params.untilDate.valueOf() > 0) {
-        conditions.push(`date <= ${params.untilDate.valueOf()}`);
-    }
     var accountConditions = [];
     for (var i = 0; i < accountIDs.length; i++) {
         accountConditions.push(`account_id = ${accountIDs[i]}`);
     }
-    const conditionsStr = conditions.concat(accountConditions).join(' AND ');
+    const accountConditionsStr = accountConditions.join(' OR ');
+
+    /** @type {string[]} */
+    var conditions = [ `(${accountConditionsStr})` ];
+    if (params.untilDate && params.untilDate.valueOf() > 0) {
+        conditions.push(`date <= ${params.untilDate.valueOf()}`);
+    }
+    const conditionsStr = conditions.join(' AND ');
+
     return `SELECT accounts.id AS account_id, accounts.start_amount + SUM(t.amount) AS ballance
     FROM accounts
         LEFT JOIN (
@@ -1557,7 +1560,7 @@ function query_getAccountBallance(accountIDs, params) {
             WHERE ${conditionsStr}
             GROUP BY account_id
         ) AS t ON accounts.id = t.account_id
-    WHERE ${accountConditions.join(' AND ')}
+    WHERE ${accountConditionsStr}
     GROUP BY t.account_id;`;
 }
 
