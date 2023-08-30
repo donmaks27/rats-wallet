@@ -364,6 +364,7 @@ function task_addAccount(user_id, account, db_data) {
  */
 function task_addRecord(record, db_data) {
     return (callback) => {
+        process.stdout.write('.');
         const srcAccountIndex = record.src_account ? db_data.accounts.findIndex(v => v.name == record.src_account) : -1;
         const dstAccountIndex = record.dst_account ? db_data.accounts.findIndex(v => v.name == record.dst_account) : -1;
         const categoryIndex = db_data.categories.findIndex(v => v.name == record.category);

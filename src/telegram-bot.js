@@ -10,10 +10,11 @@ function log_debug(msg) {
     log.info('[BOT] ' + msg);
 }
 
-/** @type {{ id: number, token: string, ownerUserID: number, server: { ip: string, port: number, hostname?: string }, secretToken: string }} */
+/** @type {{ id: number, token: string, owner: { userID: number, name: string }, server: { ip: string, port: number, hostname?: string }, secretToken: string }} */
 const botInfo = JSON.parse(fs.readFileSync('data/botInfo.json').toString());
 
-module.exports.getOwnerUserID = () => botInfo.ownerUserID;
+module.exports.getOwnerUserID = () => botInfo.owner.userID;
+module.exports.getOwnerName = () => botInfo.owner.name;
 module.exports.getServerAddress = () => botInfo.server;
 module.exports.getSecretToken = () => botInfo.secretToken;
 

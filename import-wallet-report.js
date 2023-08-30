@@ -8,23 +8,8 @@ var bot = require('./src/telegram-bot');
 var report = require('./src/wallet-report');
 
 const reportFilepath = 'data/report.json';
-
-if (!fs.existsSync('data/report.json')) {
-    report.load((data, error) => {
-        if (error) {
-            log.error('failed to load wallet report data: ' + error);
-        } else {
-            fs.writeFile(reportFilepath, JSON.stringify(data, null, 4), {
-                encoding: 'utf-8'
-            }, (error) => {
-                if (error) {
-                    log.error(`failed to save parsed wallet report data to "${reportFilepath}": ` + error);
-                } else {
-                    log.info(`wallet report data parsed and saved to "${reportFilepath}"`);
-                }
-            });
-        }
-    });
+if (!fs.existsSync(reportFilepath)) {
+    log.error(`failed to find wallet report data`);
 } else {
     var data = fs.readFileSync(reportFilepath, {
         encoding: 'utf-8'
@@ -45,8 +30,19 @@ if (!fs.existsSync('data/report.json')) {
             }
             db.user_get(bot.getOwnerUserID(), (userData, error) => {
                 if (error || !userData) {
-                    log.error(`can't find owner user data: ` + error);
-                    db.close();
+                    db.user_create({ id: bot.getOwnerUserID(), name: bot.getOwnerName() }, (userData, error) => {
+                        if (error || !userData) {
+                            log.error(`can't find owner user data: ` + error);
+                            db.close();
+                        } else {
+                            report.apply(bot.getOwnerUserID(), reportData, (error) => {
+                                if (error) {
+                                    log.error(`failed to apply wallet report: ` + error);
+                                }
+                                db.close();
+                            });
+                        }
+                    });
                 } else {
                     report.apply(bot.getOwnerUserID(), reportData, (error) => {
                         if (error) {
