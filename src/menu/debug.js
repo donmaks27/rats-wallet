@@ -18,7 +18,8 @@ const log = {
 module.exports.get = () => {
     return {
         debug: createMenuData_debug,
-        debugPickDate: createMenuData_debugPickDate
+        debugPickDate: createMenuData_debugPickDate,
+        debugPickTime: createMenuData_debugPickTime
     };
 }
 
@@ -52,7 +53,7 @@ function createMenuData_debug(user, userData, args, callback) {
 function createMenuData_debugPickDate(user, userData, args, callback) {
     const dateArg = args.date;
     var dateStr = '';
-    if (typeof dateArg != 'number') {
+    if (typeof dateArg !== 'number') {
         dateStr = 'NONE';
     } else {
         const date = menuBase.decodeDate(dateArg);
@@ -66,6 +67,38 @@ function createMenuData_debugPickDate(user, userData, args, callback) {
                 {
                     text: `Pick date`,
                     callback_data: menuBase.makeMenuButton('pickDate', { ...args, from: 'debugPickDate' })
+                }
+            ],
+            [
+                {
+                    text: '<< DEBUG',
+                    callback_data: menuBase.makeMenuButton('debug')
+                }
+            ]
+        ]
+    });
+}
+
+/**
+ * @type {menuBase.menu_create_func}
+ */
+function createMenuData_debugPickTime(user, userData, args, callback) {
+    const timeArg = args.time;
+    var timeStr = '';
+    if (typeof timeArg !== 'number') {
+        timeStr = 'NONE';
+    } else {
+        const time = menuBase.decodeTime(timeArg);
+        timeStr = `${time.getUTCHours()}:${time.getUTCMinutes()}`;
+    }
+    callback({
+        text: `*DEBUG _Time Picker_*\nCurrent time: ${bot.escapeMarkdown(timeStr)}`,
+        parseMode: 'MarkdownV2',
+        keyboard: [
+            [
+                {
+                    text: `Pick time`,
+                    callback_data: menuBase.makeMenuButton('pickTime', { ...args, from: 'debugPickTime' })
                 }
             ],
             [

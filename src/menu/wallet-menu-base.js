@@ -62,14 +62,31 @@ module.exports.encodeDate = function(date) {
  * @param {number} encodedDate 
  */
 module.exports.decodeDate = function(encodedDate) {
+    encodedDate = Math.max(encodedDate, 0);
     const day = encodedDate % 31;
     const monthAndYear = Math.floor((encodedDate - day) / 31);
     const month = monthAndYear % 12;
     const year = Math.floor((monthAndYear - month) / 12);
     var date = new Date(0);
-    date.setUTCFullYear(year);
-    date.setUTCMonth(month);
-    date.setUTCDate(day + 1);
+    date.setUTCFullYear(year, month, day + 1);
+    return date;
+}
+
+/**
+ * @param {Date} date 
+ */
+module.exports.encodeTime = function(date) {
+    return date.getUTCHours() * 60 + date.getUTCMinutes();
+}
+/**
+ * @param {number} encodedTime 
+ */
+module.exports.decodeTime = function(encodedTime) {
+    encodedTime = Math.max(encodedTime, 0);
+    const minutes = encodedTime % 60;
+    const hours = Math.min(Math.floor((encodedTime - minutes) / 60), 23);
+    var date = new Date(0);
+    date.setUTCHours(hours, minutes);
     return date;
 }
 

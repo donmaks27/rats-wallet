@@ -20,7 +20,8 @@ const MAX_YEAR = 2169;
  */
 module.exports.get = () => {
     return {
-        pickDate: createMenuData_pickDate
+        pickDate: createMenuData_pickDate,
+        pickTime: createMenuData_pickTime
     };
 }
 
@@ -414,6 +415,150 @@ function createMenuData_pickDate_year(user, userData, args, callback) {
     ]);
     callback({
         text: `*Date picker*\nPlease, choose month:`,
+        parseMode: 'MarkdownV2',
+        keyboard: keyboard
+    })
+}
+
+/**
+ * @type {menuBase.menu_create_func}
+ */
+function createMenuData_pickTime(user, userData, args, callback) {
+    /** @type {walletCommon.menu_type} */
+    // @ts-ignore
+    const prevMenu = typeof args.from === 'string' ? args.from : 'main';
+    var returnButtonArgs = { ...args };
+    delete returnButtonArgs._c;
+    delete returnButtonArgs._t;
+    delete returnButtonArgs.from;
+
+    const cursor = typeof args._c === 'number' ? Math.max(0, Math.min(3, args._c)) : 0;
+    const currentEncodedTime = typeof args._t === 'number' ? args._t : (typeof args.time === 'number' ? args.time : menuBase.encodeTime(new Date()));
+    const currentTime = menuBase.decodeTime(currentEncodedTime);
+    const hours = currentTime.getUTCHours();
+    const hours0 = Math.floor(hours / 10);
+    const hours1 = hours % 10;
+    const minutes = currentTime.getUTCMinutes();
+    const minutes0 = Math.floor(minutes / 10);
+    const minutes1 = minutes % 10;
+
+    var timeText = '';
+    switch (cursor) {
+    case 0:
+        timeText = `__* ${hours0} *__${hours1} : ${minutes0} ${minutes1} `;
+        break;
+    case 1:
+        timeText = ` ${hours0}__* ${hours1} *__: ${minutes0} ${minutes1} `;
+        break;
+    case 2:
+        timeText = ` ${hours0} ${hours1} :__* ${minutes0} *__${minutes1} `;
+        break;
+    default:
+        timeText = ` ${hours0} ${hours1} : ${minutes0}__* ${minutes1} *__`;
+        break;
+    }
+
+    /** @type {bot.keyboard_button_inline_data[][]} */
+    var keyboard = [];
+
+    /** @type {bot.keyboard_button_inline_data[]} */
+    var keyboardHeader = [];
+    if (cursor > 0) {
+        keyboardHeader.push({
+            text: `<`,
+            callback_data: menuBase.makeMenuButton('pickTime', { ...args, _c: cursor - 1 })
+        });
+    } else {
+        keyboardHeader.push({
+            text: ` `,
+            callback_data: menuBase.makeDummyButton()
+        });
+    }
+    if (cursor < 3) {
+        keyboardHeader.push({
+            text: `<`,
+            callback_data: menuBase.makeMenuButton('pickTime', { ...args, _c: cursor + 1 })
+        });
+    } else {
+        keyboardHeader.push({
+            text: ` `,
+            callback_data: menuBase.makeDummyButton()
+        });
+    }
+    keyboard.push(keyboardHeader);
+
+    var maxNumber = 9;
+    switch (cursor) {
+    case 0:
+        maxNumber = 2;
+        break;
+    case 1:
+        if (hours0 == 2) {
+            maxNumber = 3;
+        }
+        break;
+    case 2:
+        maxNumber = 6;
+        break;
+    default: 
+        break;
+    }
+    /** @type {bot.keyboard_button_inline_data[]} */
+    var keyboardNumbers = [];
+    var buttonTime = new Date(currentTime.valueOf());
+    for (var i = 0; i <= 9; i++) {
+        if (i <= maxNumber) {
+            switch (cursor) {
+            case 0:
+                buttonTime.setUTCHours(Math.min(i*10 + hours1, 23), minutes);
+                break;
+            case 1:
+                buttonTime.setUTCHours(Math.min(hours0*10 + i, 23), minutes);
+                break;
+            case 2:
+                buttonTime.setUTCHours(hours, Math.min(i*10 + minutes1, 59));
+                break;
+            default:
+                buttonTime.setUTCHours(hours, Math.min(minutes0*10 + i, 59));
+                break;
+            }
+            if (cursor < 3) {
+                keyboardNumbers.push({
+                    text: `${i}`,
+                    callback_data: menuBase.makeMenuButton('pickTime', { ...args, _c: cursor + 1, _t: menuBase.encodeTime(buttonTime) })
+                });
+            } else {
+                keyboardNumbers.push({
+                    text: `${i}`,
+                    callback_data: menuBase.makeMenuButton(prevMenu, { ...returnButtonArgs, time: menuBase.encodeTime(buttonTime) })
+                });
+            }
+        } else {
+            keyboardNumbers.push({
+                text: ` `,
+                callback_data: menuBase.makeDummyButton()
+            });
+        }
+    }
+    keyboard.push(keyboardNumbers);
+
+    keyboard.push([
+        {
+            text: `NONE`,
+            callback_data: menuBase.makeMenuButton(prevMenu, { ...returnButtonArgs, time: null })
+        },
+        {
+            text: `Done`,
+            callback_data: menuBase.makeMenuButton(prevMenu, { ...returnButtonArgs, time: menuBase.encodeTime(currentTime) })
+        }
+    ], [
+        {
+            text: `<< Back`,
+            callback_data: menuBase.makeMenuButton(prevMenu, returnButtonArgs)
+        }
+    ]);
+    callback({
+        text: `*Time picker*\n${timeText}\nPlease, choose month:`,
         parseMode: 'MarkdownV2',
         keyboard: keyboard
     })
