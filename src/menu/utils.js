@@ -445,16 +445,16 @@ function createMenuData_pickTime(user, userData, args, callback) {
     var timeText = '';
     switch (cursor) {
     case 0:
-        timeText = `__* ${hours0} *__${hours1} : ${minutes0} ${minutes1} `;
+        timeText = `__*${hours0}*__${hours1} : ${minutes0} ${minutes1}`;
         break;
     case 1:
-        timeText = ` ${hours0}__* ${hours1} *__: ${minutes0} ${minutes1} `;
+        timeText = `${hours0} __*${hours1}*__ : ${minutes0} ${minutes1}`;
         break;
     case 2:
-        timeText = ` ${hours0} ${hours1} :__* ${minutes0} *__${minutes1} `;
+        timeText = `${hours0} ${hours1} :__* ${minutes0} *__${minutes1}`;
         break;
     default:
-        timeText = ` ${hours0} ${hours1} : ${minutes0}__* ${minutes1} *__`;
+        timeText = `${hours0} ${hours1} : ${minutes0} __*${minutes1}*__`;
         break;
     }
 
@@ -476,7 +476,7 @@ function createMenuData_pickTime(user, userData, args, callback) {
     }
     if (cursor < 3) {
         keyboardHeader.push({
-            text: `<`,
+            text: `>`,
             callback_data: menuBase.makeMenuButton('pickTime', { ...args, _c: cursor + 1 })
         });
     } else {
@@ -538,6 +538,10 @@ function createMenuData_pickTime(user, userData, args, callback) {
                 text: ` `,
                 callback_data: menuBase.makeDummyButton()
             });
+        }
+        if (keyboardNumbers.length == 5) {
+            keyboard.push(keyboardNumbers);
+            keyboardNumbers = [];
         }
     }
     keyboard.push(keyboardNumbers);
