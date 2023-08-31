@@ -82,7 +82,7 @@ function dayOfWeekToString(month) {
  */
 function createMenuData_pickDate(user, userData, args, callback) {
     if (!args._d) {
-        args._d = menuBase.encodeDate(new Date());
+        args._d = (typeof args.date === 'number') ? args.date : menuBase.encodeDate(new Date());
     }
     if (!args._s) {
         args._s = 'd';
@@ -117,9 +117,15 @@ function createMenuData_pickDate_day(user, userData, args, callback) {
 
     var date = typeof args._d === 'number' ? menuBase.decodeDate(args._d) : new Date(0);
     date.setUTCDate(1);
-    const year = date.getUTCFullYear();
+    var year = date.getUTCFullYear();
+    if (year > MAX_YEAR) {
+        date.setFullYear(MAX_YEAR);
+        year = date.getUTCFullYear();
+    } else if (year < MIN_YEAR) {
+        date.setFullYear(MIN_YEAR);
+        year = date.getUTCFullYear();
+    }
     const month = date.getUTCMonth();
-    //const day = date.getUTCDate();
     const firstDayOfWeek = getFirstDayOfWeek(date);
     const daysInMonth = getDaysInMonth(date);
 
@@ -235,7 +241,14 @@ function createMenuData_pickDate_month(user, userData, args, callback) {
 
     var date = typeof args._d === 'number' ? menuBase.decodeDate(args._d) : new Date(0);
     date.setUTCMonth(0, 1);
-    const year = date.getUTCFullYear();
+    var year = date.getUTCFullYear();
+    if (year > MAX_YEAR) {
+        date.setFullYear(MAX_YEAR);
+        year = date.getUTCFullYear();
+    } else if (year < MIN_YEAR) {
+        date.setFullYear(MIN_YEAR);
+        year = date.getUTCFullYear();
+    }
 
     /** @type {bot.keyboard_button_inline_data[][]} */
     var keyboard = [];
@@ -322,7 +335,14 @@ function createMenuData_pickDate_year(user, userData, args, callback) {
 
     var date = typeof args._d === 'number' ? menuBase.decodeDate(args._d) : new Date(0);
     date.setUTCMonth(0, 1);
-    const year = date.getUTCFullYear();
+    var year = date.getUTCFullYear();
+    if (year > MAX_YEAR) {
+        date.setFullYear(MAX_YEAR);
+        year = date.getUTCFullYear();
+    } else if (year < MIN_YEAR) {
+        date.setFullYear(MIN_YEAR);
+        year = date.getUTCFullYear();
+    }
     const minYear = year - 12;
     const maxYear = year + 12;
 
