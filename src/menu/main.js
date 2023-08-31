@@ -26,28 +26,36 @@ module.exports.get = () => {
  * @type {menuBase.menu_create_func}
  */
 function createMenuData_main(user, userData, args, callback) {
+    /** @type {bot.keyboard_button_inline_data[][]} */
+    var keyboard = [
+        [
+            {
+                text: 'Wallet >>',
+                callback_data: menuBase.makeMenuButton('wallet')
+            }
+        ],
+        [
+            {
+                text: 'Invite user',
+                callback_data: menuBase.makeActionButton('invite')
+            }
+        ],
+        [
+            {
+                text: 'Settings >>',
+                callback_data: menuBase.makeMenuButton('settings')
+            }
+        ]
+    ];
+    if (user.id == bot.getOwnerUserID()) {
+        keyboard.push([{
+            text: 'DEBUG >>',
+            callback_data: menuBase.makeMenuButton('debug')
+        }]);
+    }
     callback({
         text: `Welcome, ${userData.name}!\nChoose what you want to do:`,
-        keyboard: [
-            [
-                {
-                    text: 'Wallet >>',
-                    callback_data: menuBase.makeMenuButton('wallet')
-                }
-            ],
-            [
-                {
-                    text: 'Invite user',
-                    callback_data: menuBase.makeActionButton('invite')
-                }
-            ],
-            [
-                {
-                    text: 'Settings >>',
-                    callback_data: menuBase.makeMenuButton('settings')
-                }
-            ]
-        ]
+        keyboard: keyboard
     });
 }
 /**

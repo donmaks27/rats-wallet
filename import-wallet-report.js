@@ -36,6 +36,7 @@ if (!fs.existsSync(reportFilepath)) {
                             db.close();
                         } else {
                             report.apply(bot.getOwnerUserID(), reportData, (error) => {
+                                console.log(`\n`);
                                 if (error) {
                                     log.error(`failed to apply wallet report: ` + error);
                                 }
@@ -45,6 +46,7 @@ if (!fs.existsSync(reportFilepath)) {
                     });
                 } else {
                     report.apply(bot.getOwnerUserID(), reportData, (error) => {
+                        console.log(`\n`);
                         if (error) {
                             log.error(`failed to apply wallet report: ` + error);
                         }

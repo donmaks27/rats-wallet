@@ -24,6 +24,8 @@ const log = {
     info: (userID, msg) => menuBase.info(userID, msg)
 };
 const WalletMenuConstructors = {
+    ...require('./menu/debug').get(),
+    ...require('./menu/utils').get(),
     ...require('./menu/main').get(),
     ...require('./menu/account').get(),
     ...require('./menu/currency').get(),
