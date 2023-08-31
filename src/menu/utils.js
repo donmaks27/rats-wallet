@@ -83,10 +83,15 @@ function createMenuData_pickDate(user, userData, args, callback) {
     if (!args._d) {
         args._d = menuBase.encodeDate(new Date());
     }
+    if (!args._s) {
+        args._s = 'd';
+    }
     switch (args._s) {
     case 'd':
-    default:
         createMenuData_pickDate_day(user, userData, args, callback);
+        break;
+        
+    default: 
         break;
     }
 }
@@ -119,7 +124,7 @@ function createMenuData_pickDate_day(user, userData, args, callback) {
         [
             {
                 text: `<`,
-                callback_data: menuBase.makeMenuButton(prevMenu, { ...returnButtonArgs, date: menuBase.encodeDate(buttonPrevMonthDate) })
+                callback_data: menuBase.makeMenuButton('pickDate', { ...args, _d: menuBase.encodeDate(buttonPrevMonthDate) })
             },
             {
                 text: monthToString(month),
@@ -131,7 +136,7 @@ function createMenuData_pickDate_day(user, userData, args, callback) {
             },
             {
                 text: `>`,
-                callback_data: menuBase.makeMenuButton(prevMenu, { ...returnButtonArgs, date: menuBase.encodeDate(buttonNextMonthDate) })
+                callback_data: menuBase.makeMenuButton('pickDate', { ...args, _d: menuBase.encodeDate(buttonNextMonthDate) })
             }
         ]
     ];
