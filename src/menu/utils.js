@@ -348,7 +348,7 @@ function createMenuData_pickDate_year(user, userData, args, callback) {
         var nextPageDate = new Date(date.valueOf());
         nextPageDate.setUTCFullYear(Math.min(MAX_YEAR, year + 25));
         keyboardHeader.push({
-            text: `<`,
+            text: `>`,
             callback_data: menuBase.makeMenuButton('pickDate', { ...args, _s: 'y', _d: menuBase.encodeDate(nextPageDate) })
         });
     } else {
