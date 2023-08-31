@@ -12,6 +12,9 @@ const log = {
     error: menuBase.error,
 };
 
+const MIN_YEAR = 1970;
+const MAX_YEAR = 2169;
+
 /**
  * @type {menuBase.menu_get_func}
  */
@@ -35,9 +38,7 @@ function getFirstDayOfWeek(date) {
  */
 function getDaysInMonth(date) {
     var checkDate = new Date(date.valueOf());
-    checkDate.setUTCDate(1);
-    checkDate.setUTCMonth(date.getUTCMonth() + 1);
-    checkDate.setUTCDate(0);
+    checkDate.setUTCMonth(date.getUTCMonth() + 1, 0);
     return checkDate.getUTCDate();
 }
 /**
@@ -90,11 +91,18 @@ function createMenuData_pickDate(user, userData, args, callback) {
     case 'd':
         createMenuData_pickDate_day(user, userData, args, callback);
         break;
-        
+    case 'm':
+        createMenuData_pickDate_month(user, userData, args, callback);
+        break;
+    case 'y':
+        createMenuData_pickDate_year(user, userData, args, callback);
+        break;
+
     default: 
         break;
     }
 }
+
 /**
  * @type {menuBase.menu_create_func}
  */
@@ -115,31 +123,46 @@ function createMenuData_pickDate_day(user, userData, args, callback) {
     const firstDayOfWeek = getFirstDayOfWeek(date);
     const daysInMonth = getDaysInMonth(date);
 
-    var buttonPrevMonthDate = new Date(date.valueOf());
-    buttonPrevMonthDate.setUTCMonth(buttonPrevMonthDate.getUTCMonth() - 1);
-    var buttonNextMonthDate = new Date(date.valueOf());
-    buttonNextMonthDate.setUTCMonth(buttonNextMonthDate.getUTCMonth() + 1);
     /** @type {bot.keyboard_button_inline_data[][]} */
-    var keyboard = [
-        [
-            {
-                text: `<`,
-                callback_data: menuBase.makeMenuButton('pickDate', { ...args, _d: menuBase.encodeDate(buttonPrevMonthDate) })
-            },
-            {
-                text: monthToString(month),
-                callback_data: menuBase.makeDummyButton()
-            },
-            {
-                text: `${year}`,
-                callback_data: menuBase.makeDummyButton()
-            },
-            {
-                text: `>`,
-                callback_data: menuBase.makeMenuButton('pickDate', { ...args, _d: menuBase.encodeDate(buttonNextMonthDate) })
-            }
-        ]
-    ];
+    var keyboard = [];
+    
+    /** @type {bot.keyboard_button_inline_data[]} */
+    var keyboardHeader = [];
+    if ((year > MIN_YEAR) || (month > 0)) {
+        var buttonPrevMonthDate = new Date(date.valueOf());
+        buttonPrevMonthDate.setUTCMonth(month - 1);
+        keyboardHeader.push({
+            text: `<`,
+            callback_data: menuBase.makeMenuButton('pickDate', { ...args, _s: 'd', _d: menuBase.encodeDate(buttonPrevMonthDate) })
+        });
+    } else {
+        keyboardHeader.push({
+            text: ` `,
+            callback_data: menuBase.makeDummyButton()
+        });
+    }
+    keyboardHeader.push({
+        text: monthToString(month),
+        callback_data: menuBase.makeMenuButton('pickDate', { ...args, _s: 'm', _d: menuBase.encodeDate(date) })
+    }, {
+        text: `${year}`,
+        callback_data: menuBase.makeMenuButton('pickDate', { ...args, _s: 'y', _d: menuBase.encodeDate(date) })
+    });
+    if ((year < MAX_YEAR) || (month < 11))
+    {
+        var buttonNextMonthDate = new Date(date.valueOf());
+        buttonNextMonthDate.setUTCMonth(month + 1);
+        keyboardHeader.push({
+            text: `>`,
+            callback_data: menuBase.makeMenuButton('pickDate', { ...args, _s: 'd', _d: menuBase.encodeDate(buttonNextMonthDate) })
+        });
+    } else {
+        keyboardHeader.push({
+            text: ` `,
+            callback_data: menuBase.makeDummyButton()
+        });
+    }
+    keyboard.push(keyboardHeader);
 
     /** @type {bot.keyboard_button_inline_data[]} */
     var keyboardWeek = [];
@@ -193,6 +216,154 @@ function createMenuData_pickDate_day(user, userData, args, callback) {
     ]);
     callback({
         text: `*Date picker*\nPlease, choose date:`,
+        parseMode: 'MarkdownV2',
+        keyboard: keyboard
+    })
+}
+
+/**
+ * @type {menuBase.menu_create_func}
+ */
+function createMenuData_pickDate_month(user, userData, args, callback) {
+    /** @type {walletCommon.menu_type} */
+    // @ts-ignore
+    const prevMenu = typeof args.from === 'string' ? args.from : 'main';
+    var returnButtonArgs = { ...args };
+    delete returnButtonArgs._s;
+    delete returnButtonArgs._d;
+    delete returnButtonArgs.from;
+
+    var date = typeof args._d === 'number' ? menuBase.decodeDate(args._d) : new Date(0);
+    date.setUTCMonth(0, 1);
+    const year = date.getUTCFullYear();
+
+    /** @type {bot.keyboard_button_inline_data[][]} */
+    var keyboard = [];
+
+    /** @type {bot.keyboard_button_inline_data[]} */
+    var keyboardHeader = [];
+    if (year > MIN_YEAR) {
+        var buttonPrevYearDate = new Date(date.valueOf());
+        buttonPrevYearDate.setUTCFullYear(year - 1);
+        keyboardHeader.push({
+            text: `<`,
+            callback_data: menuBase.makeMenuButton('pickDate', { ...args, _s: 'm', _d: menuBase.encodeDate(buttonPrevYearDate) })
+        });
+    } else {
+        keyboardHeader.push({
+            text: ` `,
+            callback_data: menuBase.makeDummyButton()
+        });
+    }
+    keyboardHeader.push({
+        text: `${year}`,
+        callback_data: menuBase.makeMenuButton('pickDate', { ...args, _s: 'y', _d: menuBase.encodeDate(date) })
+    });
+    if (year < MAX_YEAR)
+    {
+        var buttonNextYearDate = new Date(date.valueOf());
+        buttonNextYearDate.setUTCFullYear(year + 1);
+        keyboardHeader.push({
+            text: `>`,
+            callback_data: menuBase.makeMenuButton('pickDate', { ...args, _s: 'm', _d: menuBase.encodeDate(buttonNextYearDate) })
+        });
+    } else {
+        keyboardHeader.push({
+            text: ` `,
+            callback_data: menuBase.makeDummyButton()
+        });
+    }
+    keyboard.push(keyboardHeader);
+
+    /** @type {bot.keyboard_button_inline_data[]} */
+    var keyboardMonthes = [];
+    var buttonDate = new Date(date.valueOf());
+    for (var i = 0; i < 12; i++) {
+        buttonDate.setUTCMonth(i, 1);
+        keyboardMonthes.push({
+            text: monthToString(i),
+            callback_data: menuBase.makeMenuButton('pickDate', { ...args, _s: 'd', _d: menuBase.encodeDate(buttonDate) })
+        });
+        if (keyboardMonthes.length == 6) {
+            keyboard.push(keyboardMonthes);
+            keyboardMonthes = [];
+        }
+    }
+
+    keyboard.push([
+        {
+            text: `NONE`,
+            callback_data: menuBase.makeMenuButton(prevMenu, { ...returnButtonArgs, date: null })
+        }
+    ], [
+        {
+            text: `<< Back`,
+            callback_data: menuBase.makeMenuButton(prevMenu, returnButtonArgs)
+        }
+    ]);
+    callback({
+        text: `*Date picker*\nPlease, choose month:`,
+        parseMode: 'MarkdownV2',
+        keyboard: keyboard
+    })
+}
+
+/**
+ * @type {menuBase.menu_create_func}
+ */
+function createMenuData_pickDate_year(user, userData, args, callback) {
+    /** @type {walletCommon.menu_type} */
+    // @ts-ignore
+    const prevMenu = typeof args.from === 'string' ? args.from : 'main';
+    var returnButtonArgs = { ...args };
+    delete returnButtonArgs._s;
+    delete returnButtonArgs._d;
+    delete returnButtonArgs.from;
+
+    var date = typeof args._d === 'number' ? menuBase.decodeDate(args._d) : new Date(0);
+    date.setUTCMonth(0, 1);
+    const year = date.getUTCFullYear();
+    const minYear = year - 12;
+    const maxYear = year + 12;
+
+    /** @type {bot.keyboard_button_inline_data[][]} */
+    var keyboard = [];
+
+    /** @type {bot.keyboard_button_inline_data[]} */
+    var keyboardYears = [];
+    var buttonDate = new Date(date.valueOf());
+    for (var i = minYear; i <= maxYear; i++) {
+        if ((i < MIN_YEAR) || (i > MAX_YEAR)) {
+            keyboardYears.push({
+                text: ` `,
+                callback_data: menuBase.makeDummyButton()
+            });
+        } else {
+            buttonDate.setUTCFullYear(i);
+            keyboardYears.push({
+                text: `${i}`,
+                callback_data: menuBase.makeMenuButton('pickDate', { ...args, _s: 'm', _d: menuBase.encodeDate(buttonDate) })
+            });
+        }
+        if (keyboardYears.length == 5) {
+            keyboard.push(keyboardYears);
+            keyboardYears = [];
+        }
+    }
+
+    keyboard.push([
+        {
+            text: `NONE`,
+            callback_data: menuBase.makeMenuButton(prevMenu, { ...returnButtonArgs, date: null })
+        }
+    ], [
+        {
+            text: `<< Back`,
+            callback_data: menuBase.makeMenuButton(prevMenu, returnButtonArgs)
+        }
+    ]);
+    callback({
+        text: `*Date picker*\nPlease, choose month:`,
         parseMode: 'MarkdownV2',
         keyboard: keyboard
     })
