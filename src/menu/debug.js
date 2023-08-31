@@ -17,7 +17,8 @@ const log = {
  */
 module.exports.get = () => {
     return {
-        debug: createMenuData_debug
+        debug: createMenuData_debug,
+        debugPickDate: createMenuData_debugPickDate
     };
 }
 
@@ -32,13 +33,45 @@ function createMenuData_debug(user, userData, args, callback) {
             [
                 {
                     text: 'Date picker',
-                    callback_data: menuBase.makeMenuButton('pickDate', { ...args, from: 'debug' })
+                    callback_data: menuBase.makeMenuButton('debugDatePick')
                 }
             ],
             [
                 {
                     text: '<< Main',
                     callback_data: menuBase.makeMenuButton('main')
+                }
+            ]
+        ]
+    });
+}
+
+/**
+ * @type {menuBase.menu_create_func}
+ */
+function createMenuData_debugPickDate(user, userData, args, callback) {
+    const dateArg = args.date;
+    var dateStr = '';
+    if (typeof dateArg != 'number') {
+        dateStr = 'NONE';
+    } else {
+        const date = menuBase.decodeDate(dateArg);
+        dateStr = `${date.getUTCDate()}-${date.getUTCMonth() + 1}-${date.getUTCFullYear()}`;
+    }
+    callback({
+        text: `*DEBUG _Date Picker_*\nCurrent date: ${bot.escapeMarkdown(dateStr)}`,
+        parseMode: 'MarkdownV2',
+        keyboard: [
+            [
+                {
+                    text: `Pick date`,
+                    callback_data: menuBase.makeMenuButton('pickDate', { ...args, from: 'debugPickDate' })
+                }
+            ],
+            [
+                {
+                    text: '<< DEBUG',
+                    callback_data: menuBase.makeMenuButton('debug')
                 }
             ]
         ]

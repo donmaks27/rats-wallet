@@ -53,6 +53,27 @@ module.exports.makeMenuMessageTitle = function(str) {
 }
 
 /**
+ * @param {Date} date 
+ */
+module.exports.encodeDate = function(date) {
+    return (date.getUTCFullYear() * 12 + date.getUTCMonth()) * 31 + (date.getUTCDate() - 1);
+}
+/**
+ * @param {number} encodedDate 
+ */
+module.exports.decodeDate = function(encodedDate) {
+    const day = encodedDate % 31;
+    const monthAndYear = Math.floor((encodedDate - day) / 31);
+    const month = monthAndYear % 12;
+    const year = Math.floor((monthAndYear - month) / 12);
+    var date = new Date(0);
+    date.setUTCFullYear(year);
+    date.setUTCMonth(month);
+    date.setUTCDate(day + 1);
+    return date;
+}
+
+/**
  * @param {string} refType 
  * @param {string} refDestination 
  * @param {walletCommon.args_data} [args] 

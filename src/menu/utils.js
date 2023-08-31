@@ -24,26 +24,6 @@ module.exports.get = () => {
 /**
  * @param {Date} date 
  */
-function encodeDate(date) {
-    return (date.getUTCFullYear() * 12 + date.getUTCMonth()) * 31 + (date.getUTCDate() - 1);
-}
-/**
- * @param {number} encodedDate 
- */
-function decodeDate(encodedDate) {
-    const day = encodedDate % 31;
-    const monthAndYear = Math.floor((encodedDate - day) / 31);
-    const month = monthAndYear % 12;
-    const year = Math.floor((monthAndYear - month) / 12);
-    var date = new Date(0);
-    date.setUTCFullYear(year);
-    date.setUTCMonth(month);
-    date.setUTCDate(day + 1);
-    return date;
-}
-/**
- * @param {Date} date 
- */
 function getFirstDayOfWeek(date) {
     var checkDate = new Date(date.valueOf());
     checkDate.setUTCDate(1);
@@ -101,7 +81,7 @@ function dayOfWeekToString(month) {
  */
 function createMenuData_pickDate(user, userData, args, callback) {
     if (!args._d) {
-        args._d = encodeDate(new Date());
+        args._d = menuBase.encodeDate(new Date());
     }
     switch (args._s) {
     case 'd':
@@ -117,7 +97,12 @@ function createMenuData_pickDate_day(user, userData, args, callback) {
     /** @type {walletCommon.menu_type} */
     // @ts-ignore
     const prevMenu = typeof args.from === 'string' ? args.from : 'main';
-    const date = decodeDate(typeof args._d === 'number' ? args._d : encodeDate(new Date(0)));
+    var returnButtonArgs = { ...args };
+    delete returnButtonArgs._s;
+    delete returnButtonArgs._d;
+    delete returnButtonArgs.from;
+
+    const date = typeof args._d === 'number' ? menuBase.decodeDate(args._d) : new Date(0);
     const year = date.getUTCFullYear();
     const month = date.getUTCMonth();
     //const day = date.getUTCDate();
@@ -163,10 +148,12 @@ function createMenuData_pickDate_day(user, userData, args, callback) {
             callback_data: menuBase.makeDummyButton()
         });
     }
+    var buttonDate = new Date(date.valueOf());
     for (var i = 0; i < daysInMonth; i++) {
+        buttonDate.setUTCDate(i + 1);
         keyboardWeek.push({
             text: `${i + 1}`,
-            callback_data: menuBase.makeDummyButton()
+            callback_data: menuBase.makeMenuButton(prevMenu, { ...returnButtonArgs, date: menuBase.encodeDate(buttonDate) })
         });
         if (keyboardWeek.length == 7) {
             keyboard.push(keyboardWeek);
@@ -183,14 +170,17 @@ function createMenuData_pickDate_day(user, userData, args, callback) {
         keyboard.push(keyboardWeek);
     }
 
-    var backButtonArgs = { ...args };
-    delete backButtonArgs._s;
-    delete backButtonArgs._d;
-    delete backButtonArgs.from;
-    keyboard.push([{
-        text: `<< Back`,
-        callback_data: menuBase.makeMenuButton(prevMenu, backButtonArgs)
-    }]);
+    keyboard.push([
+        {
+            text: `NONE`,
+            callback_data: menuBase.makeMenuButton(prevMenu, { ...returnButtonArgs, date: null })
+        }
+    ], [
+        {
+            text: `<< Back`,
+            callback_data: menuBase.makeMenuButton(prevMenu, returnButtonArgs)
+        }
+    ]);
     callback({
         text: `*Date picker*\nPlease, choose date:`,
         parseMode: 'MarkdownV2',
