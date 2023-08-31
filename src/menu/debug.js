@@ -35,6 +35,10 @@ function createMenuData_debug(user, userData, args, callback) {
                 {
                     text: 'Date picker',
                     callback_data: menuBase.makeMenuButton('debugPickDate')
+                },
+                {
+                    text: 'Time picker',
+                    callback_data: menuBase.makeMenuButton('debugPickTime')
                 }
             ],
             [
