@@ -102,19 +102,24 @@ function createMenuData_pickDate_day(user, userData, args, callback) {
     delete returnButtonArgs._d;
     delete returnButtonArgs.from;
 
-    const date = typeof args._d === 'number' ? menuBase.decodeDate(args._d) : new Date(0);
+    var date = typeof args._d === 'number' ? menuBase.decodeDate(args._d) : new Date(0);
+    date.setUTCDate(1);
     const year = date.getUTCFullYear();
     const month = date.getUTCMonth();
     //const day = date.getUTCDate();
     const firstDayOfWeek = getFirstDayOfWeek(date);
     const daysInMonth = getDaysInMonth(date);
 
+    var buttonPrevMonthDate = new Date(date.valueOf());
+    buttonPrevMonthDate.setUTCMonth(buttonPrevMonthDate.getUTCMonth() - 1);
+    var buttonNextMonthDate = new Date(date.valueOf());
+    buttonNextMonthDate.setUTCMonth(buttonNextMonthDate.getUTCMonth() + 1);
     /** @type {bot.keyboard_button_inline_data[][]} */
     var keyboard = [
         [
             {
                 text: `<`,
-                callback_data: menuBase.makeDummyButton()
+                callback_data: menuBase.makeMenuButton(prevMenu, { ...returnButtonArgs, date: menuBase.encodeDate(buttonPrevMonthDate) })
             },
             {
                 text: monthToString(month),
@@ -126,7 +131,7 @@ function createMenuData_pickDate_day(user, userData, args, callback) {
             },
             {
                 text: `>`,
-                callback_data: menuBase.makeDummyButton()
+                callback_data: menuBase.makeMenuButton(prevMenu, { ...returnButtonArgs, date: menuBase.encodeDate(buttonNextMonthDate) })
             }
         ]
     ];
