@@ -330,6 +330,36 @@ function createMenuData_pickDate_year(user, userData, args, callback) {
     var keyboard = [];
 
     /** @type {bot.keyboard_button_inline_data[]} */
+    var keyboardHeader = [];
+    if (minYear > MIN_YEAR) {
+        var nextPageDate = new Date(date.valueOf());
+        nextPageDate.setUTCFullYear(Math.max(MIN_YEAR, year - 25));
+        keyboardHeader.push({
+            text: `<`,
+            callback_data: menuBase.makeMenuButton('pickDate', { ...args, _s: 'y', _d: menuBase.encodeDate(nextPageDate) })
+        });
+    } else {
+        keyboardHeader.push({
+            text: ` `,
+            callback_data: menuBase.makeDummyButton()
+        });
+    }
+    if (maxYear < MAX_YEAR) {
+        var nextPageDate = new Date(date.valueOf());
+        nextPageDate.setUTCFullYear(Math.min(MAX_YEAR, year + 25));
+        keyboardHeader.push({
+            text: `<`,
+            callback_data: menuBase.makeMenuButton('pickDate', { ...args, _s: 'y', _d: menuBase.encodeDate(nextPageDate) })
+        });
+    } else {
+        keyboardHeader.push({
+            text: ` `,
+            callback_data: menuBase.makeDummyButton()
+        });
+    }
+    keyboard.push(keyboardHeader);
+
+    /** @type {bot.keyboard_button_inline_data[]} */
     var keyboardYears = [];
     var buttonDate = new Date(date.valueOf());
     for (var i = minYear; i <= maxYear; i++) {
