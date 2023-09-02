@@ -55,9 +55,9 @@ function createMenuData_debug(user, userData, args, callback) {
  * @type {menuBase.menu_create_func}
  */
 function createMenuData_debugPickDate(user, userData, args, callback) {
-    const dateArg = args.date;
+    const dateArg = args.currDate;
     var dateStr = '';
-    if (typeof dateArg !== 'number') {
+    if (typeof dateArg !== 'string') {
         dateStr = 'NONE';
     } else {
         const date = menuBase.decodeDate(dateArg);
@@ -70,7 +70,7 @@ function createMenuData_debugPickDate(user, userData, args, callback) {
             [
                 {
                     text: `Pick date`,
-                    callback_data: menuBase.makeMenuButton('pickDate', { ...args, from: 'debugPickDate' })
+                    callback_data: menuBase.makeMenuButton('uPickD', { ...args, from: 'debugPickDate', out: 'currDate' })
                 }
             ],
             [
@@ -87,7 +87,7 @@ function createMenuData_debugPickDate(user, userData, args, callback) {
  * @type {menuBase.menu_create_func}
  */
 function createMenuData_debugPickTime(user, userData, args, callback) {
-    const timeArg = args.time;
+    const timeArg = args.currTime;
     var timeStr = '';
     if (typeof timeArg !== 'number') {
         timeStr = 'NONE';
@@ -102,7 +102,7 @@ function createMenuData_debugPickTime(user, userData, args, callback) {
             [
                 {
                     text: `Pick time`,
-                    callback_data: menuBase.makeMenuButton('pickTime', { ...args, from: 'debugPickTime' })
+                    callback_data: menuBase.makeMenuButton('uPickT', { ...args, from: 'debugPickTime', out: 'currTime' })
                 }
             ],
             [

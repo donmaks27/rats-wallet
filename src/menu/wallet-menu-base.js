@@ -56,15 +56,15 @@ module.exports.makeMenuMessageTitle = function(str) {
  * @param {Date} date 
  */
 module.exports.encodeDate = function(date) {
-    return (date.getUTCFullYear() * 12 + date.getUTCMonth()) * 31 + (date.getUTCDate() - 1);
+    return ((date.getUTCFullYear() * 12 + date.getUTCMonth()) * 31 + (date.getUTCDate() - 1)).toString(36);
 }
 /**
- * @param {number} encodedDate 
+ * @param {string} encodedDate 
  */
 module.exports.decodeDate = function(encodedDate) {
-    encodedDate = Math.max(encodedDate, 0);
-    const day = encodedDate % 31;
-    const monthAndYear = Math.floor((encodedDate - day) / 31);
+    const encodedNumber = Math.max(Number.parseInt(encodedDate, 36), 0);
+    const day = encodedNumber % 31;
+    const monthAndYear = Math.floor((encodedNumber - day) / 31);
     const month = monthAndYear % 12;
     const year = Math.floor((monthAndYear - month) / 12);
     var date = new Date(0);
