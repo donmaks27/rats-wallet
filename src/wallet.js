@@ -191,7 +191,7 @@ function handleMenuButton(callbackQuery) {
                 switch (buttonRef[0]) {
                 case walletCommon.MENU_BUTTON_GOTO:
                     log.info(`[MENU BUTTON] goto menu "${buttonRef[1]}" (args: ${JSON.stringify(buttonArgs)})...`);
-                    walletMenu.changeMenuMessage(callbackQuery.message.message_id, buttonRef[1], buttonArgs, callbackQuery.from, userData);
+                    walletMenu.changeMenuMessage(callbackQuery.message.message_id, walletMenu.getNameByShortName(buttonRef[1]), buttonArgs, callbackQuery.from, userData);
                     break;
 
                 case walletCommon.MENU_BUTTON_ACTION:

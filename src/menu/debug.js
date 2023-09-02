@@ -5,6 +5,7 @@ var bot = require('../telegram-bot');
 var dateFormat = require('../date-format');
 var menuBase = require('./wallet-menu-base');
 var walletCommon = require('../wallet-common');
+var walletMenu = require('../wallet-menu');
 
 const log = {
     info: menuBase.info,
@@ -18,8 +19,8 @@ const log = {
 module.exports.get = () => {
     return {
         debug: createMenuData_debug,
-        debugPickDate: createMenuData_debugPickDate,
-        debugPickTime: createMenuData_debugPickTime
+        debugPickDate: { shortName: 'dPD', handler: createMenuData_debugPickDate },
+        debugPickTime: { shortName: 'dPT', handler: createMenuData_debugPickTime }
     };
 }
 
@@ -57,7 +58,7 @@ function createMenuData_debug(user, userData, args, callback) {
 function createMenuData_debugPickDate(user, userData, args, callback) {
     const dateArg = args.currDate;
     var dateStr = '';
-    if (typeof dateArg !== 'string') {
+    if (typeof dateArg !== 'number') {
         dateStr = 'NONE';
     } else {
         const date = menuBase.decodeDate(dateArg);
@@ -70,7 +71,7 @@ function createMenuData_debugPickDate(user, userData, args, callback) {
             [
                 {
                     text: `Pick date`,
-                    callback_data: menuBase.makeMenuButton('uPickD', { ...args, from: 'debugPickDate', out: 'currDate' })
+                    callback_data: menuBase.makeMenuButton('uPickD', { ...args, from: walletMenu.getShortName('debugPickDate'), out: 'currDate' })
                 }
             ],
             [
@@ -102,7 +103,7 @@ function createMenuData_debugPickTime(user, userData, args, callback) {
             [
                 {
                     text: `Pick time`,
-                    callback_data: menuBase.makeMenuButton('uPickT', { ...args, from: 'debugPickTime', out: 'currTime' })
+                    callback_data: menuBase.makeMenuButton('uPickT', { ...args, from: walletMenu.getShortName('debugPickTime'), out: 'currTime' })
                 }
             ],
             [

@@ -5,11 +5,12 @@ var db  = require('../database');
 var bot = require('../telegram-bot');
 var walletCommon = require('../wallet-common');
 var walletActions = require('../wallet-actions');
+var walletMenu = require('../wallet-menu');
 
 /**
  * @typedef {{ text: string, parseMode?: bot.message_parse_mode, keyboard: bot.keyboard_button_inline_data[][] }} menu_data
  * @typedef {(user: bot.user_data, userData: db.user_data, args: walletCommon.args_data, callback: (menuData: menu_data) => any) => void} menu_create_func
- * @typedef {() => { [menu: string]: menu_create_func }} menu_get_func
+ * @typedef {() => { [menu: string]: menu_create_func | { shortName: string, handler: menu_create_func } }} menu_get_func
  */
 
 /**
@@ -33,7 +34,7 @@ module.exports.info = (userID, msg) => log.info(`[WALLET][MENU][USER ${userID}] 
  * @param {walletCommon.args_data} [args] 
  */
 module.exports.makeMenuButton = function(type, args) {
-    return makeButton(walletCommon.MENU_BUTTON_GOTO, type, args);
+    return makeButton(walletCommon.MENU_BUTTON_GOTO, walletMenu.getShortName(type), args);
 }
 /**
  * @param {walletCommon.action_type} action 
@@ -56,15 +57,14 @@ module.exports.makeMenuMessageTitle = function(str) {
  * @param {Date} date 
  */
 module.exports.encodeDate = function(date) {
-    return ((date.getUTCFullYear() * 12 + date.getUTCMonth()) * 31 + (date.getUTCDate() - 1)).toString(36);
+    return ((date.getUTCFullYear() * 12 + date.getUTCMonth()) * 31 + (date.getUTCDate() - 1));
 }
 /**
- * @param {string} encodedDate 
+ * @param {number} encodedDate 
  */
 module.exports.decodeDate = function(encodedDate) {
-    const encodedNumber = Math.max(Number.parseInt(encodedDate, 36), 0);
-    const day = encodedNumber % 31;
-    const monthAndYear = Math.floor((encodedNumber - day) / 31);
+    const day = Math.max(encodedDate, 0) % 31;
+    const monthAndYear = Math.floor((encodedDate - day) / 31);
     const month = monthAndYear % 12;
     const year = Math.floor((monthAndYear - month) / 12);
     var date = new Date(0);

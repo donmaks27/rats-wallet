@@ -33,9 +33,44 @@ const WalletMenuConstructors = {
     ...require('./menu/category').get(),
     ...require('./menu/records').get(),
 };
+const WalletMenusMap = makeWalletMenusMap(WalletMenuConstructors);
 
+/**
+ * @param {string} menu 
+ */
+module.exports.getShortName = function(menu) {
+    const menuHandler = WalletMenuConstructors[menu];
+    return menuHandler && (typeof menuHandler !== 'function') ? menuHandler.shortName : menu;
+}
+/**
+ * @param {string} shortName 
+ */
+module.exports.getNameByShortName = function(shortName) {
+    const menuName = WalletMenusMap[shortName];
+    return menuName ? menuName : shortName;
+}
 module.exports.sendMenuMessage = sendMenuMessage;
 module.exports.changeMenuMessage = changeMenuMessage;
+
+/**
+ * @param {{ [menu: string]: menuBase.menu_create_func | { shortName: string, handler: menuBase.menu_create_func } }} menus 
+ */
+function makeWalletMenusMap(menus) {
+    /** @type {{ [shortName: string]: string }} */
+    var result = {};
+    const menuNames = Object.getOwnPropertyNames(menus);
+    for (var i = 0; i < menuNames.length; i++) {
+        const menuName = menuNames[i];
+        const menuData = menus[menuName];
+        if (menuData && (typeof menuData !== 'function')) {
+            if (result[menuData.shortName]) {
+                console.log(`[DEBUG ERROR] dublicate menu short name '${menuData.shortName}', menu '${menuName}'`);
+            }
+            result[menuData.shortName] = menuName;
+        }
+    }
+    return result;
+}
 
 /**
  * @param {string} menu 
@@ -59,14 +94,15 @@ function changeMenuMessage(menuMessageID, menu, args, user, userData, callback) 
     const userID = user.id;
     log.info(userID, `changing menu message ${menuMessageID} to menu "${menu}"...`);
 
-    const menuConstructor = WalletMenuConstructors[menu];
-    if (!menuConstructor) {
+    const menuHandler = WalletMenuConstructors[menu];
+    if (!menuHandler) {
         log.warning(userID, `invalid menu type "${menu}"`);
         if (callback) {
             callback(null, `invalid menu type "${menu}"`);
         }
         return;
     }
+    const menuConstructor = typeof menuHandler !== 'function' ? menuHandler.handler : menuHandler;
 
     walletCommon.setUserMenu(userID, menu, args);
     menuConstructor(user, userData, args, (menuData) => {

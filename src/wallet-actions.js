@@ -75,6 +75,9 @@ function makeWalletActionsMap(actions) {
         const actionName = actionNames[i];
         const shortName = actions[actionName].shortName;
         if (shortName) {
+            if (result[shortName]) {
+                console.log(`[DEBUG ERROR] dublicate action short name '${shortName}', action '${actionName}'`);
+            }
             result[shortName] = actionName;
         }
     }

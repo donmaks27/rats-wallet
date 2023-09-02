@@ -149,7 +149,7 @@ function encodeArgs(str, args) {
                     result += argValue ? 't' : 'f'; 
                     break;
                 case 'number': 
-                    result += `n${argValue}`; 
+                    result += `n${argValue.toString(36)}`; 
                     break;
                 default: 
                     result += `s${argValue}`; 
@@ -180,7 +180,7 @@ function decodeArgs(str) {
         case '0': result[argKey] = null; break;
         case 't': result[argKey] = true; break;
         case 'f': result[argKey] = false; break;
-        case 'n': result[argKey] = Number.parseInt(argValue); break;
+        case 'n': result[argKey] = Number.parseInt(argValue, 36); break;
         case 's': result[argKey] = argValue; break;
         default: ;
         }

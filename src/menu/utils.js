@@ -5,6 +5,7 @@ var bot = require('../telegram-bot');
 var dateFormat = require('../date-format');
 var menuBase = require('./wallet-menu-base');
 var walletCommon = require('../wallet-common');
+var walletMenu = require('../wallet-menu');
 
 const log = {
     info: menuBase.info,
@@ -85,7 +86,7 @@ function createMenuData_pickDate(user, userData, args, callback) {
     if (!args._d) {
         const outArg = typeof args.out === 'string' ? args.out : 'date';
         const prevDate = args[outArg];
-        args._d = (typeof prevDate === 'string') ? prevDate : menuBase.encodeDate(new Date());
+        args._d = (typeof prevDate === 'number') ? prevDate : menuBase.encodeDate(new Date());
     }
     if (!args._s) {
         args._s = 'd';
@@ -112,14 +113,14 @@ function createMenuData_pickDate(user, userData, args, callback) {
 function createMenuData_pickDate_day(user, userData, args, callback) {
     /** @type {walletCommon.menu_type} */
     // @ts-ignore
-    const prevMenu = typeof args.from === 'string' ? args.from : 'main';
+    const prevMenu = typeof args.from === 'string' ? walletMenu.getNameByShortName(args.from) : 'main';
     const outArg = typeof args.out === 'string' ? args.out : 'date';
     var returnButtonArgs = { ...args };
     delete returnButtonArgs._s;
     delete returnButtonArgs._d;
     delete returnButtonArgs.from;
 
-    var date = typeof args._d === 'string' ? menuBase.decodeDate(args._d) : new Date(0);
+    var date = typeof args._d === 'number' ? menuBase.decodeDate(args._d) : new Date(0);
     date.setUTCDate(1);
     var year = date.getUTCFullYear();
     if (year > MAX_YEAR) {
@@ -237,14 +238,14 @@ function createMenuData_pickDate_day(user, userData, args, callback) {
 function createMenuData_pickDate_month(user, userData, args, callback) {
     /** @type {walletCommon.menu_type} */
     // @ts-ignore
-    const prevMenu = typeof args.from === 'string' ? args.from : 'main';
+    const prevMenu = typeof args.from === 'string' ? walletMenu.getNameByShortName(args.from) : 'main';
     const outArg = typeof args.out === 'string' ? args.out : 'date';
     var returnButtonArgs = { ...args };
     delete returnButtonArgs._s;
     delete returnButtonArgs._d;
     delete returnButtonArgs.from;
 
-    var date = typeof args._d === 'string' ? menuBase.decodeDate(args._d) : new Date(0);
+    var date = typeof args._d === 'number' ? menuBase.decodeDate(args._d) : new Date(0);
     date.setUTCMonth(0, 1);
     var year = date.getUTCFullYear();
     if (year > MAX_YEAR) {
@@ -332,14 +333,14 @@ function createMenuData_pickDate_month(user, userData, args, callback) {
 function createMenuData_pickDate_year(user, userData, args, callback) {
     /** @type {walletCommon.menu_type} */
     // @ts-ignore
-    const prevMenu = typeof args.from === 'string' ? args.from : 'main';
+    const prevMenu = typeof args.from === 'string' ? walletMenu.getNameByShortName(args.from) : 'main';
     const outArg = typeof args.out === 'string' ? args.out : 'date';
     var returnButtonArgs = { ...args };
     delete returnButtonArgs._s;
     delete returnButtonArgs._d;
     delete returnButtonArgs.from;
 
-    var date = typeof args._d === 'string' ? menuBase.decodeDate(args._d) : new Date(0);
+    var date = typeof args._d === 'number' ? menuBase.decodeDate(args._d) : new Date(0);
     date.setUTCMonth(0, 1);
     var year = date.getUTCFullYear();
     if (year > MAX_YEAR) {
@@ -431,7 +432,7 @@ function createMenuData_pickDate_year(user, userData, args, callback) {
 function createMenuData_pickTime(user, userData, args, callback) {
     /** @type {walletCommon.menu_type} */
     // @ts-ignore
-    const prevMenu = typeof args.from === 'string' ? args.from : 'main';
+    const prevMenu = typeof args.from === 'string' ? walletMenu.getNameByShortName(args.from) : 'main';
     const outArg = typeof args.out === 'string' ? args.out : 'time';
     var returnButtonArgs = { ...args };
     delete returnButtonArgs._c;
