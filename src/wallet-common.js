@@ -12,7 +12,7 @@ var db = require('./database');
  *           'changeRecordsPage'
  *          } action_type
  * @typedef {'debug'|'debugPickDate'|'debugPickTime'|
- *           'uPickD'|'uPickT'|
+ *           'pickDate'|'pickTime'|
  *           'main'|'settings'|'wallet'|'changeColor'|
  *           'accounts'|'account'|'createAccount'|'deleteAccount'|
  *           'currencies'|'currency'|'deleteCurrency'|

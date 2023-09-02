@@ -56,7 +56,7 @@ function createMenuData_debug(user, userData, args, callback) {
  * @type {menuBase.menu_create_func}
  */
 function createMenuData_debugPickDate(user, userData, args, callback) {
-    const dateArg = args.currDate;
+    const dateArg = args.d;
     var dateStr = '';
     if (typeof dateArg !== 'number') {
         dateStr = 'NONE';
@@ -71,7 +71,7 @@ function createMenuData_debugPickDate(user, userData, args, callback) {
             [
                 {
                     text: `Pick date`,
-                    callback_data: menuBase.makeMenuButton('uPickD', { ...args, from: walletMenu.getShortName('debugPickDate'), out: 'currDate' })
+                    callback_data: menuBase.makeMenuButton('pickDate', { ...args, from: walletMenu.getShortName('debugPickDate'), out: 'd' })
                 }
             ],
             [
@@ -88,7 +88,7 @@ function createMenuData_debugPickDate(user, userData, args, callback) {
  * @type {menuBase.menu_create_func}
  */
 function createMenuData_debugPickTime(user, userData, args, callback) {
-    const timeArg = args.currTime;
+    const timeArg = args.t;
     var timeStr = '';
     if (typeof timeArg !== 'number') {
         timeStr = 'NONE';
@@ -103,7 +103,7 @@ function createMenuData_debugPickTime(user, userData, args, callback) {
             [
                 {
                     text: `Pick time`,
-                    callback_data: menuBase.makeMenuButton('uPickT', { ...args, from: walletMenu.getShortName('debugPickTime'), out: 'currTime' })
+                    callback_data: menuBase.makeMenuButton('pickTime', { ...args, from: walletMenu.getShortName('debugPickTime'), out: 't' })
                 }
             ],
             [

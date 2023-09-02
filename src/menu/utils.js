@@ -21,8 +21,8 @@ const MAX_YEAR = 2169;
  */
 module.exports.get = () => {
     return {
-        uPickD: createMenuData_pickDate,
-        uPickT: createMenuData_pickTime
+        pickDate: { shortName: 'uPD', handler: createMenuData_pickDate },
+        pickTime: { shortName: 'uPT', handler: createMenuData_pickTime }
     };
 }
 
@@ -144,7 +144,7 @@ function createMenuData_pickDate_day(user, userData, args, callback) {
         buttonPrevMonthDate.setUTCMonth(month - 1);
         keyboardHeader.push({
             text: `<`,
-            callback_data: menuBase.makeMenuButton('uPickD', { ...args, _s: 'd', _d: menuBase.encodeDate(buttonPrevMonthDate) })
+            callback_data: menuBase.makeMenuButton('pickDate', { ...args, _s: 'd', _d: menuBase.encodeDate(buttonPrevMonthDate) })
         });
     } else {
         keyboardHeader.push({
@@ -154,10 +154,10 @@ function createMenuData_pickDate_day(user, userData, args, callback) {
     }
     keyboardHeader.push({
         text: monthToString(month),
-        callback_data: menuBase.makeMenuButton('uPickD', { ...args, _s: 'm', _d: menuBase.encodeDate(date) })
+        callback_data: menuBase.makeMenuButton('pickDate', { ...args, _s: 'm', _d: menuBase.encodeDate(date) })
     }, {
         text: `${year}`,
-        callback_data: menuBase.makeMenuButton('uPickD', { ...args, _s: 'y', _d: menuBase.encodeDate(date) })
+        callback_data: menuBase.makeMenuButton('pickDate', { ...args, _s: 'y', _d: menuBase.encodeDate(date) })
     });
     if ((year < MAX_YEAR) || (month < 11))
     {
@@ -165,7 +165,7 @@ function createMenuData_pickDate_day(user, userData, args, callback) {
         buttonNextMonthDate.setUTCMonth(month + 1);
         keyboardHeader.push({
             text: `>`,
-            callback_data: menuBase.makeMenuButton('uPickD', { ...args, _s: 'd', _d: menuBase.encodeDate(buttonNextMonthDate) })
+            callback_data: menuBase.makeMenuButton('pickDate', { ...args, _s: 'd', _d: menuBase.encodeDate(buttonNextMonthDate) })
         });
     } else {
         keyboardHeader.push({
@@ -266,7 +266,7 @@ function createMenuData_pickDate_month(user, userData, args, callback) {
         buttonPrevYearDate.setUTCFullYear(year - 1);
         keyboardHeader.push({
             text: `<`,
-            callback_data: menuBase.makeMenuButton('uPickD', { ...args, _s: 'm', _d: menuBase.encodeDate(buttonPrevYearDate) })
+            callback_data: menuBase.makeMenuButton('pickDate', { ...args, _s: 'm', _d: menuBase.encodeDate(buttonPrevYearDate) })
         });
     } else {
         keyboardHeader.push({
@@ -276,7 +276,7 @@ function createMenuData_pickDate_month(user, userData, args, callback) {
     }
     keyboardHeader.push({
         text: `${year}`,
-        callback_data: menuBase.makeMenuButton('uPickD', { ...args, _s: 'y', _d: menuBase.encodeDate(date) })
+        callback_data: menuBase.makeMenuButton('pickDate', { ...args, _s: 'y', _d: menuBase.encodeDate(date) })
     });
     if (year < MAX_YEAR)
     {
@@ -284,7 +284,7 @@ function createMenuData_pickDate_month(user, userData, args, callback) {
         buttonNextYearDate.setUTCFullYear(year + 1);
         keyboardHeader.push({
             text: `>`,
-            callback_data: menuBase.makeMenuButton('uPickD', { ...args, _s: 'm', _d: menuBase.encodeDate(buttonNextYearDate) })
+            callback_data: menuBase.makeMenuButton('pickDate', { ...args, _s: 'm', _d: menuBase.encodeDate(buttonNextYearDate) })
         });
     } else {
         keyboardHeader.push({
@@ -301,7 +301,7 @@ function createMenuData_pickDate_month(user, userData, args, callback) {
         buttonDate.setUTCMonth(i, 1);
         keyboardMonthes.push({
             text: monthToString(i),
-            callback_data: menuBase.makeMenuButton('uPickD', { ...args, _s: 'd', _d: menuBase.encodeDate(buttonDate) })
+            callback_data: menuBase.makeMenuButton('pickDate', { ...args, _s: 'd', _d: menuBase.encodeDate(buttonDate) })
         });
         if (keyboardMonthes.length == 6) {
             keyboard.push(keyboardMonthes);
@@ -363,7 +363,7 @@ function createMenuData_pickDate_year(user, userData, args, callback) {
         nextPageDate.setUTCFullYear(Math.max(MIN_YEAR, year - 25));
         keyboardHeader.push({
             text: `<`,
-            callback_data: menuBase.makeMenuButton('uPickD', { ...args, _s: 'y', _d: menuBase.encodeDate(nextPageDate) })
+            callback_data: menuBase.makeMenuButton('pickDate', { ...args, _s: 'y', _d: menuBase.encodeDate(nextPageDate) })
         });
     } else {
         keyboardHeader.push({
@@ -376,7 +376,7 @@ function createMenuData_pickDate_year(user, userData, args, callback) {
         nextPageDate.setUTCFullYear(Math.min(MAX_YEAR, year + 25));
         keyboardHeader.push({
             text: `>`,
-            callback_data: menuBase.makeMenuButton('uPickD', { ...args, _s: 'y', _d: menuBase.encodeDate(nextPageDate) })
+            callback_data: menuBase.makeMenuButton('pickDate', { ...args, _s: 'y', _d: menuBase.encodeDate(nextPageDate) })
         });
     } else {
         keyboardHeader.push({
@@ -399,7 +399,7 @@ function createMenuData_pickDate_year(user, userData, args, callback) {
             buttonDate.setUTCFullYear(i);
             keyboardYears.push({
                 text: `${i}`,
-                callback_data: menuBase.makeMenuButton('uPickD', { ...args, _s: 'm', _d: menuBase.encodeDate(buttonDate) })
+                callback_data: menuBase.makeMenuButton('pickDate', { ...args, _s: 'm', _d: menuBase.encodeDate(buttonDate) })
             });
         }
         if (keyboardYears.length == 5) {
@@ -475,7 +475,7 @@ function createMenuData_pickTime(user, userData, args, callback) {
     if (cursor > 0) {
         keyboardHeader.push({
             text: `<`,
-            callback_data: menuBase.makeMenuButton('uPickT', { ...args, _c: cursor - 1 })
+            callback_data: menuBase.makeMenuButton('pickTime', { ...args, _c: cursor - 1 })
         });
     } else {
         keyboardHeader.push({
@@ -486,7 +486,7 @@ function createMenuData_pickTime(user, userData, args, callback) {
     if (cursor < 3) {
         keyboardHeader.push({
             text: `>`,
-            callback_data: menuBase.makeMenuButton('uPickT', { ...args, _c: cursor + 1 })
+            callback_data: menuBase.makeMenuButton('pickTime', { ...args, _c: cursor + 1 })
         });
     } else {
         keyboardHeader.push({
@@ -534,7 +534,7 @@ function createMenuData_pickTime(user, userData, args, callback) {
             if (cursor < 3) {
                 keyboardNumbers.push({
                     text: `${i}`,
-                    callback_data: menuBase.makeMenuButton('uPickT', { ...args, _c: cursor + 1, _t: menuBase.encodeTime(buttonTime) })
+                    callback_data: menuBase.makeMenuButton('pickTime', { ...args, _c: cursor + 1, _t: menuBase.encodeTime(buttonTime) })
                 });
             } else {
                 keyboardNumbers.push({
