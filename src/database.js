@@ -1846,9 +1846,9 @@ function query_deleteInvite(userID) {
  * @param {number} userID 
  */
 function query_createTempFilter(userID) {
-    return `INSERT INTO filters(user_id, filter_type, create_date)
-    VALUES (${userID}, ${FILTER_TYPE_TEMP}, ${Date.now()}),
-        (${userID}, ${FILTER_TYPE_CUSTOM}, ${Date.now()});`;
+    return `INSERT INTO filters(user_id, filter_type, date_from, date_until, create_date)
+    VALUES (${userID}, ${FILTER_TYPE_TEMP}, NULL, NULL, ${Date.now()}),
+        (${userID}, ${FILTER_TYPE_CUSTOM}, NULL, NULL, ${Date.now()});`;
 }
 /**
  * @param {number} userID 
