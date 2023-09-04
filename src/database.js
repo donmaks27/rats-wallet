@@ -6,7 +6,7 @@ var sqlite = require('sqlite3');
 var log = require('./log');
 
 /**
- * @typedef {{ users: user_data[], currencies: currency_data[], labels: label_data[], categories: category_data[], accounts: account_data[], records: record_data[], record_labels: record_label_data[], user_invites: user_invite_data[] }} full_data
+ * @typedef {{ users: user_data[], currencies: currency_data[], labels: label_data[], categories: category_data[], accounts: account_data[], records: record_data[], record_labels: record_label_data[], user_invites: user_invite_data[], filters: filter_data[] }} full_data
  * @typedef {{ id: number, name: string, create_date: Date }} user_data
  * @typedef {{ code: string, name: string | null, symbol: string | null, is_active: boolean, create_date: Date }} currency_data
  * @typedef {'red'|'orange'|'yellow'|'green'|'blue'|'purple'|'black'|'white'|'brown'|null} color_type
@@ -16,10 +16,16 @@ var log = require('./log');
  * @typedef {{ id: number, src_account_id: number, src_amount: number, dst_account_id: number, dst_amount: number, category_id: number, date: Date, create_date: Date }} record_data
  * @typedef {{ record_id: number, label_id: number, create_date: Date }} record_label_data
  * @typedef {{ id: number, inviting_user_id: number, invite_date: Date, expire_date: Date }} user_invite_data
+ * @typedef {{ id: number, user_id: number, filter_type: boolean, date_from: Date | null, date_until: Date | null }} filter_data
+ * @typedef {{ date_from?: Date | null, date_until?: Date | null }} filter_params
  */
 
 const db_filepath = "data/database.db";
 const invalid_id = 0;
+
+const FILTER_TYPE_TEMP = 0;
+const FILTER_TYPE_CUSTOM = 1;
+const FILTER_TYPE_SAVED = 2;
 
 module.exports.invalid_id = invalid_id;
 module.exports.open = openDatabase;
@@ -76,11 +82,16 @@ module.exports.invite_create = invite_create;
 module.exports.invite_get = invite_get;
 module.exports.invite_delete = invite_delete;
 
+module.exports.filter_getTemp = filter_getOrCreateTemp;
+module.exports.filter_editTemp = filter_editTemp;
+module.exports.filter_editCustom = filter_editCustom;
+module.exports.filter_get = filter_get;
+
 
 
 /** @type {sqlite.Database} */
 var db;
-var cached_data = getEmptyCachedData();
+var cached_data = makeEmptyCachedData();
 
 function debug_log(msg) {
     log.info('[DB] ' + msg);
@@ -106,7 +117,7 @@ function parseColor(str) {
  *             labels: { [labelID: number]: label_data | null }, categories: { [categoryID: number]: category_data | null }, 
  *             accounts: { [accountID: number]: account_data | null }, user_invites: { [userID: string]: user_invite_data | null } }}
  */
-function getEmptyCachedData() {
+function makeEmptyCachedData() {
     return { users: {}, currencies: {}, labels: {}, categories: {}, accounts: {}, user_invites: {} };
 }
 
@@ -114,7 +125,7 @@ function getEmptyCachedData() {
  * @param {(error?: string) => any} callback 
  */
 function openDatabase(callback) {
-    cached_data = getEmptyCachedData();
+    cached_data = makeEmptyCachedData();
 
     var file_exists = fs.existsSync(db_filepath);
     debug_log('opening database...');
@@ -143,7 +154,7 @@ function openDatabase(callback) {
  * @param {(error?: string) => any} [callback] 
  */
 function closeDatabase(callback) {
-    cached_data = getEmptyCachedData();
+    cached_data = makeEmptyCachedData();
     if (callback) {
         db.close((error) => {
             if (error) {
@@ -162,7 +173,7 @@ function closeDatabase(callback) {
  */
 function getAllData(callback) {
     /** @type {full_data} */
-    var result = { users: [], currencies: [], labels: [], categories: [], accounts: [], records: [], record_labels: [], user_invites: [] };
+    var result = { users: [], currencies: [], labels: [], categories: [], accounts: [], records: [], record_labels: [], user_invites: [], filters: [] };
     user_getAll((data, error) => {
         if (error) {
             callback(null, error);
@@ -199,16 +210,7 @@ function getAllData(callback) {
                                 return;
                             }
                             for (var i = 0; i < rows.length; i++) {
-                                result.records.push({
-                                    id: rows[i].id,
-                                    src_account_id: rows[i].src_account_id ? rows[i].src_account_id : invalid_id,
-                                    src_amount: rows[i].src_amount,
-                                    dst_account_id: rows[i].dst_account_id ? rows[i].dst_account_id : invalid_id,
-                                    dst_amount: rows[i].dst_amount,
-                                    category_id: rows[i].category_id ? rows[i].category_id : invalid_id,
-                                    date: new Date(rows[i].date),
-                                    create_date: new Date(rows[i].create_date)
-                                });
+                                result.records.push(parseRecordRow(rows[i]));
                             }
                             db.all(query_getAllRecordLabels(), (error, rows) => {
                                 if (error) {
@@ -228,12 +230,7 @@ function getAllData(callback) {
                                         return;
                                     }
                                     for (var i = 0; i < rows.length; i++) {
-                                        result.user_invites.push({
-                                            id: rows[i].id,
-                                            inviting_user_id: rows[i].inviting_user_id,
-                                            invite_date: new Date(rows[i].invite_date),
-                                            expire_date: new Date(rows[i].expire_date)
-                                        });
+                                        result.user_invites.push(parseInviteRow(rows[i]));
                                     }
                                     callback(result);
                                 });
@@ -375,6 +372,42 @@ function parseRecordRow(row, prefix) {
     if (!data.category_id) {
         data.category_id = invalid_id;
     }
+    return data;
+}
+/**
+ * @param {any} row 
+ * @param {string} [prefix] 
+ * @returns {user_invite_data}
+ */
+function parseInviteRow(row, prefix) {
+    if (!prefix) {
+        prefix = '';
+    }
+    var data = {
+        id: row[prefix + 'id'],
+        inviting_user_id: row[prefix + 'inviting_user_id'],
+        invite_date: new Date(row[prefix + 'invite_date']),
+        expire_date: new Date(row[prefix + 'expire_date'])
+    };
+    return data;
+}
+/**
+ * @param {any} row 
+ * @param {string} [prefix] 
+ * @returns {filter_data}
+ */
+function parseFilterRow(row, prefix) {
+    if (!prefix) {
+        prefix = '';
+    }
+    var data = {
+        id: row[prefix + 'id'],
+        user_id: row[prefix + 'user_id'],
+        filter_type: row[prefix + 'filter_type'] != 0,
+        date_from: new Date(row[prefix + 'date_from']),
+        date_until: new Date(row[prefix + 'date_until']),
+        create_date: new Date(row[prefix + 'create_date'])
+    };
     return data;
 }
 
@@ -1203,12 +1236,7 @@ function invite_get(userID, callback) {
         } else if (!row) {
             callback(null, `can't find data of user ${userID}`);
         } else {
-            callback({
-                id: row.id,
-                inviting_user_id: row.inviting_user_id,
-                invite_date: new Date(row.invite_date),
-                expire_date: new Date(row.expire_date)
-            });
+            callback(parseInviteRow(row));
         }
     });
 }
@@ -1234,6 +1262,92 @@ function invite_delete(userID, callback) {
             callback();
         }
     } : undefined);
+}
+
+/**
+ * @param {number} userID 
+ * @param {(data: filter_data | null, error?: string) => any} callback 
+ */
+function filter_getOrCreateTemp(userID, callback) {
+    filter_getTemp(userID, true, callback);
+}
+/**
+ * @param {number} userID 
+ * @param {boolean} createIfNotFound 
+ * @param {(data: filter_data | null, error?: string) => any} callback 
+ */
+function filter_getTemp(userID, createIfNotFound, callback) {
+    db.get(query_getTempFilter(userID), (error, row) => {
+        if (error) {
+            callback(null, `failed to get temp filter for user ${userID} (${error})`);
+        } else if (!row) {
+            if (createIfNotFound) {
+                db.run(query_createTempFilter(userID), (error) => {
+                    if (error) {
+                        callback(null, `failed to create temp filter for user ${userID} (${error})`);
+                    } else {
+                        filter_getTemp(userID, false, callback);
+                    }
+                });
+            } else {
+                callback(null);
+            }
+        } else {
+            callback(parseFilterRow(row));
+        }
+    });
+}
+/**
+ * @param {number} userID 
+ * @param {filter_params} params 
+ * @param {(data: filter_data | null, error?: string) => any} callback 
+ */
+function filter_editTemp(userID, params, callback) {
+    db.run(query_editTempFilter(userID, params), (error) => {
+        if (error) {
+            callback(null, `failed to update temp filter for user ${userID} (${error})`);
+        } else {
+            filter_getTemp(userID, false, callback);
+        }
+    });
+}
+/**
+ * @param {number} userID 
+ * @param {filter_params} params 
+ * @param {(data: filter_data | null, error?: string) => any} callback 
+ */
+function filter_editCustom(userID, params, callback) {
+    db.run(query_editTempFilter(userID, params, true), (error) => {
+        if (error) {
+            callback(null, `failed to update custom filter for user ${userID} (${error})`);
+        } else {
+            db.get(query_getTempFilter(userID, true), (error, row) => {
+                if (error) {
+                    callback(null, `failed to get custom filter for user ${userID} (${error})`);
+                } else if (!row) {
+                    callback(null);
+                } else {
+                    callback(parseFilterRow(row));
+                }
+            });
+        }
+    });
+}
+
+/**
+ * @param {number} filterID 
+ * @param {(filterData: filter_data | null, error?: string) => any} callback 
+ */
+function filter_get(filterID, callback) {
+    db.get(query_getFilter(filterID), (error, row) => {
+        if (error) {
+            callback(null, `failed to get filter data ${filterID} (${error})`);
+        } else if (!row) {
+            callback(null);
+        } else {
+            callback(parseFilterRow(row));
+        }
+    });
 }
 
 /**
@@ -1283,6 +1397,9 @@ function query_getAllRecordLabels() {
 }
 function query_getAllInvites() {
     return `SELECT * FROM user_invites;`;
+}
+function query_getAllFilters() {
+    return `SELECT * FROM filters;`;
 }
 
 /**
@@ -1723,4 +1840,57 @@ function query_getInvite(userID) {
  */
 function query_deleteInvite(userID) {
     return `DELETE FROM user_invites WHERE id = ${userID};`;
+}
+
+/**
+ * @param {number} userID 
+ */
+function query_createTempFilter(userID) {
+    return `INSERT INTO filters(user_id, filter_type, create_date)
+    VALUES (${userID}, ${FILTER_TYPE_TEMP}, ${Date.now()}),
+        (${userID}, ${FILTER_TYPE_CUSTOM}, ${Date.now()});`;
+}
+/**
+ * @param {number} userID 
+ * @param {boolean} [customType] 
+ */
+function query_getTempFilter(userID, customType) {
+    return `SELECT * 
+    FROM filters 
+    WHERE (user_id = ${userID}) AND (filter_type = ${customType ? FILTER_TYPE_CUSTOM : FILTER_TYPE_TEMP}) 
+    LIMIT 1;`;
+}
+/**
+ * @param {number} userID 
+ * @param {filter_params} params 
+ * @param {boolean} [customType] 
+ */
+function query_editTempFilter(userID, params, customType) {
+    var statements = [];
+    const properties = Object.getOwnPropertyNames(params);
+    if (properties.includes('date_from')) {
+        if (params.date_from) {
+            statements.push(`date_from = ${params.date_from.valueOf()}`);
+        } else {
+            statements.push(`date_from IS NULL`);
+        }
+    }
+    if (properties.includes('date_until')) {
+        if (params.date_until) {
+            statements.push(`date_until = ${params.date_until.valueOf()}`);
+        } else {
+            statements.push(`date_until IS NULL`);
+        }
+    }
+    return `UPDATE filters SET ${statements.join(', ')} WHERE (user_id = ${userID}) AND (filter_type = ${customType ? FILTER_TYPE_CUSTOM : FILTER_TYPE_TEMP});`;
+}
+
+/**
+ * @param {number} filterID 
+ */
+function query_getFilter(filterID) {
+    return `SELECT * 
+    FROM filters 
+    WHERE id = ${filterID} 
+    LIMIT 1;`;
 }

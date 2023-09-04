@@ -36,7 +36,7 @@ const WalletMenuConstructors = {
 const WalletMenusMap = makeWalletMenusMap(WalletMenuConstructors);
 
 /**
- * @param {string} menu 
+ * @param {walletCommon.menu_type} menu 
  */
 module.exports.getShortName = function(menu) {
     const menuHandler = WalletMenuConstructors[menu];

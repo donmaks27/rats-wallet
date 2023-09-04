@@ -153,12 +153,13 @@ function createMenuData_records(user, userData, args, callback) {
                 callback({
                     text: messageText, 
                     parseMode: 'MarkdownV2',
-                    keyboard: [ controlButtons, [
-                        {
-                            text: '<< Back to Wallet',
-                            callback_data: menuBase.makeMenuButton('wallet')
-                        }
-                    ]]
+                    keyboard: [ controlButtons, [{
+                        text: `Filter`,
+                        callback_data: menuBase.makeMenuButton('filter', { pP: page })
+                    }], [{
+                        text: '<< Back to Wallet',
+                        callback_data: menuBase.makeMenuButton('wallet')
+                    }]]
                 });
             });
         });

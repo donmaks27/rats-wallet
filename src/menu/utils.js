@@ -119,6 +119,7 @@ function createMenuData_pickDate_day(user, userData, args, callback) {
     delete returnButtonArgs._s;
     delete returnButtonArgs._d;
     delete returnButtonArgs.from;
+    delete returnButtonArgs.out;
 
     var date = typeof args._d === 'number' ? menuBase.decodeDate(args._d) : new Date(0);
     date.setUTCDate(1);
@@ -244,6 +245,7 @@ function createMenuData_pickDate_month(user, userData, args, callback) {
     delete returnButtonArgs._s;
     delete returnButtonArgs._d;
     delete returnButtonArgs.from;
+    delete returnButtonArgs.out;
 
     var date = typeof args._d === 'number' ? menuBase.decodeDate(args._d) : new Date(0);
     date.setUTCMonth(0, 1);
@@ -339,6 +341,7 @@ function createMenuData_pickDate_year(user, userData, args, callback) {
     delete returnButtonArgs._s;
     delete returnButtonArgs._d;
     delete returnButtonArgs.from;
+    delete returnButtonArgs.out;
 
     var date = typeof args._d === 'number' ? menuBase.decodeDate(args._d) : new Date(0);
     date.setUTCMonth(0, 1);
@@ -438,7 +441,7 @@ function createMenuData_pickTime(user, userData, args, callback) {
     delete returnButtonArgs._c;
     delete returnButtonArgs._t;
     delete returnButtonArgs.from;
-    delete returnButtonArgs.outArg;
+    delete returnButtonArgs.out;
 
     const cursor = typeof args._c === 'number' ? Math.max(0, Math.min(3, args._c)) : 0;
     const prevTime = args[outArg];
