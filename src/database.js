@@ -16,7 +16,7 @@ var log = require('./log');
  * @typedef {{ id: number, src_account_id: number, src_amount: number, dst_account_id: number, dst_amount: number, category_id: number, date: Date, create_date: Date }} record_data
  * @typedef {{ record_id: number, label_id: number, create_date: Date }} record_label_data
  * @typedef {{ id: number, inviting_user_id: number, invite_date: Date, expire_date: Date }} user_invite_data
- * @typedef {{ id: number, user_id: number, filter_type: boolean, date_from: Date | null, date_until: Date | null }} filter_data
+ * @typedef {{ id: number, user_id: number, filter_type: number, date_from: Date | null, date_until: Date | null }} filter_data
  * @typedef {{ date_from?: Date | null, date_until?: Date | null }} filter_params
  */
 
@@ -400,12 +400,14 @@ function parseFilterRow(row, prefix) {
     if (!prefix) {
         prefix = '';
     }
+    const dateFrom = row[prefix + 'date_from'];
+    const dateUntil = row[prefix + 'date_until'];
     var data = {
         id: row[prefix + 'id'],
         user_id: row[prefix + 'user_id'],
-        filter_type: row[prefix + 'filter_type'] != 0,
-        date_from: new Date(row[prefix + 'date_from']),
-        date_until: new Date(row[prefix + 'date_until']),
+        filter_type: row[prefix + 'filter_type'],
+        date_from: dateFrom ? new Date(row[prefix + 'date_from']) : null,
+        date_until: dateUntil ? new Date(row[prefix + 'date_until']) : null,
         create_date: new Date(row[prefix + 'create_date'])
     };
     return data;

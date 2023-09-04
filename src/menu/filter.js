@@ -27,13 +27,24 @@ module.exports.get = () => {
  */
 function createMenuData_filter(user, userData, args, callback) {
     const userID = user.id;
+    const reset = args.reset;
+    delete args.reset;
     db.filter_getTemp(userID, (filterData, error) => {
         if (error || !filterData) {
             log.error(userID, `[filter] failed to get temp filter data: ${error}`);
             onTempFilterError(user, userData, args, callback);
         } else {
             const argsKeys = Object.getOwnPropertyNames(args);
-            if (argsKeys.includes('dF')) {
+            if (reset) {
+                db.filter_editTemp(userID, { date_from: null, date_until: null }, (filterData, error) => {
+                    if (error || !filterData) {
+                        log.error(userID, `[filter] failed to clear temp filter: ${error}`);
+                        onTempFilterError(user, userData, args, callback);
+                    } else {
+                        onTempFilterUpdated(user, userData, args, filterData, callback);
+                    }
+                });
+            } else if (argsKeys.includes('dF')) {
                 const dateFrom = typeof args.dF === 'number' ? menuBase.decodeDate(args.dF) : null;
                 db.filter_editTemp(userID, { date_from: dateFrom }, (filterData, error) => {
                     if (error || !filterData) {

@@ -155,7 +155,7 @@ function createMenuData_records(user, userData, args, callback) {
                     parseMode: 'MarkdownV2',
                     keyboard: [ controlButtons, [{
                         text: `Filter`,
-                        callback_data: menuBase.makeMenuButton('filter', { pP: page })
+                        callback_data: menuBase.makeMenuButton('filter', { pP: page, reset: true })
                     }], [{
                         text: '<< Back to Wallet',
                         callback_data: menuBase.makeMenuButton('wallet')
