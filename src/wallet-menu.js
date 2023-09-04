@@ -32,6 +32,7 @@ const WalletMenuConstructors = {
     ...require('./menu/labels').get(),
     ...require('./menu/category').get(),
     ...require('./menu/records').get(),
+    ...require('./menu/filter').get(),
 };
 const WalletMenusMap = makeWalletMenusMap(WalletMenuConstructors);
 
