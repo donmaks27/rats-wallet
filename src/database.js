@@ -1763,7 +1763,7 @@ function query_updateRecord(id, params) {
         if (params.src_account_id) {
             statements.push(`src_account_id = ${params.src_account_id}`);
         } else {
-            statements.push(`src_account_id IS NULL`);
+            statements.push(`src_account_id = NULL`);
         }
     }
     if (properties.includes('src_amount')) {
@@ -1773,7 +1773,7 @@ function query_updateRecord(id, params) {
         if (params.dst_account_id) {
             statements.push(`dst_account_id = ${params.dst_account_id}`);
         } else {
-            statements.push(`dst_account_id IS NULL`);
+            statements.push(`dst_account_id = NULL`);
         }
     }
     if (properties.includes('dst_amount')) {
@@ -1783,7 +1783,7 @@ function query_updateRecord(id, params) {
         if (params.category_id) {
             statements.push(`category_id = ${params.category_id}`);
         } else {
-            statements.push(`category_id IS NULL`);
+            statements.push(`category_id = NULL`);
         }
     }
     if (properties.includes('date')) {
@@ -1874,14 +1874,14 @@ function query_editTempFilter(userID, params, customType) {
         if (params.date_from) {
             statements.push(`date_from = ${params.date_from.valueOf()}`);
         } else {
-            statements.push(`date_from IS NULL`);
+            statements.push(`date_from = NULL`);
         }
     }
     if (properties.includes('date_until')) {
         if (params.date_until) {
             statements.push(`date_until = ${params.date_until.valueOf()}`);
         } else {
-            statements.push(`date_until IS NULL`);
+            statements.push(`date_until = NULL`);
         }
     }
     return `UPDATE filters SET ${statements.join(', ')} WHERE (user_id = ${userID}) AND (filter_type = ${customType ? FILTER_TYPE_CUSTOM : FILTER_TYPE_TEMP});`;
