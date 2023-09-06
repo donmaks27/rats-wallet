@@ -22,20 +22,28 @@ module.exports.get = () => {
     };
 }
 
+const ARG_PREV_PAGE = 'pP';
+const ARG_PREV_FILTER_ID = 'pF';
+const ARG_RESET_TEMP_FILTER = 'reset';
+const ARG_DATE_FROM = 'dF';
+const ARG_DATE_UNTIL = 'dU';
+const ARG_RECORDS_PAGE = 'page';
+const ARG_RECORDS_FILTER_ID = 'fID';
+
 /**
  * @type {menuBase.menu_create_func}
  */
 function createMenuData_filter(user, userData, args, callback) {
     const userID = user.id;
-    const reset = args.reset;
-    delete args.reset;
+    const shouldResetTempFilter = args[ARG_RESET_TEMP_FILTER] ? true : false;
+    delete args[ARG_RESET_TEMP_FILTER];
     db.filter_getTemp(userID, (filterData, error) => {
         if (error || !filterData) {
             log.error(userID, `[filter] failed to get temp filter data: ${error}`);
             onTempFilterError(user, userData, args, callback);
         } else {
             const argsKeys = Object.getOwnPropertyNames(args);
-            if (reset) {
+            if (shouldResetTempFilter) {
                 db.filter_editTemp(userID, { date_from: null, date_until: null }, (filterData, error) => {
                     if (error || !filterData) {
                         log.error(userID, `[filter] failed to clear temp filter: ${error}`);
@@ -44,25 +52,25 @@ function createMenuData_filter(user, userData, args, callback) {
                         onTempFilterUpdated(user, userData, args, filterData, callback);
                     }
                 });
-            } else if (argsKeys.includes('dF')) {
-                const dateFrom = typeof args.dF === 'number' ? menuBase.decodeDate(args.dF) : null;
+            } else if (argsKeys.includes(ARG_DATE_FROM)) {
+                const dateFrom = typeof args[ARG_DATE_FROM] === 'number' ? menuBase.decodeDate(args[ARG_DATE_FROM]) : null;
                 db.filter_editTemp(userID, { date_from: dateFrom }, (filterData, error) => {
                     if (error || !filterData) {
                         log.error(userID, `[filter] failed to update field "date_from" of temp filter: ${error}`);
                         onTempFilterError(user, userData, args, callback);
                     } else {
-                        delete args.dF;
+                        delete args[ARG_DATE_FROM];
                         onTempFilterUpdated(user, userData, args, filterData, callback);
                     }
                 });
-            } else if (argsKeys.includes('dU')) {
-                const dateUntil = typeof args.dU === 'number' ? menuBase.decodeDate(args.dU) : null;
+            } else if (argsKeys.includes(ARG_DATE_UNTIL)) {
+                const dateUntil = typeof args[ARG_DATE_UNTIL] === 'number' ? menuBase.decodeDate(args[ARG_DATE_UNTIL]) : null;
                 db.filter_editTemp(userID, { date_until: dateUntil }, (filterData, error) => {
                     if (error || !filterData) {
                         log.error(userID, `[filter] failed to update field "date_until" of temp filter: ${error}`);
                         onTempFilterError(user, userData, args, callback);
                     } else {
-                        delete args.dU;
+                        delete args[ARG_DATE_UNTIL];
                         onTempFilterUpdated(user, userData, args, filterData, callback);
                     }
                 });
@@ -76,15 +84,12 @@ function createMenuData_filter(user, userData, args, callback) {
  * @type {menuBase.menu_create_func}
  */
 function onTempFilterError(user, userData, args, callback) {
-    const prevPage = args.pP;
-    const prevFilter = args.pF;
+    const prevPage = args[ARG_PREV_PAGE];
+    const prevFilter = args[ARG_PREV_FILTER_ID];
     /** @type {walletCommon.args_data} */
-    var backButtonArgs = {};
-    if (prevPage) {
-        backButtonArgs.page = prevPage;
-    }
+    var backButtonArgs = { [ARG_RECORDS_PAGE]: (args[ARG_PREV_PAGE] ? args[ARG_PREV_PAGE] : 0) };
     if (prevFilter) {
-        backButtonArgs.fID = prevFilter;
+        backButtonArgs[ARG_RECORDS_FILTER_ID] = prevFilter;
     }
     callback({
         text: `_${bot.escapeMarkdown(`Hmm, something wrong...`)}_`, parseMode: 'MarkdownV2',
@@ -106,24 +111,27 @@ function onTempFilterUpdated(user, userData, args, tempFilterData, callback) {
 
     keyboard.push([{
         text: `From: ${tempFilterData.date_from ? dateFormat.to_readable_string(tempFilterData.date_from, { date: true }) : '--'}`,
-        callback_data: menuBase.makeMenuButton('pickDate', { ...args, from: walletMenu.getShortName('filter'), out: 'dF' })
+        callback_data: menuBase.makeMenuButton('pickDate', { ...args, from: walletMenu.getShortName('filter'), out: ARG_DATE_FROM })
     }], [{
         text: `Until: ${tempFilterData.date_until ? dateFormat.to_readable_string(tempFilterData.date_until, { date: true }) : '--'}`,
-        callback_data: menuBase.makeMenuButton('pickDate', { ...args, from: walletMenu.getShortName('filter'), out: 'dU' })
+        callback_data: menuBase.makeMenuButton('pickDate', { ...args, from: walletMenu.getShortName('filter'), out: ARG_DATE_UNTIL })
     }]);
 
     /** @type {walletCommon.args_data} */
-    var backButtonArgs = { page: (args.pP ? args.pP : 0) };
-    if (args.pP) {
-        backButtonArgs.page = args.pP;
+    var backButtonArgs = { [ARG_RECORDS_PAGE]: (args[ARG_PREV_PAGE] ? args[ARG_PREV_PAGE] : 0) };
+    if (args[ARG_PREV_FILTER_ID]) {
+        backButtonArgs[ARG_RECORDS_FILTER_ID] = args[ARG_PREV_FILTER_ID];
     }
-    if (args.pF) {
-        backButtonArgs.fID = args.pF;
-    }
-    keyboard.push([{
-        text: `<< Back to Records`,
-        callback_data: menuBase.makeMenuButton('records', backButtonArgs)
-    }]);
+    keyboard.push([
+        {
+            text: `<< Back to Records`,
+            callback_data: menuBase.makeMenuButton('records', backButtonArgs)
+        },
+        {
+            text: `Apply filter`,
+            callback_data: menuBase.makeActionButton('applyTempFilter')
+        }
+    ]);
     callback({
         text: `*Records filter:*`,
         parseMode: 'MarkdownV2',

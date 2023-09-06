@@ -21,13 +21,18 @@ module.exports.get = () => {
     };
 }
 
+const ARG_PAGE = 'page';
+const ARG_FILTER_ID = 'fID';
+const PAGE_SIZE = 10;
+
 /**
  * @type {menuBase.menu_create_func}
  */
 function createMenuData_records(user, userData, args, callback) {
     const userID = user.id;
-    const pageSize = 10;
-    const page = typeof args.page === 'number' ? args.page : 0;
+    const pageSize = PAGE_SIZE;
+    const page = typeof args[ARG_PAGE] === 'number' ? args[ARG_PAGE] : 0;
+    const argFilterID = args[ARG_FILTER_ID];
     db.record_getAmount(userID, (recordsAmount, error) => {
         if (error) {
             log.error(userID, `[records] failed to get amount of records (${error})`);
@@ -44,7 +49,11 @@ function createMenuData_records(user, userData, args, callback) {
         }
 
         const pagesCount = Math.floor(recordsAmount / pageSize) + ( (recordsAmount % pageSize) != 0 ? 1 : 0 );
-        db.record_getList(userID, pageSize, page, (records, error) => {
+        var recordParams = { recordsPerPage: pageSize, pageIndex: page };
+        if (typeof argFilterID === 'number') {
+            recordParams.filterID = argFilterID;
+        }
+        db.record_getList(userID, recordParams, (records, error) => {
             if (error) {
                 log.error(userID, `[records] failed to get records list (${error})`);
             }
@@ -60,7 +69,6 @@ function createMenuData_records(user, userData, args, callback) {
                     accountIDs.push(record.dst_account_id);
                 }
                 if (record.date > lastDate) {
-                    // TODO: Prevent creating several records with the same date (one record for each ms)
                     lastDate = record.date;
                 }
             }

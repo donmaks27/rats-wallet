@@ -50,6 +50,7 @@ const WalletActionsHandlers = {
     ...require('./actions/makeCategoryGlobal').register(stopUserAction),
 
     ...require('./actions/changeRecordsPage').register(stopUserAction),
+    ...require('./actions/applyTempFilter').register(stopUserAction),
 };
 const WalletActionsMap = makeWalletActionsMap(WalletActionsHandlers);
 

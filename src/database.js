@@ -1068,12 +1068,11 @@ function record_getAmount(userID, callback) {
 }
 /**
  * @param {number} userID 
- * @param {number} recordsPerPage 
- * @param {number} pageIndex 
+ * @param {{ recordsPerPage: number, pageIndex: number, filterID?: number }} params 
  * @param {(records: (record_data & { src_account?: account_data, dst_account?: account_data, src_currency?: currency_data, dst_currency?: currency_data, category?: category_data, labels: label_data[] })[], error?: string) => any} callback 
  */
-function record_getList(userID, recordsPerPage, pageIndex, callback) {
-    db.all(query_getRecordsList(userID, recordsPerPage >= 1 ? recordsPerPage : 1, pageIndex > 0 ? pageIndex : 0), (error, rows) => {
+function record_getList(userID, params, callback) {
+    db.all(query_getRecordsList(userID, params), (error, rows) => {
         if (error) {
             callback([], `failed to get records list: ` + error);
         } else {
@@ -1712,10 +1711,12 @@ function query_getRecordsAmount(userID) {
 }
 /**
  * @param {number} userID 
- * @param {number} recordsPerPage 
- * @param {number} pageIndex 
+ * @param {{ recordsPerPage: number, pageIndex: number, filterID?: number }} params 
  */
-function query_getRecordsList(userID, recordsPerPage, pageIndex) {
+function query_getRecordsList(userID, params) {
+    const useFilter = typeof params.filterID === 'number';
+    const recordsPerPage = Math.max(1, params.recordsPerPage);
+    const pageIndex = Math.max(0, params.pageIndex);
     /** @type {string[]} */
     var srcAccountColumns = [], dstAccountColumns = [], srcCurrencyColumns = [], dstCurrencyColumns = [], categoryColumns = [], labelColumns = [];
     const accountColumnNames = Object.getOwnPropertyNames(parseAccountRow({}));
@@ -1739,7 +1740,7 @@ function query_getRecordsList(userID, recordsPerPage, pageIndex) {
     return `SELECT records.*, ${srcAccountColumns.join(', ')}, ${dstAccountColumns.join(', ')}, 
         ${srcCurrencyColumns.join(', ')}, ${dstCurrencyColumns.join(', ')}, ${categoryColumns.join(', ')}, 
         JSON_GROUP_ARRAY(JSON_OBJECT(${labelColumns.join(', ')})) AS labels
-    FROM records
+    FROM ${useFilter ? `filters CROSS JOIN` : ''} records
         LEFT JOIN accounts AS src_account ON records.src_account_id = src_account.id
         LEFT JOIN accounts AS dst_account ON records.dst_account_id = dst_account.id
         LEFT JOIN currencies AS src_currency ON src_account.currency_code = src_currency.code
@@ -1747,7 +1748,10 @@ function query_getRecordsList(userID, recordsPerPage, pageIndex) {
         LEFT JOIN categories ON records.category_id = categories.id
         LEFT JOIN record_labels ON records.id = record_labels.record_id
         LEFT JOIN labels ON record_labels.label_id = labels.id
-    WHERE (src_account.user_id = ${userID}) OR (dst_account.user_id = ${userID})
+    WHERE ${useFilter ? `(filters.id = ${params.filterID}) AND 
+            (filters.date_from IS NULL OR (records.date >= filters.date_from)) AND 
+            (filters.date_until IS NULL OR (records.date <= filters.date_until)) AND` : ''} 
+        (src_account.user_id = ${userID}) OR (dst_account.user_id = ${userID})
     GROUP BY records.id
     ORDER BY records.date DESC, records.create_date DESC
     LIMIT ${pageIndex * recordsPerPage}, ${recordsPerPage};`;
