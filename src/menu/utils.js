@@ -326,8 +326,8 @@ function createMenuData_pickDate_month(user, userData, args, callback) {
 
     /** @type {bot.keyboard_button_inline_data[]} */
     var keyboardMonthes = [];
-    var buttonDate = new Date(date.valueOf());
     for (var i = 0; i < 12; i++) {
+        var buttonDate = new Date(date.valueOf());
         buttonDate.setUTCMonth(i + 1, 0);
         if (buttonDate >= fromDate) {
             keyboardMonthes.push({
@@ -335,6 +335,7 @@ function createMenuData_pickDate_month(user, userData, args, callback) {
                 callback_data: menuBase.makeMenuButton('pickDate', { ...args, _s: 'd', _d: menuBase.encodeDate(buttonDate) })
             });
         } else {
+            buttonDate = new Date(date.valueOf());
             buttonDate.setUTCMonth(i, 1);
             if (buttonDate <= untilDate) {
                 keyboardMonthes.push({
