@@ -134,44 +134,36 @@ function createMenuData_records(user, userData, args, callback) {
                 }
                 messageText += `\nChoose what you want to do:`
                 const dummyButton = { text: ` `, callback_data: menuBase.makeDummyButton() };
-                var choosePageButtonArgs = { page: page, maxPage: pagesCount };
-                if (filterID != null) {
-                    choosePageButtonArgs.fID = filterID;
-                }
                 /** @type {bot.keyboard_button_inline_data[]} */
                 var controlButtons = [
                     page > 1 ? { 
                         text: `<< 1`, 
-                        callback_data: menuBase.makeMenuButton('records', { page: 0 }) 
+                        callback_data: menuBase.makeMenuButton('records', { page: 0, fID: filterID }) 
                     } : dummyButton,
                     page > 0 ? { 
                         text: `< ${page}`, 
-                        callback_data: menuBase.makeMenuButton('records', { page: page - 1 }) 
+                        callback_data: menuBase.makeMenuButton('records', { page: page - 1, fID: filterID }) 
                     } : dummyButton,
                     { 
                         text: `${page + 1}`, 
-                        callback_data: menuBase.makeActionButton('changeRecordsPage', choosePageButtonArgs)
+                        callback_data: menuBase.makeActionButton('changeRecordsPage', { page: page, maxPage: pagesCount, fID: filterID })
                     },
                     page < pagesCount - 1 ? { 
                         text: `${page + 2} >`, 
-                        callback_data: menuBase.makeMenuButton('records', { page: page + 1 }) 
+                        callback_data: menuBase.makeMenuButton('records', { page: page + 1, fID: filterID }) 
                     } : dummyButton,
                     page < pagesCount - 2 ? { 
                         text: `${pagesCount} >>`, 
-                        callback_data: menuBase.makeMenuButton('records', { page: pagesCount - 1 }) 
+                        callback_data: menuBase.makeMenuButton('records', { page: pagesCount - 1, fID: filterID }) 
                     } : dummyButton
                 ];
                 // TODO: Add buttons for every record
-                var filterButtonArgs = { pP: page, reset: true };
-                if (filterID != null) {
-                    filterButtonArgs.pF = filterID;
-                }
                 callback({
                     text: messageText, 
                     parseMode: 'MarkdownV2',
                     keyboard: [ controlButtons, [{
                         text: `Filter`,
-                        callback_data: menuBase.makeMenuButton('filter', filterButtonArgs)
+                        callback_data: menuBase.makeMenuButton('filter', { pP: page, pF: filterID, reset: true })
                     }], [{
                         text: '<< Back to Wallet',
                         callback_data: menuBase.makeMenuButton('wallet')
