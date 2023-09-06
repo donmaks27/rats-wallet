@@ -93,7 +93,7 @@ function sendMenuMessage(menu, args, user, userData, callback) {
  */
 function changeMenuMessage(menuMessageID, menu, args, user, userData, callback) {
     const userID = user.id;
-    log.info(userID, `changing menu message ${menuMessageID} to menu "${menu}"...`);
+    log.info(userID, `changing menu message ${menuMessageID} to menu "${menu}" (args: ${JSON.stringify(args)})...`);
 
     const menuHandler = WalletMenuConstructors[menu];
     if (!menuHandler) {

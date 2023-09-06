@@ -94,7 +94,7 @@ function makeWalletActionsMap(actions) {
  */
 function startUserAction(action, args, user, userData, callback) {
     const userID = user.id;
-    log.info(userID, `starting action "${action}"...`);
+    log.info(userID, `starting action "${action}" (args: ${JSON.stringify(args)})...`);
 
     var actualActionName = WalletActionsMap[action];
     if (!actualActionName) {
@@ -187,11 +187,12 @@ function stopUserAction(user, userData, callback) {
                 callback(false);
             }
         } else {
+            log.info(userID, `found active action "${currentAction.action}" (args: ${JSON.stringify(currentAction.args)})`);
             actionHandlers.stop(user, userData, currentAction.args, (success) => {
                 if (!success) {
-                    log.error(userID, `failed to stop action "${currentAction}"`);
+                    log.error(userID, `failed to stop action "${currentAction.action}"`);
                 } else {
-                    log.info(userID, `stopped action "${currentAction}"`);
+                    log.info(userID, `stopped action "${currentAction.action}"`);
                     walletCommon.clearUserAction(userID);
                 }
                 if (callback) {

@@ -58,6 +58,7 @@ function startAction(user, userData, args, callback) {
                     log.error(userID, `failed to update custom filter data`);
                     callback(false);
                 } else {
+                    log.info(userID, `custom filter updated: ${JSON.stringify(filterData)}`);
                     args.filterID = filterData.id;
                     walletCommon.setUserActionArgs(userID, args);
                     ActionStopCallback(user, userData, callback);
