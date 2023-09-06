@@ -32,8 +32,8 @@ function createMenuData_records(user, userData, args, callback) {
     const userID = user.id;
     const pageSize = PAGE_SIZE;
     const page = typeof args[ARG_PAGE] === 'number' ? args[ARG_PAGE] : 0;
-    const argFilterID = args[ARG_FILTER_ID];
-    db.record_getAmount(userID, (recordsAmount, error) => {
+    const filterID = typeof args[ARG_FILTER_ID] === 'number' ? args[ARG_FILTER_ID] : null;
+    db.record_getAmount(userID, filterID, (recordsAmount, error) => {
         if (error) {
             log.error(userID, `[records] failed to get amount of records (${error})`);
         }
@@ -50,8 +50,8 @@ function createMenuData_records(user, userData, args, callback) {
 
         const pagesCount = Math.floor(recordsAmount / pageSize) + ( (recordsAmount % pageSize) != 0 ? 1 : 0 );
         var recordParams = { recordsPerPage: pageSize, pageIndex: page };
-        if (typeof argFilterID === 'number') {
-            recordParams.filterID = argFilterID;
+        if (filterID != null) {
+            recordParams.filterID = filterID;
         }
         db.record_getList(userID, recordParams, (records, error) => {
             if (error) {
@@ -134,6 +134,10 @@ function createMenuData_records(user, userData, args, callback) {
                 }
                 messageText += `\nChoose what you want to do:`
                 const dummyButton = { text: ` `, callback_data: menuBase.makeDummyButton() };
+                var choosePageButtonArgs = { page: page, maxPage: pagesCount };
+                if (filterID != null) {
+                    choosePageButtonArgs.fID = filterID;
+                }
                 /** @type {bot.keyboard_button_inline_data[]} */
                 var controlButtons = [
                     page > 1 ? { 
@@ -146,7 +150,7 @@ function createMenuData_records(user, userData, args, callback) {
                     } : dummyButton,
                     { 
                         text: `${page + 1}`, 
-                        callback_data: menuBase.makeActionButton('changeRecordsPage', { page: page, maxPage: pagesCount })
+                        callback_data: menuBase.makeActionButton('changeRecordsPage', choosePageButtonArgs)
                     },
                     page < pagesCount - 1 ? { 
                         text: `${page + 2} >`, 
@@ -158,12 +162,16 @@ function createMenuData_records(user, userData, args, callback) {
                     } : dummyButton
                 ];
                 // TODO: Add buttons for every record
+                var filterButtonArgs = { pP: page, reset: true };
+                if (filterID != null) {
+                    filterButtonArgs.pF = filterID;
+                }
                 callback({
                     text: messageText, 
                     parseMode: 'MarkdownV2',
                     keyboard: [ controlButtons, [{
                         text: `Filter`,
-                        callback_data: menuBase.makeMenuButton('filter', { pP: page, reset: true })
+                        callback_data: menuBase.makeMenuButton('filter', filterButtonArgs)
                     }], [{
                         text: '<< Back to Wallet',
                         callback_data: menuBase.makeMenuButton('wallet')

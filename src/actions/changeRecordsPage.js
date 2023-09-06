@@ -57,6 +57,10 @@ function startAction(user, userData, args, callback) {
     }
 
     log.info(userID, `changing menu message...`);
+    var backButtonArgs = { page: args.page };
+    if (typeof args.fID === 'number') {
+        backButtonArgs.fID = args.fID;
+    }
     bot.editMessage({
         message: { chatID: userID, id: walletCommon.getUserMenuMessageID(userID) },
         parseMode: 'MarkdownV2',
@@ -65,7 +69,7 @@ function startAction(user, userData, args, callback) {
             [
                 {
                     text: '<< Back to Records',
-                    callback_data: menuBase.makeMenuButton('records', { page: args.page })
+                    callback_data: menuBase.makeMenuButton('records', backButtonArgs)
                 }
             ]
         ] }
@@ -125,7 +129,11 @@ function stopAction(user, userData, args, callback) {
     if (menuMessageID > 0) {
         bot.deleteMessage({ chatID: userID, messageID: menuMessageID });
     }
-    walletMenu.sendMenuMessage('records', { page: page }, user, userData, (message, error) => {
+    var menuArgs = { page: page };
+    if (typeof args.fID === 'number') {
+        menuArgs.fID = args.fID;
+    }
+    walletMenu.sendMenuMessage('records', menuArgs, user, userData, (message, error) => {
         if (error) {
             log.error(userID, `failed to return to records menu (page ${page}) (${error})`);
         } else {

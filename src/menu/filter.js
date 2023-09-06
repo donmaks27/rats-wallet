@@ -35,6 +35,7 @@ const ARG_RECORDS_FILTER_ID = 'fID';
  */
 function createMenuData_filter(user, userData, args, callback) {
     const userID = user.id;
+    const prevFilterID = typeof args[ARG_PREV_FILTER_ID] === 'number' ? args[ARG_PREV_FILTER_ID] : null;
     const shouldResetTempFilter = args[ARG_RESET_TEMP_FILTER] ? true : false;
     delete args[ARG_RESET_TEMP_FILTER];
     db.filter_getTemp(userID, (filterData, error) => {
@@ -44,14 +45,32 @@ function createMenuData_filter(user, userData, args, callback) {
         } else {
             const argsKeys = Object.getOwnPropertyNames(args);
             if (shouldResetTempFilter) {
-                db.filter_editTemp(userID, { date_from: null, date_until: null }, (filterData, error) => {
-                    if (error || !filterData) {
-                        log.error(userID, `[filter] failed to clear temp filter: ${error}`);
-                        onTempFilterError(user, userData, args, callback);
-                    } else {
-                        onTempFilterUpdated(user, userData, args, filterData, callback);
-                    }
-                });
+                if (prevFilterID == null) {
+                    db.filter_editTemp(userID, { date_from: null, date_until: null }, (filterData, error) => {
+                        if (error || !filterData) {
+                            log.error(userID, `[filter] failed to clear temp filter: ${error}`);
+                            onTempFilterError(user, userData, args, callback);
+                        } else {
+                            onTempFilterUpdated(user, userData, args, filterData, callback);
+                        }
+                    });
+                } else {
+                    db.filter_get(prevFilterID, (filterData, error) => {
+                        if (error || !filterData) {
+                            log.error(userID, `[filter] failed to get previous filter: ${error}`);
+                            onTempFilterError(user, userData, args, callback);
+                        } else {
+                            db.filter_editTemp(userID, filterData, (filterData, error) => {
+                                if (error || !filterData) {
+                                    log.error(userID, `[filter] failed to reset temp filter: ${error}`);
+                                    onTempFilterError(user, userData, args, callback);
+                                } else {
+                                    onTempFilterUpdated(user, userData, args, filterData, callback);
+                                }
+                            });
+                        }
+                    });
+                }
             } else if (argsKeys.includes(ARG_DATE_FROM)) {
                 const dateFrom = typeof args[ARG_DATE_FROM] === 'number' ? menuBase.decodeDate(args[ARG_DATE_FROM]) : null;
                 db.filter_editTemp(userID, { date_from: dateFrom }, (filterData, error) => {

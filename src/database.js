@@ -1055,10 +1055,11 @@ function record_get(id, callback) {
 }
 /**
  * @param {number} userID 
+ * @param {number | null} filterID
  * @param {(amount: number, error?: string) => any} callback 
  */
-function record_getAmount(userID, callback) {
-    db.get(query_getRecordsAmount(userID), (error, row) => {
+function record_getAmount(userID, filterID, callback) {
+    db.get(query_getRecordsAmount(userID, filterID), (error, row) => {
         if (error) {
             callback(0, `failed to get amount of records: ` + error);
         } else {
@@ -1700,13 +1701,17 @@ function query_getRecord(id) {
 }
 /**
  * @param {number} userID 
+ * @param {number | null} filterID
  */
-function query_getRecordsAmount(userID) {
+function query_getRecordsAmount(userID, filterID) {
     return `SELECT COUNT(records.id) AS amount
-    FROM records
+    FROM ${filterID != null ? `filters CROSS JOIN` : ''} records
         LEFT JOIN accounts AS src_account ON records.src_account_id = src_account.id
         LEFT JOIN accounts AS dst_account ON records.dst_account_id = dst_account.id
-    WHERE (src_account.user_id = ${userID}) OR (dst_account.user_id = ${userID})
+    WHERE ${filterID != null ? `(filters.id = ${filterID}) AND 
+            (filters.date_from IS NULL OR (records.date >= filters.date_from)) AND 
+            (filters.date_until IS NULL OR (records.date <= filters.date_until)) AND` : ''} 
+        ((src_account.user_id = ${userID}) OR (dst_account.user_id = ${userID}))
     LIMIT 1;`;
 }
 /**
