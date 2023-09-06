@@ -26,6 +26,17 @@ module.exports.get = () => {
     };
 }
 
+function getMinDate() {
+    var date = new Date(0);
+    date.setUTCFullYear(MIN_YEAR, 0, 1);
+    return date;
+}
+function getMaxDate() {
+    var date = new Date(0);
+    date.setUTCFullYear(MAX_YEAR, 11, 31);
+    return date;
+}
+
 /**
  * @param {Date} date 
  */
@@ -115,22 +126,27 @@ function createMenuData_pickDate_day(user, userData, args, callback) {
     // @ts-ignore
     const prevMenu = typeof args.from === 'string' ? walletMenu.getNameByShortName(args.from) : 'main';
     const outArg = typeof args.out === 'string' ? args.out : 'date';
+    const fromDate = typeof args.min === 'number' ? menuBase.decodeDate(args.min) : getMinDate();
+    var untilDate = typeof args.max === 'number' ? menuBase.decodeDate(args.max) : getMaxDate();
+    if (untilDate < fromDate) {
+        untilDate = fromDate;
+    }
+
     var returnButtonArgs = { ...args };
     delete returnButtonArgs._s;
     delete returnButtonArgs._d;
     delete returnButtonArgs.from;
     delete returnButtonArgs.out;
+    delete returnButtonArgs.min;
+    delete returnButtonArgs.max;
 
     var date = typeof args._d === 'number' ? menuBase.decodeDate(args._d) : new Date(0);
-    date.setUTCDate(1);
-    var year = date.getUTCFullYear();
-    if (year > MAX_YEAR) {
-        date.setFullYear(MAX_YEAR);
-        year = date.getUTCFullYear();
-    } else if (year < MIN_YEAR) {
-        date.setFullYear(MIN_YEAR);
-        year = date.getUTCFullYear();
+    if (date < fromDate) {
+        date = fromDate;
+    } else if (date > untilDate) {
+        date = untilDate;
     }
+    const year = date.getUTCFullYear();
     const month = date.getUTCMonth();
     const firstDayOfWeek = getFirstDayOfWeek(date);
     const daysInMonth = getDaysInMonth(date);
@@ -140,9 +156,9 @@ function createMenuData_pickDate_day(user, userData, args, callback) {
     
     /** @type {bot.keyboard_button_inline_data[]} */
     var keyboardHeader = [];
-    if ((year > MIN_YEAR) || (month > 0)) {
-        var buttonPrevMonthDate = new Date(date.valueOf());
-        buttonPrevMonthDate.setUTCMonth(month - 1);
+    var buttonPrevMonthDate = new Date(date.valueOf());
+    buttonPrevMonthDate.setUTCDate(0);
+    if (buttonPrevMonthDate >= fromDate) {
         keyboardHeader.push({
             text: `<`,
             callback_data: menuBase.makeMenuButton('pickDate', { ...args, _s: 'd', _d: menuBase.encodeDate(buttonPrevMonthDate) })
@@ -160,10 +176,10 @@ function createMenuData_pickDate_day(user, userData, args, callback) {
         text: `${year}`,
         callback_data: menuBase.makeMenuButton('pickDate', { ...args, _s: 'y', _d: menuBase.encodeDate(date) })
     });
-    if ((year < MAX_YEAR) || (month < 11))
+    var buttonNextMonthDate = new Date(date.valueOf());
+    buttonNextMonthDate.setUTCMonth(month + 1, 1);
+    if (buttonNextMonthDate <= untilDate)
     {
-        var buttonNextMonthDate = new Date(date.valueOf());
-        buttonNextMonthDate.setUTCMonth(month + 1);
         keyboardHeader.push({
             text: `>`,
             callback_data: menuBase.makeMenuButton('pickDate', { ...args, _s: 'd', _d: menuBase.encodeDate(buttonNextMonthDate) })
@@ -196,10 +212,17 @@ function createMenuData_pickDate_day(user, userData, args, callback) {
     var buttonDate = new Date(date.valueOf());
     for (var i = 0; i < daysInMonth; i++) {
         buttonDate.setUTCDate(i + 1);
-        keyboardWeek.push({
-            text: `${i + 1}`,
-            callback_data: menuBase.makeMenuButton(prevMenu, { ...returnButtonArgs, [outArg]: menuBase.encodeDate(buttonDate) })
-        });
+        if ((fromDate <= buttonDate) && (buttonDate <= untilDate)) {
+            keyboardWeek.push({
+                text: `${i + 1}`,
+                callback_data: menuBase.makeMenuButton(prevMenu, { ...returnButtonArgs, [outArg]: menuBase.encodeDate(buttonDate) })
+            });
+        } else {
+            keyboardWeek.push({
+                text: ' ',
+                callback_data: menuBase.makeDummyButton()
+            });
+        }
         if (keyboardWeek.length == 7) {
             keyboard.push(keyboardWeek);
             keyboardWeek = [];
@@ -241,31 +264,36 @@ function createMenuData_pickDate_month(user, userData, args, callback) {
     // @ts-ignore
     const prevMenu = typeof args.from === 'string' ? walletMenu.getNameByShortName(args.from) : 'main';
     const outArg = typeof args.out === 'string' ? args.out : 'date';
+    const fromDate = typeof args.min === 'number' ? menuBase.decodeDate(args.min) : getMinDate();
+    var untilDate = typeof args.max === 'number' ? menuBase.decodeDate(args.max) : getMaxDate();
+    if (untilDate < fromDate) {
+        untilDate = fromDate;
+    }
+
     var returnButtonArgs = { ...args };
     delete returnButtonArgs._s;
     delete returnButtonArgs._d;
     delete returnButtonArgs.from;
     delete returnButtonArgs.out;
+    delete returnButtonArgs.min;
+    delete returnButtonArgs.max;
 
     var date = typeof args._d === 'number' ? menuBase.decodeDate(args._d) : new Date(0);
-    date.setUTCMonth(0, 1);
-    var year = date.getUTCFullYear();
-    if (year > MAX_YEAR) {
-        date.setFullYear(MAX_YEAR);
-        year = date.getUTCFullYear();
-    } else if (year < MIN_YEAR) {
-        date.setFullYear(MIN_YEAR);
-        year = date.getUTCFullYear();
+    if (date < fromDate) {
+        date = fromDate;
+    } else if (date > untilDate) {
+        date = untilDate;
     }
+    const year = date.getUTCFullYear();
 
     /** @type {bot.keyboard_button_inline_data[][]} */
     var keyboard = [];
 
     /** @type {bot.keyboard_button_inline_data[]} */
     var keyboardHeader = [];
-    if (year > MIN_YEAR) {
-        var buttonPrevYearDate = new Date(date.valueOf());
-        buttonPrevYearDate.setUTCFullYear(year - 1);
+    var buttonPrevYearDate = new Date(date.valueOf());
+    buttonPrevYearDate.setUTCMonth(0, 0);
+    if (buttonPrevYearDate >= fromDate) {
         keyboardHeader.push({
             text: `<`,
             callback_data: menuBase.makeMenuButton('pickDate', { ...args, _s: 'm', _d: menuBase.encodeDate(buttonPrevYearDate) })
@@ -280,10 +308,10 @@ function createMenuData_pickDate_month(user, userData, args, callback) {
         text: `${year}`,
         callback_data: menuBase.makeMenuButton('pickDate', { ...args, _s: 'y', _d: menuBase.encodeDate(date) })
     });
-    if (year < MAX_YEAR)
+    var buttonNextYearDate = new Date(date.valueOf());
+    buttonNextYearDate.setUTCFullYear(year + 1, 0, 1);
+    if (buttonNextYearDate <= untilDate)
     {
-        var buttonNextYearDate = new Date(date.valueOf());
-        buttonNextYearDate.setUTCFullYear(year + 1);
         keyboardHeader.push({
             text: `>`,
             callback_data: menuBase.makeMenuButton('pickDate', { ...args, _s: 'm', _d: menuBase.encodeDate(buttonNextYearDate) })
@@ -300,11 +328,26 @@ function createMenuData_pickDate_month(user, userData, args, callback) {
     var keyboardMonthes = [];
     var buttonDate = new Date(date.valueOf());
     for (var i = 0; i < 12; i++) {
-        buttonDate.setUTCMonth(i, 1);
-        keyboardMonthes.push({
-            text: monthToString(i),
-            callback_data: menuBase.makeMenuButton('pickDate', { ...args, _s: 'd', _d: menuBase.encodeDate(buttonDate) })
-        });
+        buttonDate.setUTCMonth(i + 1, 0);
+        if (buttonDate >= fromDate) {
+            keyboardMonthes.push({
+                text: monthToString(i),
+                callback_data: menuBase.makeMenuButton('pickDate', { ...args, _s: 'd', _d: menuBase.encodeDate(buttonDate) })
+            });
+        } else {
+            buttonDate.setUTCMonth(i, 1);
+            if (buttonDate <= untilDate) {
+                keyboardMonthes.push({
+                    text: monthToString(i),
+                    callback_data: menuBase.makeMenuButton('pickDate', { ...args, _s: 'd', _d: menuBase.encodeDate(buttonDate) })
+                });
+            } else {
+                keyboardHeader.push({
+                    text: ` `,
+                    callback_data: menuBase.makeDummyButton()
+                });
+            }
+        }
         if (keyboardMonthes.length == 6) {
             keyboard.push(keyboardMonthes);
             keyboardMonthes = [];
@@ -337,22 +380,27 @@ function createMenuData_pickDate_year(user, userData, args, callback) {
     // @ts-ignore
     const prevMenu = typeof args.from === 'string' ? walletMenu.getNameByShortName(args.from) : 'main';
     const outArg = typeof args.out === 'string' ? args.out : 'date';
+    const fromDate = typeof args.min === 'number' ? menuBase.decodeDate(args.min) : getMinDate();
+    var untilDate = typeof args.max === 'number' ? menuBase.decodeDate(args.max) : getMaxDate();
+    if (untilDate < fromDate) {
+        untilDate = fromDate;
+    }
+
     var returnButtonArgs = { ...args };
     delete returnButtonArgs._s;
     delete returnButtonArgs._d;
     delete returnButtonArgs.from;
     delete returnButtonArgs.out;
+    delete returnButtonArgs.min;
+    delete returnButtonArgs.max;
 
     var date = typeof args._d === 'number' ? menuBase.decodeDate(args._d) : new Date(0);
-    date.setUTCMonth(0, 1);
-    var year = date.getUTCFullYear();
-    if (year > MAX_YEAR) {
-        date.setFullYear(MAX_YEAR);
-        year = date.getUTCFullYear();
-    } else if (year < MIN_YEAR) {
-        date.setFullYear(MIN_YEAR);
-        year = date.getUTCFullYear();
+    if (date < fromDate) {
+        date = fromDate;
+    } else if (date > untilDate) {
+        date = untilDate;
     }
+    const year = date.getUTCFullYear();
     const minYear = year - 12;
     const maxYear = year + 12;
 
@@ -361,9 +409,9 @@ function createMenuData_pickDate_year(user, userData, args, callback) {
 
     /** @type {bot.keyboard_button_inline_data[]} */
     var keyboardHeader = [];
-    if (minYear > MIN_YEAR) {
+    if (minYear > fromDate.getUTCFullYear()) {
         var nextPageDate = new Date(date.valueOf());
-        nextPageDate.setUTCFullYear(Math.max(MIN_YEAR, year - 25));
+        nextPageDate.setUTCFullYear(Math.max(fromDate.getUTCFullYear(), year - 25));
         keyboardHeader.push({
             text: `<`,
             callback_data: menuBase.makeMenuButton('pickDate', { ...args, _s: 'y', _d: menuBase.encodeDate(nextPageDate) })
@@ -374,9 +422,9 @@ function createMenuData_pickDate_year(user, userData, args, callback) {
             callback_data: menuBase.makeDummyButton()
         });
     }
-    if (maxYear < MAX_YEAR) {
+    if (maxYear < untilDate.getUTCFullYear()) {
         var nextPageDate = new Date(date.valueOf());
-        nextPageDate.setUTCFullYear(Math.min(MAX_YEAR, year + 25));
+        nextPageDate.setUTCFullYear(Math.min(untilDate.getUTCFullYear(), year + 25));
         keyboardHeader.push({
             text: `>`,
             callback_data: menuBase.makeMenuButton('pickDate', { ...args, _s: 'y', _d: menuBase.encodeDate(nextPageDate) })
@@ -393,7 +441,7 @@ function createMenuData_pickDate_year(user, userData, args, callback) {
     var keyboardYears = [];
     var buttonDate = new Date(date.valueOf());
     for (var i = minYear; i <= maxYear; i++) {
-        if ((i < MIN_YEAR) || (i > MAX_YEAR)) {
+        if ((i < fromDate.getUTCFullYear()) || (i > untilDate.getUTCFullYear())) {
             keyboardYears.push({
                 text: ` `,
                 callback_data: menuBase.makeDummyButton()

@@ -83,7 +83,10 @@ function createMenuData_filter(user, userData, args, callback) {
                     }
                 });
             } else if (argsKeys.includes(ARG_DATE_UNTIL)) {
-                const dateUntil = typeof args[ARG_DATE_UNTIL] === 'number' ? menuBase.decodeDate(args[ARG_DATE_UNTIL]) : null;
+                var dateUntil = typeof args[ARG_DATE_UNTIL] === 'number' ? menuBase.decodeDate(args[ARG_DATE_UNTIL]) : null;
+                if (dateUntil != null) {
+                    dateUntil.setUTCHours(23, 59, 59, 999);
+                }
                 db.filter_editTemp(userID, { date_until: dateUntil }, (filterData, error) => {
                     if (error || !filterData) {
                         log.error(userID, `[filter] failed to update field "date_until" of temp filter: ${error}`);
@@ -124,36 +127,30 @@ function onTempFilterError(user, userData, args, callback) {
  */
 function onTempFilterUpdated(user, userData, args, tempFilterData, callback) {
     const userID = user.id;
-    
-    /** @type {bot.keyboard_button_inline_data[][]} */
-    var keyboard = [];
-
-    keyboard.push([{
-        text: `From: ${tempFilterData.date_from ? dateFormat.to_readable_string(tempFilterData.date_from, { date: true }) : '--'}`,
-        callback_data: menuBase.makeMenuButton('pickDate', { ...args, from: walletMenu.getShortName('filter'), out: ARG_DATE_FROM })
-    }], [{
-        text: `Until: ${tempFilterData.date_until ? dateFormat.to_readable_string(tempFilterData.date_until, { date: true }) : '--'}`,
-        callback_data: menuBase.makeMenuButton('pickDate', { ...args, from: walletMenu.getShortName('filter'), out: ARG_DATE_UNTIL })
-    }]);
-
-    /** @type {walletCommon.args_data} */
-    var backButtonArgs = { [ARG_RECORDS_PAGE]: (args[ARG_PREV_PAGE] ? args[ARG_PREV_PAGE] : 0) };
-    if (args[ARG_PREV_FILTER_ID]) {
-        backButtonArgs[ARG_RECORDS_FILTER_ID] = args[ARG_PREV_FILTER_ID];
-    }
-    keyboard.push([
-        {
-            text: `<< Back to Records`,
-            callback_data: menuBase.makeMenuButton('records', backButtonArgs)
-        },
-        {
-            text: `Apply filter`,
-            callback_data: menuBase.makeActionButton('applyTempFilter')
-        }
-    ]);
     callback({
         text: `*Records filter:*`,
         parseMode: 'MarkdownV2',
-        keyboard: keyboard
+        keyboard: [
+            [
+                {
+                    text: `From: ${tempFilterData.date_from ? dateFormat.to_readable_string(tempFilterData.date_from, { date: true }) : '--'}`,
+                    callback_data: menuBase.makeMenuButton('pickDate', { ...args, from: walletMenu.getShortName('filter'), out: ARG_DATE_FROM, max: tempFilterData.date_until ? menuBase.encodeDate(tempFilterData.date_until) : null })
+                }
+            ], [
+                {
+                    text: `Until: ${tempFilterData.date_until ? dateFormat.to_readable_string(tempFilterData.date_until, { date: true }) : '--'}`,
+                    callback_data: menuBase.makeMenuButton('pickDate', { ...args, from: walletMenu.getShortName('filter'), out: ARG_DATE_UNTIL, min: tempFilterData.date_from ? menuBase.encodeDate(tempFilterData.date_from) : null })
+                }
+            ], [
+                {
+                    text: `<< Back to Records`,
+                    callback_data: menuBase.makeMenuButton('records', { [ARG_RECORDS_PAGE]: (args[ARG_PREV_PAGE] ? args[ARG_PREV_PAGE] : 0), [ARG_RECORDS_FILTER_ID]: args[ARG_PREV_FILTER_ID] })
+                },
+                {
+                    text: `Apply filter`,
+                    callback_data: menuBase.makeActionButton('applyTempFilter')
+                }
+            ]
+        ]
     });
 }
