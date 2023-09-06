@@ -1751,7 +1751,7 @@ function query_getRecordsList(userID, params) {
     WHERE ${useFilter ? `(filters.id = ${params.filterID}) AND 
             (filters.date_from IS NULL OR (records.date >= filters.date_from)) AND 
             (filters.date_until IS NULL OR (records.date <= filters.date_until)) AND` : ''} 
-        (src_account.user_id = ${userID}) OR (dst_account.user_id = ${userID})
+        ((src_account.user_id = ${userID}) OR (dst_account.user_id = ${userID}))
     GROUP BY records.id
     ORDER BY records.date DESC, records.create_date DESC
     LIMIT ${pageIndex * recordsPerPage}, ${recordsPerPage};`;
