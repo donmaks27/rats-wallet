@@ -329,25 +329,24 @@ function createMenuData_pickDate_month(user, userData, args, callback) {
     for (var i = 0; i < 12; i++) {
         var buttonDate = new Date(date.valueOf());
         buttonDate.setUTCMonth(i + 1, 0);
-        if (buttonDate >= fromDate) {
-            keyboardMonthes.push({
-                text: monthToString(i),
-                callback_data: menuBase.makeMenuButton('pickDate', { ...args, _s: 'd', _d: menuBase.encodeDate(buttonDate) })
-            });
-        } else {
-            buttonDate = new Date(date.valueOf());
-            buttonDate.setUTCMonth(i, 1);
+        if (fromDate <= buttonDate) {
+            buttonDate.setUTCDate(1);
             if (buttonDate <= untilDate) {
                 keyboardMonthes.push({
                     text: monthToString(i),
                     callback_data: menuBase.makeMenuButton('pickDate', { ...args, _s: 'd', _d: menuBase.encodeDate(buttonDate) })
                 });
             } else {
-                keyboardHeader.push({
+                keyboardMonthes.push({
                     text: ` `,
                     callback_data: menuBase.makeDummyButton()
                 });
             }
+        } else {
+            keyboardMonthes.push({
+                text: ` `,
+                callback_data: menuBase.makeDummyButton()
+            });
         }
         if (keyboardMonthes.length == 6) {
             keyboard.push(keyboardMonthes);
