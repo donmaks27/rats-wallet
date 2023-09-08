@@ -639,7 +639,9 @@ function createMenuData_enterNumber(user, userData, args, callback) {
     const outArg = typeof args.out === 'string' ? args.out : 'num';
     const prevNumber = args[outArg];
     const currentNumber = typeof args._n === 'number' ? args._n : (typeof prevNumber === 'number' ? prevNumber : 0);
-    const currentCursor = typeof args._c === 'number' ? args._c : 0;
+    const currentNumber1 = currentNumber % 100;
+    const currentNumber0 = Math.floor(currentNumber / 100);
+    const currentCursor = typeof args._c === 'number' ? args._c : (currentNumber % 10 != 0 ? 3 : (currentNumber1 != 0 ? 2 : 0));
     var returnButtonArgs = { ...args };
     delete returnButtonArgs.from;
     delete returnButtonArgs.out;
@@ -746,8 +748,6 @@ function createMenuData_enterNumber(user, userData, args, callback) {
         ]
     ];
     
-    const currentNumber1 = currentNumber % 100;
-    const currentNumber0 = Math.floor(currentNumber / 100);
     var currentNumberStr = `${currentNumber0}`;
     if (currentCursor > 0) {
         currentNumberStr += '.';
