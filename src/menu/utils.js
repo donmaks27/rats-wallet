@@ -750,10 +750,12 @@ function createMenuData_enterNumber(user, userData, args, callback) {
     if (currentCursor > 0) {
         currentNumberStr += '.';
         if (currentCursor > 1) {
-            if ((currentCursor == 2) || (currentNumber1 >= 10)) {
-                currentNumberStr += `${currentNumber1}`;
-            } else {
+            if (currentCursor == 2) {
+                currentNumberStr += `${Math.floor(currentNumber1 / 10)}`
+            } else if (currentNumber1 < 10) {
                 currentNumberStr += `0${currentNumber1}`;
+            } else {
+                currentNumberStr += `${currentNumber1}`;
             }
         }
     }
