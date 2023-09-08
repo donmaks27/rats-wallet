@@ -650,19 +650,23 @@ function createMenuData_enterNumber(user, userData, args, callback) {
     const cursorMultiplier = currentCursor == 0 ? 100 : (currentCursor == 1 ? 10 : 1);
     var backspaceButtonArgs = { ...args };
     switch (currentCursor) {
-    case 2:
-        backspaceButtonArgs._n = currentNumber - currentNumber % 10;
-        backspaceButtonArgs._c = 1;
-        break;
-    case 1:
-        backspaceButtonArgs._n = currentNumber - currentNumber % 100;
-        backspaceButtonArgs._c = 0;
-        break;
-    default:
+    case 0:
         backspaceButtonArgs._n = Math.floor(currentNumber / 10);
         backspaceButtonArgs._n = backspaceButtonArgs._n - backspaceButtonArgs._n % 100;
         backspaceButtonArgs._c = 0;
         break;
+    case 1:
+        backspaceButtonArgs._c = 0;
+        break;
+    case 2:
+        backspaceButtonArgs._n = currentNumber - currentNumber % 10;
+        backspaceButtonArgs._c = 1;
+        break;
+    case 3:
+        backspaceButtonArgs._n = currentNumber - currentNumber % 10;
+        backspaceButtonArgs._c = 2;
+        break;
+    default: break;
     }
     /** @type {bot.keyboard_button_inline_data[][]} */
     var keyboard = [
@@ -745,10 +749,12 @@ function createMenuData_enterNumber(user, userData, args, callback) {
     var currentNumberStr = `${currentNumber0}`;
     if (currentCursor > 0) {
         currentNumberStr += '.';
-        if ((currentCursor == 1) || (currentNumber1 >= 10)) {
-            currentNumberStr += `${currentNumber1}`;
-        } else {
-            currentNumberStr += `0${currentNumber1}`;
+        if (currentCursor > 1) {
+            if ((currentCursor == 2) || (currentNumber1 >= 10)) {
+                currentNumberStr += `${currentNumber1}`;
+            } else {
+                currentNumberStr += `0${currentNumber1}`;
+            }
         }
     }
     callback({
