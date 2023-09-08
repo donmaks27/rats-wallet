@@ -129,7 +129,7 @@ function createMenu_debugNumpad(user, userData, args, callback) {
     var numberStr = 'NONE';
     if (typeof numberArg === 'number') {
         const lastPart = numberArg % 100;
-        numberStr = `${numberArg - lastPart}.${lastPart < 10 ? '0' : ''}${lastPart}`;
+        numberStr = `${Math.floor(numberArg / 100)}.${lastPart < 10 ? '0' : ''}${lastPart}`;
     }
     callback({
         text: `*DEBUG _Numpad_*\nCurrent number: ${bot.escapeMarkdown(numberStr)}`, parseMode: 'MarkdownV2',

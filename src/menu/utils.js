@@ -669,40 +669,40 @@ function createMenuData_enterNumber(user, userData, args, callback) {
         [
             {
                 text: `7`,
-                callback_data: currentCursor < 2 ? menuBase.makeMenuButton('enterNumber', { ...args, _n: currentNumber * cursorShift + 7 * cursorMultiplier, _c: nextCursor }) : menuBase.makeDummyButton()
+                callback_data: currentCursor <= 2 ? menuBase.makeMenuButton('enterNumber', { ...args, _n: currentNumber * cursorShift + 7 * cursorMultiplier, _c: nextCursor }) : menuBase.makeDummyButton()
             },
             {
                 text: `8`,
-                callback_data: currentCursor < 2 ? menuBase.makeMenuButton('enterNumber', { ...args, _n: currentNumber * cursorShift + 8 * cursorMultiplier, _c: nextCursor }) : menuBase.makeDummyButton()
+                callback_data: currentCursor <= 2 ? menuBase.makeMenuButton('enterNumber', { ...args, _n: currentNumber * cursorShift + 8 * cursorMultiplier, _c: nextCursor }) : menuBase.makeDummyButton()
             },{
                 text: `9`,
-                callback_data: currentCursor < 2 ? menuBase.makeMenuButton('enterNumber', { ...args, _n: currentNumber * cursorShift + 9 * cursorMultiplier, _c: nextCursor }) : menuBase.makeDummyButton()
+                callback_data: currentCursor <= 2 ? menuBase.makeMenuButton('enterNumber', { ...args, _n: currentNumber * cursorShift + 9 * cursorMultiplier, _c: nextCursor }) : menuBase.makeDummyButton()
             },
         ],
         [
             {
                 text: `4`,
-                callback_data: currentCursor < 2 ? menuBase.makeMenuButton('enterNumber', { ...args, _n: currentNumber * cursorShift + 4 * cursorMultiplier, _c: nextCursor }) : menuBase.makeDummyButton()
+                callback_data: currentCursor <= 2 ? menuBase.makeMenuButton('enterNumber', { ...args, _n: currentNumber * cursorShift + 4 * cursorMultiplier, _c: nextCursor }) : menuBase.makeDummyButton()
             },
             {
                 text: `5`,
-                callback_data: currentCursor < 2 ? menuBase.makeMenuButton('enterNumber', { ...args, _n: currentNumber * cursorShift + 5 * cursorMultiplier, _c: nextCursor }) : menuBase.makeDummyButton()
+                callback_data: currentCursor <= 2 ? menuBase.makeMenuButton('enterNumber', { ...args, _n: currentNumber * cursorShift + 5 * cursorMultiplier, _c: nextCursor }) : menuBase.makeDummyButton()
             },{
                 text: `6`,
-                callback_data: currentCursor < 2 ? menuBase.makeMenuButton('enterNumber', { ...args, _n: currentNumber * cursorShift + 6 * cursorMultiplier, _c: nextCursor }) : menuBase.makeDummyButton()
+                callback_data: currentCursor <= 2 ? menuBase.makeMenuButton('enterNumber', { ...args, _n: currentNumber * cursorShift + 6 * cursorMultiplier, _c: nextCursor }) : menuBase.makeDummyButton()
             },
         ],
         [
             {
                 text: `1`,
-                callback_data: currentCursor < 2 ? menuBase.makeMenuButton('enterNumber', { ...args, _n: currentNumber * cursorShift + 1 * cursorMultiplier, _c: nextCursor }) : menuBase.makeDummyButton()
+                callback_data: currentCursor <= 2 ? menuBase.makeMenuButton('enterNumber', { ...args, _n: currentNumber * cursorShift + 1 * cursorMultiplier, _c: nextCursor }) : menuBase.makeDummyButton()
             },
             {
                 text: `2`,
-                callback_data: currentCursor < 2 ? menuBase.makeMenuButton('enterNumber', { ...args, _n: currentNumber * cursorShift + 2 * cursorMultiplier, _c: nextCursor }) : menuBase.makeDummyButton()
+                callback_data: currentCursor <= 2 ? menuBase.makeMenuButton('enterNumber', { ...args, _n: currentNumber * cursorShift + 2 * cursorMultiplier, _c: nextCursor }) : menuBase.makeDummyButton()
             },{
                 text: `3`,
-                callback_data: currentCursor < 2 ? menuBase.makeMenuButton('enterNumber', { ...args, _n: currentNumber * cursorShift + 3 * cursorMultiplier, _c: nextCursor }) : menuBase.makeDummyButton()
+                callback_data: currentCursor <= 2 ? menuBase.makeMenuButton('enterNumber', { ...args, _n: currentNumber * cursorShift + 3 * cursorMultiplier, _c: nextCursor }) : menuBase.makeDummyButton()
             },
         ],
         [
@@ -712,7 +712,7 @@ function createMenuData_enterNumber(user, userData, args, callback) {
             },
             {
                 text: `0`,
-                callback_data: currentCursor < 2 ? menuBase.makeMenuButton('enterNumber', { ...args, _n: currentNumber * cursorShift, _c: nextCursor }) : menuBase.makeDummyButton()
+                callback_data: currentCursor <= 2 ? menuBase.makeMenuButton('enterNumber', { ...args, _n: currentNumber * cursorShift, _c: nextCursor }) : menuBase.makeDummyButton()
             },{
                 text: `⭰`,
                 callback_data: menuBase.makeMenuButton('enterNumber', backspaceButtonArgs)
@@ -741,14 +741,14 @@ function createMenuData_enterNumber(user, userData, args, callback) {
     ];
     
     const currentNumber1 = currentNumber % 100;
-    const currentNumber0 = currentNumber - currentNumber1;
+    const currentNumber0 = Math.floor(currentNumber / 100);
     var currentNumberStr = `${currentNumber0}`;
     if (currentCursor > 0) {
         currentNumberStr += '.';
-        if (currentNumber1 < 10) {
-            currentNumberStr += `0${currentNumber1}`;
-        } else {
+        if ((currentCursor == 1) || (currentNumber1 >= 10)) {
             currentNumberStr += `${currentNumber1}`;
+        } else {
+            currentNumberStr += `0${currentNumber1}`;
         }
     }
     callback({
