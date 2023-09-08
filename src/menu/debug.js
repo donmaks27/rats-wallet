@@ -20,7 +20,8 @@ module.exports.get = () => {
     return {
         debug: createMenuData_debug,
         debugPickDate: { shortName: 'dPD', handler: createMenuData_debugPickDate },
-        debugPickTime: { shortName: 'dPT', handler: createMenuData_debugPickTime }
+        debugPickTime: { shortName: 'dPT', handler: createMenuData_debugPickTime },
+        debugNumpad: { shortName: 'dN', handler: createMenu_debugNumpad }
     };
 }
 
@@ -40,6 +41,10 @@ function createMenuData_debug(user, userData, args, callback) {
                 {
                     text: 'Time picker',
                     callback_data: menuBase.makeMenuButton('debugPickTime')
+                },
+                {
+                    text: 'Numpad',
+                    callback_data: menuBase.makeMenuButton('debugNumpad')
                 }
             ],
             [
@@ -110,6 +115,29 @@ function createMenuData_debugPickTime(user, userData, args, callback) {
                 {
                     text: '<< DEBUG',
                     callback_data: menuBase.makeMenuButton('debug')
+                }
+            ]
+        ]
+    });
+}
+
+/**
+ * @type {menuBase.menu_create_func}
+ */
+function createMenu_debugNumpad(user, userData, args, callback) {
+    const numberArg = args.dnum;
+    var numberStr = 'NONE';
+    if (typeof numberArg === 'number') {
+        const lastPart = numberArg % 100;
+        numberStr = `${numberArg - lastPart}.${lastPart < 10 ? '0' : ''}${lastPart}`;
+    }
+    callback({
+        text: `*DEBUG _Numpad_*\nCurrent number: ${bot.escapeMarkdown(numberStr)}`, parseMode: 'MarkdownV2',
+        keyboard: [
+            [
+                {
+                    text: 'Numpad',
+                    callback_data: menuBase.makeMenuButton('enterNumber', { from: walletMenu.getShortName('debugNumpad'), out: 'dnum' })
                 }
             ]
         ]

@@ -11,8 +11,8 @@ var db = require('./database');
  *           'renameCategory'|'archiveCategory'|'createCategory'|'deleteCategory'|'makeCategoryGlobal'|
  *           'changeRecordsPage'|'applyTempFilter'
  *          } action_type
- * @typedef {'debug'|'debugPickDate'|'debugPickTime'|
- *           'pickDate'|'pickTime'|
+ * @typedef {'debug'|'debugPickDate'|'debugPickTime'|'debugNumpad'|
+ *           'pickDate'|'pickTime'|'enterNumber'|
  *           'main'|'settings'|'wallet'|'changeColor'|
  *           'accounts'|'account'|'createAccount'|'deleteAccount'|'chooseAccount'|
  *           'currencies'|'currency'|'deleteCurrency'|

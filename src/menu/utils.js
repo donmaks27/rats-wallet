@@ -22,7 +22,8 @@ const MAX_YEAR = 2169;
 module.exports.get = () => {
     return {
         pickDate: { shortName: 'uPD', handler: createMenuData_pickDate },
-        pickTime: { shortName: 'uPT', handler: createMenuData_pickTime }
+        pickTime: { shortName: 'uPT', handler: createMenuData_pickTime },
+        enterNumber: { shortName: 'uN', handler: createMenuData_enterNumber }
     };
 }
 
@@ -626,4 +627,132 @@ function createMenuData_pickTime(user, userData, args, callback) {
         parseMode: 'MarkdownV2',
         keyboard: keyboard
     })
+}
+
+/**
+ * @type {menuBase.menu_create_func}
+ */
+function createMenuData_enterNumber(user, userData, args, callback) {
+    /** @type {walletCommon.menu_type} */
+    // @ts-ignore
+    const prevMenu = typeof args.from === 'string' ? walletMenu.getNameByShortName(args.from) : 'main';
+    const outArg = typeof args.out === 'string' ? args.out : 'num';
+    const currentNumber = typeof args._n === 'number' ? args._n : 0;
+    const currentCursor = typeof args._c === 'number' ? args._c : 0;
+    var returnButtonArgs = { ...args };
+    delete returnButtonArgs.from;
+    delete returnButtonArgs.out;
+    delete returnButtonArgs._n;
+    delete returnButtonArgs._c;
+
+    const nextCursor = currentCursor != 0 ? currentCursor + 1 : currentCursor;
+    const cursorShift = currentCursor == 0 ? 10 : 1;
+    const cursorMultiplier = currentCursor == 0 ? 100 : (currentCursor == 1 ? 10 : 1);
+    var backspaceButtonArgs = { ...args };
+    switch (currentCursor) {
+    case 2:
+        backspaceButtonArgs._n = currentNumber - currentNumber % 10;
+        backspaceButtonArgs._c = 1;
+        break;
+    case 1:
+        backspaceButtonArgs._n = currentNumber - currentNumber % 100;
+        backspaceButtonArgs._c = 0;
+        break;
+    default:
+        backspaceButtonArgs._n = Math.floor(currentNumber / 10);
+        backspaceButtonArgs._n = backspaceButtonArgs._n - backspaceButtonArgs._n % 100;
+        backspaceButtonArgs._c = 0;
+        break;
+    }
+    /** @type {bot.keyboard_button_inline_data[][]} */
+    var keyboard = [
+        [
+            {
+                text: `7`,
+                callback_data: currentCursor < 2 ? menuBase.makeMenuButton('enterNumber', { ...args, _n: currentNumber * cursorShift + 7 * cursorMultiplier, _c: nextCursor }) : menuBase.makeDummyButton()
+            },
+            {
+                text: `8`,
+                callback_data: currentCursor < 2 ? menuBase.makeMenuButton('enterNumber', { ...args, _n: currentNumber * cursorShift + 8 * cursorMultiplier, _c: nextCursor }) : menuBase.makeDummyButton()
+            },{
+                text: `9`,
+                callback_data: currentCursor < 2 ? menuBase.makeMenuButton('enterNumber', { ...args, _n: currentNumber * cursorShift + 9 * cursorMultiplier, _c: nextCursor }) : menuBase.makeDummyButton()
+            },
+        ],
+        [
+            {
+                text: `4`,
+                callback_data: currentCursor < 2 ? menuBase.makeMenuButton('enterNumber', { ...args, _n: currentNumber * cursorShift + 4 * cursorMultiplier, _c: nextCursor }) : menuBase.makeDummyButton()
+            },
+            {
+                text: `5`,
+                callback_data: currentCursor < 2 ? menuBase.makeMenuButton('enterNumber', { ...args, _n: currentNumber * cursorShift + 5 * cursorMultiplier, _c: nextCursor }) : menuBase.makeDummyButton()
+            },{
+                text: `6`,
+                callback_data: currentCursor < 2 ? menuBase.makeMenuButton('enterNumber', { ...args, _n: currentNumber * cursorShift + 6 * cursorMultiplier, _c: nextCursor }) : menuBase.makeDummyButton()
+            },
+        ],
+        [
+            {
+                text: `1`,
+                callback_data: currentCursor < 2 ? menuBase.makeMenuButton('enterNumber', { ...args, _n: currentNumber * cursorShift + 1 * cursorMultiplier, _c: nextCursor }) : menuBase.makeDummyButton()
+            },
+            {
+                text: `2`,
+                callback_data: currentCursor < 2 ? menuBase.makeMenuButton('enterNumber', { ...args, _n: currentNumber * cursorShift + 2 * cursorMultiplier, _c: nextCursor }) : menuBase.makeDummyButton()
+            },{
+                text: `3`,
+                callback_data: currentCursor < 2 ? menuBase.makeMenuButton('enterNumber', { ...args, _n: currentNumber * cursorShift + 3 * cursorMultiplier, _c: nextCursor }) : menuBase.makeDummyButton()
+            },
+        ],
+        [
+            {
+                text: `.`,
+                callback_data: currentCursor == 0 ? menuBase.makeMenuButton('enterNumber', { ...args, _n: currentNumber, _c: currentCursor + 1 }) : menuBase.makeDummyButton()
+            },
+            {
+                text: `0`,
+                callback_data: currentCursor < 2 ? menuBase.makeMenuButton('enterNumber', { ...args, _n: currentNumber * cursorShift, _c: nextCursor }) : menuBase.makeDummyButton()
+            },{
+                text: `⭰`,
+                callback_data: menuBase.makeMenuButton('enterNumber', backspaceButtonArgs)
+            },
+        ],
+        [
+            {
+                text: 'C',
+                callback_data: menuBase.makeMenuButton('enterNumber', { ...args, _n: 0, _c: 0 })
+            }
+        ],
+        [
+            {
+                text: '<< Back',
+                callback_data: menuBase.makeMenuButton(prevMenu, returnButtonArgs)
+            },
+            {
+                text: 'NONE',
+                callback_data: menuBase.makeMenuButton(prevMenu, { ...returnButtonArgs, [outArg]: null })
+            },
+            {
+                text: 'Apply',
+                callback_data: menuBase.makeMenuButton(prevMenu, { ...returnButtonArgs, [outArg]: currentNumber })
+            }
+        ]
+    ];
+    
+    const currentNumber1 = currentNumber % 100;
+    const currentNumber0 = currentNumber - currentNumber1;
+    var currentNumberStr = `${currentNumber0}`;
+    if (currentCursor > 0) {
+        currentNumberStr += '.';
+        if (currentNumber1 < 10) {
+            currentNumberStr += `0${currentNumber1}`;
+        } else {
+            currentNumberStr += `${currentNumber1}`;
+        }
+    }
+    callback({
+        text: `*Please, enter the number:*\n${bot.escapeMarkdown(currentNumberStr)}`, parseMode: 'MarkdownV2',
+        keyboard: keyboard
+    });
 }
