@@ -656,10 +656,11 @@ function createMenuData_enterNumber(user, userData, args, callback) {
         backspaceButtonArgs._c = 0;
         break;
     case 1:
+        backspaceButtonArgs._n = currentNumber - currentNumber % 100;
         backspaceButtonArgs._c = 0;
         break;
     case 2:
-        backspaceButtonArgs._n = currentNumber - currentNumber % 10;
+        backspaceButtonArgs._n = currentNumber - currentNumber % 100;
         backspaceButtonArgs._c = 1;
         break;
     case 3:
