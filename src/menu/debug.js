@@ -139,6 +139,12 @@ function createMenu_debugNumpad(user, userData, args, callback) {
                     text: 'Numpad',
                     callback_data: menuBase.makeMenuButton('enterNumber', { from: walletMenu.getShortName('debugNumpad'), out: 'dnum', dnum: numberArg })
                 }
+            ],
+            [
+                {
+                    text: '<< DEBUG',
+                    callback_data: menuBase.makeMenuButton('debug')
+                }
             ]
         ]
     });
