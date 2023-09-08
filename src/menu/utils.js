@@ -637,7 +637,8 @@ function createMenuData_enterNumber(user, userData, args, callback) {
     // @ts-ignore
     const prevMenu = typeof args.from === 'string' ? walletMenu.getNameByShortName(args.from) : 'main';
     const outArg = typeof args.out === 'string' ? args.out : 'num';
-    const currentNumber = typeof args._n === 'number' ? args._n : 0;
+    const prevNumber = args[outArg];
+    const currentNumber = typeof args._n === 'number' ? args._n : (typeof prevNumber === 'number' ? prevNumber : 0);
     const currentCursor = typeof args._c === 'number' ? args._c : 0;
     var returnButtonArgs = { ...args };
     delete returnButtonArgs.from;
