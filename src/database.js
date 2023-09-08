@@ -18,6 +18,7 @@ var log = require('./log');
  * @typedef {{ id: number, inviting_user_id: number, invite_date: Date, expire_date: Date }} user_invite_data
  * @typedef {{ id: number, user_id: number, filter_type: number, date_from: Date | null, date_until: Date | null }} filter_data
  * @typedef {{ date_from?: Date | null, date_until?: Date | null }} filter_params
+ * @typedef {{ user_id: number, src_account_id: number, src_amount: number, dst_account_id: number, dst_amount: number, category_id: number, date: Date }} temp_record_data
  */
 
 const db_filepath = "data/database.db";
@@ -72,11 +73,15 @@ module.exports.record_getAmount = record_getAmount;
 module.exports.record_getList = record_getList;
 module.exports.record_edit = record_edit;
 module.exports.record_delete = record_delete;
+module.exports.record_addLabel = record_addLabel;
+module.exports.record_removeLabel = record_removeLabel;
+module.exports.record_clearLabels = record_clearLabels;
 
-module.exports.addLabelToRecord = addLabelToRecord;
-module.exports.getRecordLabels = getRecordLabels;
-module.exports.deleteRecordLabel = deleteRecordLabel;
-module.exports.clearRecordLabels = clearRecordLabels;
+module.exports.record_getTemp = record_getOrCreateTemp;
+module.exports.record_editTemp = record_editTemp;
+module.exports.record_addTempLabel = record_addTempLabel;
+module.exports.record_removeTempLabel = record_removeTempLabel;
+module.exports.record_clearTempLabels = record_clearTempLabels;
 
 module.exports.invite_create = invite_create;
 module.exports.invite_get = invite_get;
@@ -362,6 +367,35 @@ function parseRecordRow(row, prefix) {
         category_id: row[prefix + 'category_id'],
         date: new Date(row[prefix + 'date']),
         create_date: new Date(row[prefix + 'create_date'])
+    };
+    if (!data.src_account_id) {
+        data.src_account_id = invalid_id;
+    }
+    if (!data.dst_account_id) {
+        data.dst_account_id = invalid_id;
+    }
+    if (!data.category_id) {
+        data.category_id = invalid_id;
+    }
+    return data;
+}
+/**
+ * @param {any} row 
+ * @param {string} [prefix] 
+ * @returns {temp_record_data}
+ */
+function parseTempRecordRow(row, prefix) {
+    if (!prefix) {
+        prefix = '';
+    }
+    var data = {
+        user_id: row[prefix + 'user_id'],
+        src_account_id: row[prefix + 'src_account_id'],
+        src_amount: row[prefix + 'src_amount'],
+        dst_account_id: row[prefix + 'dst_account_id'],
+        dst_amount: row[prefix + 'dst_amount'],
+        category_id: row[prefix + 'category_id'],
+        date: new Date(row[prefix + 'date'])
     };
     if (!data.src_account_id) {
         data.src_account_id = invalid_id;
@@ -1138,11 +1172,121 @@ function record_delete(id, callback) {
 }
 
 /**
+ * @param {number} userID 
+ * @param {(tempRecordData: (temp_record_data & { src_account?: account_data, dst_account?: account_data, src_currency?: currency_data, dst_currency?: currency_data, category?: category_data, labels: label_data[] }) | null, error?: string) => any} callback 
+ */
+function record_getOrCreateTemp(userID, callback) {
+    record_getTemp(userID, (data, error) => {
+        if (error || !data) {
+            db.run(query_createTempRecord(userID), (error) => {
+                if (error) {
+                    callback(null, `failed to create temp filter for user ${userID} (${error})`);
+                } else {
+                    record_getTemp(userID, callback);
+                }
+            });
+        } else {
+            callback(data);
+        }
+    });
+}
+/**
+ * @param {number} userID 
+ * @param {(tempRecordData: (temp_record_data & { src_account?: account_data, dst_account?: account_data, src_currency?: currency_data, dst_currency?: currency_data, category?: category_data, labels: label_data[] }) | null, error?: string) => any} callback 
+ */
+function record_getTemp(userID, callback) {
+    db.get(query_getTempRecord(userID), (error, row) => {
+        if (error || !row) {
+            callback(null, `failed to get temp filter for user ${userID} (${error})`);
+        } else {
+            /** @type {temp_record_data & { src_account?: account_data, dst_account?: account_data, src_currency?: currency_data, dst_currency?: currency_data, category?: category_data, labels: label_data[] }} */
+            var rowData = {
+                ...parseTempRecordRow(row),
+                labels: []
+            };
+            if (rowData.src_account_id != invalid_id) {
+                rowData.src_account = parseAccountRow(row, 'src_account.');
+                rowData.src_currency = parseCurrencyRow(row, 'src_currency.');
+            }
+            if (rowData.dst_account_id != invalid_id) {
+                rowData.dst_account = parseAccountRow(row, 'dst_account.');
+                rowData.dst_currency = parseCurrencyRow(row, 'dst_currency.');
+            }
+            if (rowData.category_id != invalid_id) {
+                rowData.category = parseCategoryRow(row, 'category.');
+            }
+            var labelsData = JSON.parse(row.labels);
+            for (var j = 0; j < labelsData.length; j++) {
+                if (labelsData[j].id) {
+                    rowData.labels.push(parseLabelRow(labelsData[j]));
+                }
+            }
+            callback(rowData);
+        }
+    });
+}
+/**
+ * @param {number} userID 
+ * @param {{ src_account_id?: number, src_amount?: number, dst_account_id?: number, dst_amount?: number, category_id?: number, date?: Date }} params 
+ * @param {(error?: string) => any} callback 
+ */
+function record_editTemp(userID, params, callback) {
+    db.run(query_updateTempRecord(userID, params), (error) => {
+        if (error) {
+            callback(`failed to edit temp record for user ${userID} (${error})`);
+        } else {
+            callback();
+        }
+    });
+}
+/**
+ * @param {number} userID 
+ * @param {number} labelID 
+ * @param {(error?: string) => any} callback 
+ */
+function record_addTempLabel(userID, labelID, callback) {
+    db.run(query_addTempLabel(userID, labelID), (error) => {
+        if (error) {
+            callback(`failed to add label ${labelID} to temp record of user ${userID} (${error})`);
+        } else {
+            callback();
+        }
+    });
+}
+/**
+ * @param {number} userID 
+ * @param {number} labelID 
+ * @param {(error?: string) => any} callback 
+ */
+function record_removeTempLabel(userID, labelID, callback) {
+    db.run(query_removeTempLabel(userID, labelID), (error) => {
+        if (error) {
+            callback(`failed to remove label ${labelID} from temp record of user ${userID} (${error})`);
+        } else {
+            callback();
+        }
+    });
+}
+/**
+ * @param {number} userID 
+ * @param {(error?: string) => any} callback 
+ */
+function record_clearTempLabels(userID, callback) {
+    db.run(query_clearTempLabels(userID), (error) => {
+        if (error) {
+            callback(`failed to clear labels from temp record of user ${userID} (${error})`);
+        } else {
+            callback();
+        }
+    });
+}
+
+/**
  * @param {number} record_id 
  * @param {number} label_id 
  * @param {(error?: string) => any} [callback] 
  */
-function addLabelToRecord(record_id, label_id, callback) {
+function record_addLabel(record_id, label_id, callback) {
     db.run(query_createRecordLabel(record_id, label_id), callback ? (error) => {
         if (error) {
             callback(`failed to add label ${label_id} to record ${record_id}: ` + error);
@@ -1154,27 +1298,10 @@ function addLabelToRecord(record_id, label_id, callback) {
 }
 /**
  * @param {number} record_id 
- * @param {(label_ids: number[], error?: string) => any} callback 
- */
-function getRecordLabels(record_id, callback) {
-    db.all(query_getRecordLabels(record_id), (error, rows) => {
-        if (error) {
-            callback([], `failed to get labels of record ${record_id}: ` + error);
-        } else {
-            var label_ids = [];
-            for (var i = 0; i < rows.length; i++) {
-                label_ids.push(rows[i].label_id);
-            }
-            callback(label_ids);
-        }
-    });
-}
-/**
- * @param {number} record_id 
  * @param {number} label_id 
  * @param {(error?: string) => any} [callback] 
  */
-function deleteRecordLabel(record_id, label_id, callback) {
+function record_removeLabel(record_id, label_id, callback) {
     db.run(query_deleteRecordLabel(record_id, label_id), callback ? (error) => {
         if (error) {
             callback(`failed to delete label ${label_id} from record ${record_id}: ` + error);
@@ -1188,7 +1315,7 @@ function deleteRecordLabel(record_id, label_id, callback) {
  * @param {number} record_id 
  * @param {(error?: string) => any} [callback] 
  */
-function clearRecordLabels(record_id, callback) {
+function record_clearLabels(record_id, callback) {
     db.run(query_deleteRecordLabels(record_id), callback ? (error) => {
         if (error) {
             callback(`failed to delete labels from record ${record_id}: ` + error);
@@ -1808,17 +1935,116 @@ function query_deleteRecord(id) {
 }
 
 /**
+ * @param {number} userID 
+ */
+function query_createTempRecord(userID) {
+    return `INSERT INTO temp_records(user_id, src_account_id, src_amount, dst_account_id, dst_amount, category_id, date)
+    VALUES (${userID}, NULL, 0, NULL, 0, NULL, 0);`;
+}
+/**
+ * @param {number} userID 
+ */
+function query_getTempRecord(userID) {
+    /** @type {string[]} */
+    var srcAccountColumns = [], dstAccountColumns = [], srcCurrencyColumns = [], dstCurrencyColumns = [], categoryColumns = [], labelColumns = [];
+    const accountColumnNames = Object.getOwnPropertyNames(parseAccountRow({}));
+    for (var i = 0; i < accountColumnNames.length; i++) {
+        srcAccountColumns.push(`src_account.${accountColumnNames[i]} AS 'src_account.${accountColumnNames[i]}'`);
+        dstAccountColumns.push(`dst_account.${accountColumnNames[i]} AS 'dst_account.${accountColumnNames[i]}'`);
+    }
+    const currencyColumnNames = Object.getOwnPropertyNames(parseCurrencyRow({}));
+    for (var i = 0; i < currencyColumnNames.length; i++) {
+        srcCurrencyColumns.push(`src_currency.${currencyColumnNames[i]} AS 'src_currency.${currencyColumnNames[i]}'`);
+        dstCurrencyColumns.push(`dst_currency.${currencyColumnNames[i]} AS 'dst_currency.${currencyColumnNames[i]}'`);
+    }
+    const categoryColumnNames = Object.getOwnPropertyNames(parseCategoryRow({}));
+    for (var i = 0; i < categoryColumnNames.length; i++) {
+        categoryColumns.push(`categories.${categoryColumnNames[i]} AS 'category.${categoryColumnNames[i]}'`);
+    }
+    const labelColumnNames = Object.getOwnPropertyNames(parseLabelRow({}));
+    for (var i = 0; i < labelColumnNames.length; i++) {
+        labelColumns.push(`'${labelColumnNames[i]}', labels.${labelColumnNames[i]}`);
+    }
+    return `SELECT temp_records.*, ${srcAccountColumns.join(', ')}, ${dstAccountColumns.join(', ')}, 
+        ${srcCurrencyColumns.join(', ')}, ${dstCurrencyColumns.join(', ')}, ${categoryColumns.join(', ')}, 
+        JSON_GROUP_ARRAY(JSON_OBJECT(${labelColumns.join(', ')})) AS labels
+    FROM temp_records
+        LEFT JOIN accounts AS src_account ON temp_records.src_account_id = src_account.id
+        LEFT JOIN accounts AS dst_account ON temp_records.dst_account_id = dst_account.id
+        LEFT JOIN currencies AS src_currency ON src_account.currency_code = src_currency.code
+        LEFT JOIN currencies AS dst_currency ON dst_account.currency_code = dst_currency.code
+        LEFT JOIN categories ON temp_records.category_id = categories.id
+        LEFT JOIN temp_record_labels ON temp_records.user_id = temp_record_labels.user_id
+    WHERE temp_records.user_id = ${userID}
+    GROUP BY temp_records.user_id
+    LIMIT 1;`;
+}
+/**
+ * @param {number} userID 
+ * @param {{ src_account_id?: number, src_amount?: number, dst_account_id?: number, dst_amount?: number, category_id?: number, date?: Date }} params 
+ */
+function query_updateTempRecord(userID, params) {
+    var statements = [];
+    const properties = Object.getOwnPropertyNames(params);
+    if (properties.includes('src_account_id')) {
+        if (params.src_account_id) {
+            statements.push(`src_account_id = ${params.src_account_id}`);
+        } else {
+            statements.push(`src_account_id = NULL`);
+        }
+    }
+    if (properties.includes('src_amount')) {
+        statements.push(`src_amount = ${params.src_amount ? params.src_amount : 0}`);
+    }
+    if (properties.includes('dst_account_id')) {
+        if (params.dst_account_id) {
+            statements.push(`dst_account_id = ${params.dst_account_id}`);
+        } else {
+            statements.push(`dst_account_id = NULL`);
+        }
+    }
+    if (properties.includes('dst_amount')) {
+        statements.push(`dst_amount = ${params.dst_amount ? params.dst_amount : 0}`);
+    }
+    if (properties.includes('category_id')) {
+        if (params.category_id) {
+            statements.push(`category_id = ${params.category_id}`);
+        } else {
+            statements.push(`category_id = NULL`);
+        }
+    }
+    if (properties.includes('date')) {
+        statements.push(`date = ${params.date ? params.date.valueOf() : 0}`);
+    }
+    return `UPDATE temp_records SET ${statements.join(', ')} WHERE user_id = ${userID};`;
+}
+/**
+ * @param {number} userID 
+ * @param {number} labelID 
+ */
+function query_addTempLabel(userID, labelID) {
+    return `INSERT INTO temp_record_labels(user_id, label_id) VALUES (${userID}, ${labelID});`;
+}
+/**
+ * @param {number} userID 
+ * @param {number} labelID 
+ */
+function query_removeTempLabel(userID, labelID) {
+    return `DELETE FROM temp_record_labels WHERE (user_id = ${userID}) AND (label_id = ${labelID});`;
+}
+/**
+ * @param {number} userID 
+ */
+function query_clearTempLabels(userID) {
+    return `DELETE FROM temp_record_labels WHERE user_id = ${userID};`;
+}
+
+/**
  * @param {number} record_id 
  * @param {number} label_id 
  */
 function query_createRecordLabel(record_id, label_id) {
     return `INSERT INTO record_labels(record_id, label_id, create_date) VALUES (${record_id}, ${label_id}, ${Date.now()});`;
-}
-/**
- * @param {number} record_id 
- */
-function query_getRecordLabels(record_id) {
-    return `SELECT label_id, create_date FROM record_labels WHERE record_id = ${record_id};`;
 }
 /**
  * @param {number} record_id 

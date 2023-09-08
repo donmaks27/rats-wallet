@@ -4,6 +4,7 @@ var db  = require('../database');
 var bot = require('../telegram-bot');
 var menuBase = require('./wallet-menu-base');
 var walletCommon = require('../wallet-common');
+var walletMenu = require('../wallet-menu');
 
 const log = {
     info: menuBase.info,
@@ -20,6 +21,7 @@ module.exports.get = () => {
         account:       createMenuData_account,
         createAccount: createMenuData_createAccount,
         deleteAccount: createMenuData_deleteAccount,
+        chooseAccount: { shortName: 'chA', handler: createMenuData_chooseAccount }
     };
 }
 
@@ -204,5 +206,47 @@ function createMenuData_deleteAccount(user, userData, args, callback) {
                 ]] 
             });
         }
+    });
+}
+
+/**
+ * @type {menuBase.menu_create_func}
+ */
+function createMenuData_chooseAccount(user, userData, args, callback) {
+    const userID = user.id;
+    /** @type {walletCommon.menu_type} */
+    // @ts-ignore
+    const fromMenu = typeof args.from ==='string' ? walletMenu.getNameByShortName(args.from) : 'main';
+    const outArg = typeof args.out === 'string' ? args.out : 'id';
+    const excludeID = typeof args.eID === 'number' ? args.eID : db.invalid_id;
+    var backButtonArgs = { ...args };
+    delete backButtonArgs.from;
+    delete backButtonArgs.out;
+    db.account_getAll(userID, (accountDatas, error) => {
+        if (error) {
+            log.error(userID, `[chooseAccount] failed to get list of accounts (${error})`);
+        }
+        /** @type {bot.keyboard_button_inline_data[][]} */
+        var keyboard = [];
+        for (var i = 0; i < accountDatas.length; i++) {
+            const accountData = accountDatas[i];
+            if (accountData.is_active && (accountData.id != excludeID)) {
+                keyboard.push([{
+                    text: getAccountName(accountData),
+                    callback_data: menuBase.makeMenuButton(fromMenu, { ...backButtonArgs, [outArg]: accountData.id })
+                }]);
+            }
+        }
+        keyboard.push([{
+            text: 'NONE',
+            callback_data: menuBase.makeMenuButton(fromMenu, { ...backButtonArgs, [outArg]: null })
+        }], [{
+            text: `<< Back`,
+            callback_data: menuBase.makeMenuButton(fromMenu, backButtonArgs)
+        }]);
+        callback({
+            text: `*Choose an account:*`, parseMode: 'MarkdownV2',
+            keyboard: keyboard
+        });
     });
 }

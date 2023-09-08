@@ -14,11 +14,11 @@ var db = require('./database');
  * @typedef {'debug'|'debugPickDate'|'debugPickTime'|
  *           'pickDate'|'pickTime'|
  *           'main'|'settings'|'wallet'|'changeColor'|
- *           'accounts'|'account'|'createAccount'|'deleteAccount'|
+ *           'accounts'|'account'|'createAccount'|'deleteAccount'|'chooseAccount'|
  *           'currencies'|'currency'|'deleteCurrency'|
  *           'labels'|'label'|'deleteLabel'|'makeLabelGlobal'|
  *           'categories'|'category'|'deleteCategory'|
- *           'records'|'filter'
+ *           'records'|'filter'|'createRecord'
  *          } menu_type
  */
 

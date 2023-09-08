@@ -38,3 +38,18 @@ CREATE TABLE filters(
     id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL, filter_type INTEGER NOT NULL, date_from INTEGER, date_until INTEGER, create_date INTEGER NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
+
+CREATE TABLE temp_records(
+    user_id INTEGER NOT NULL, src_account_id INTEGER, src_amount INTEGER NOT NULL, dst_account_id INTEGER, dst_amount INTEGER NOT NULL, category_id INTEGER, date INTEGER NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE,
+    FOREIGN KEY (src_account_id) REFERENCES accounts(id) ON UPDATE CASCADE ON DELETE SET NULL,
+    FOREIGN KEY (dst_account_id) REFERENCES accounts(id) ON UPDATE CASCADE ON DELETE SET NULL,
+    FOREIGN KEY (category_id) REFERENCES categories(id) ON UPDATE CASCADE ON DELETE SET NULL,
+    PRIMARY KEY (user_id)
+);
+CREATE TABLE temp_record_labels(
+    user_id INTEGER NOT NULL, label_id INTEGER NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE,
+    FOREIGN KEY (label_id) REFERENCES labels(id) ON UPDATE CASCADE ON DELETE CASCADE,
+    PRIMARY KEY (user_id, label_id)
+);

@@ -401,7 +401,7 @@ function task_addRecord(record, db_data) {
  */
 function task_addRecordLabel(record_id, label_id) {
     return (callback) => {
-        db.addLabelToRecord(record_id, label_id, (error) => {
+        db.record_addLabel(record_id, label_id, (error) => {
             if (error) {
                 callback(error);
             } else {
