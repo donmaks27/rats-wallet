@@ -171,7 +171,7 @@ function createMenu_debugChooseAccount(user, userData, args, callback) {
             menuText = bot.escapeMarkdown(walletCommon.getColorMarker(accountData.color, ' ') + accountData.name);
         }
         callback({
-            text: `*DEBUG _Choose account_*\n${accountIDArg}`, parseMode: 'MarkdownV2',
+            text: `*DEBUG _Choose account_*\n${menuText}`, parseMode: 'MarkdownV2',
             keyboard: [
                 [
                     {
