@@ -21,7 +21,8 @@ module.exports.get = () => {
         debug: createMenuData_debug,
         debugPickDate: { shortName: 'dPD', handler: createMenuData_debugPickDate },
         debugPickTime: { shortName: 'dPT', handler: createMenuData_debugPickTime },
-        debugNumpad: { shortName: 'dN', handler: createMenu_debugNumpad }
+        debugNumpad:   { shortName: 'dN', handler: createMenu_debugNumpad },
+        debugChooseAccount: { shortName: 'dChA', handler: createMenu_debugChooseAccount }
     };
 }
 
@@ -45,6 +46,12 @@ function createMenuData_debug(user, userData, args, callback) {
                 {
                     text: 'Numpad',
                     callback_data: menuBase.makeMenuButton('debugNumpad')
+                }
+            ],
+            [
+                {
+                    text: 'Choose account',
+                    callback_data: menuBase.makeMenuButton('debugChooseAccount')
                 }
             ],
             [
@@ -147,5 +154,38 @@ function createMenu_debugNumpad(user, userData, args, callback) {
                 }
             ]
         ]
+    });
+}
+
+/**
+ * @type {menuBase.menu_create_func}
+ */
+function createMenu_debugChooseAccount(user, userData, args, callback) {
+    var accountIDArg = typeof args.aID === 'number' ? args.aID : db.invalid_id;
+    db.account_get(accountIDArg, (accountData, error) => {
+        var menuText = '';
+        if (error || !accountData) {
+            menuText = `*ERROR:* ${error ? bot.escapeMarkdown(error) : 'none'}`;
+            accountIDArg = db.invalid_id;
+        } else {
+            menuText = bot.escapeMarkdown(walletCommon.getColorMarker(accountData.color, ' ') + accountData.name);
+        }
+        callback({
+            text: `*DEBUG _Choose account_*\n${accountIDArg}`, parseMode: 'MarkdownV2',
+            keyboard: [
+                [
+                    {
+                        text: 'Account',
+                        callback_data: menuBase.makeMenuButton('chooseAccount', { from: walletMenu.getShortName('debugChooseAccount'), out: 'aID', eID: accountIDArg })
+                    }
+                ],
+                [
+                    {
+                        text: '<< DEBUG',
+                        callback_data: menuBase.makeMenuButton('debug')
+                    }
+                ]
+            ]
+        });
     });
 }
