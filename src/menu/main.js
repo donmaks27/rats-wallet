@@ -304,7 +304,7 @@ function createMenuData_changeTimeZone(user, userData, args, callback) {
                     text: locations[i],
                     callback_data: menuBase.makeDummyButton()
                 });
-                if (keyboardRow.length == 4) {
+                if (keyboardRow.length == ROW_SIZE) {
                     keyboard.push(keyboardRow);
                     keyboardRow = [];
                 }
