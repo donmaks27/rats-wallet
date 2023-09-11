@@ -252,7 +252,7 @@ function createMenuData_changeTimeZone(user, userData, args, callback) {
         const lastRegionIndex = Math.min(regions.length, firstRegionIndex + ROW_SIZE * MAX_ROWS) - 1;
         for (var i = firstRegionIndex; i <= lastRegionIndex; i++) {
             keyboardRow.push({
-                text: regions[i],
+                text: regions[i].replace('_', ' '),
                 callback_data: menuBase.makeMenuButton('changeTimeZone', { _r: regions[i] })
             });
             if (keyboardRow.length == ROW_SIZE) {
@@ -301,7 +301,7 @@ function createMenuData_changeTimeZone(user, userData, args, callback) {
             const lastLocationIndex = Math.min(locations.length, firstLocationIndex + ROW_SIZE * MAX_ROWS) - 1;
             for (var i = firstLocationIndex; i <= lastLocationIndex; i++) {
                 keyboardRow.push({
-                    text: locations[i],
+                    text: locations[i].replace('_', ' '),
                     callback_data: menuBase.makeDummyButton()
                 });
                 if (keyboardRow.length == ROW_SIZE) {
