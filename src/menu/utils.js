@@ -16,6 +16,8 @@ const log = {
 const MIN_YEAR = 1970;
 const MAX_YEAR = 2169;
 
+const ARG_REQUIRED = 'r';
+
 /**
  * @type {menuBase.menu_get_func}
  */
@@ -128,6 +130,7 @@ function createMenuData_pickDate_day(user, userData, args, callback) {
     const prevMenu = typeof args.from === 'string' ? walletMenu.getNameByShortName(args.from) : 'main';
     const outArg = typeof args.out === 'string' ? args.out : 'date';
     const fromDate = typeof args.min === 'number' ? menuBase.decodeDate(args.min) : getMinDate();
+    const required = args[ARG_REQUIRED] ? true : false;
     var untilDate = typeof args.max === 'number' ? menuBase.decodeDate(args.max) : getMaxDate();
     if (untilDate < fromDate) {
         untilDate = fromDate;
@@ -140,6 +143,7 @@ function createMenuData_pickDate_day(user, userData, args, callback) {
     delete returnButtonArgs.out;
     delete returnButtonArgs.min;
     delete returnButtonArgs.max;
+    delete returnButtonArgs[ARG_REQUIRED];
 
     var date = typeof args._d === 'number' ? menuBase.decodeDate(args._d) : new Date(0);
     if (date < fromDate) {
@@ -239,12 +243,15 @@ function createMenuData_pickDate_day(user, userData, args, callback) {
         keyboard.push(keyboardWeek);
     }
 
+    if (!required) {
+        keyboard.push([
+            {
+                text: `NONE`,
+                callback_data: menuBase.makeMenuButton(prevMenu, { ...returnButtonArgs, [outArg]: null })
+            }
+        ]);
+    }
     keyboard.push([
-        {
-            text: `NONE`,
-            callback_data: menuBase.makeMenuButton(prevMenu, { ...returnButtonArgs, [outArg]: null })
-        }
-    ], [
         {
             text: `<< Back`,
             callback_data: menuBase.makeMenuButton(prevMenu, returnButtonArgs)
@@ -266,6 +273,7 @@ function createMenuData_pickDate_month(user, userData, args, callback) {
     const prevMenu = typeof args.from === 'string' ? walletMenu.getNameByShortName(args.from) : 'main';
     const outArg = typeof args.out === 'string' ? args.out : 'date';
     const fromDate = typeof args.min === 'number' ? menuBase.decodeDate(args.min) : getMinDate();
+    const required = args[ARG_REQUIRED] ? true : false;
     var untilDate = typeof args.max === 'number' ? menuBase.decodeDate(args.max) : getMaxDate();
     if (untilDate < fromDate) {
         untilDate = fromDate;
@@ -278,6 +286,7 @@ function createMenuData_pickDate_month(user, userData, args, callback) {
     delete returnButtonArgs.out;
     delete returnButtonArgs.min;
     delete returnButtonArgs.max;
+    delete returnButtonArgs[ARG_REQUIRED];
 
     var date = typeof args._d === 'number' ? menuBase.decodeDate(args._d) : new Date(0);
     if (date < fromDate) {
@@ -355,12 +364,15 @@ function createMenuData_pickDate_month(user, userData, args, callback) {
         }
     }
 
+    if (!required) {
+        keyboard.push([
+            {
+                text: `NONE`,
+                callback_data: menuBase.makeMenuButton(prevMenu, { ...returnButtonArgs, [outArg]: null })
+            }
+        ]);
+    }
     keyboard.push([
-        {
-            text: `NONE`,
-            callback_data: menuBase.makeMenuButton(prevMenu, { ...returnButtonArgs, [outArg]: null })
-        }
-    ], [
         {
             text: `<< Back`,
             callback_data: menuBase.makeMenuButton(prevMenu, returnButtonArgs)
@@ -382,6 +394,7 @@ function createMenuData_pickDate_year(user, userData, args, callback) {
     const prevMenu = typeof args.from === 'string' ? walletMenu.getNameByShortName(args.from) : 'main';
     const outArg = typeof args.out === 'string' ? args.out : 'date';
     const fromDate = typeof args.min === 'number' ? menuBase.decodeDate(args.min) : getMinDate();
+    const required = args[ARG_REQUIRED] ? true : false;
     var untilDate = typeof args.max === 'number' ? menuBase.decodeDate(args.max) : getMaxDate();
     if (untilDate < fromDate) {
         untilDate = fromDate;
@@ -394,6 +407,7 @@ function createMenuData_pickDate_year(user, userData, args, callback) {
     delete returnButtonArgs.out;
     delete returnButtonArgs.min;
     delete returnButtonArgs.max;
+    delete returnButtonArgs[ARG_REQUIRED];
 
     var date = typeof args._d === 'number' ? menuBase.decodeDate(args._d) : new Date(0);
     if (date < fromDate) {
@@ -460,12 +474,15 @@ function createMenuData_pickDate_year(user, userData, args, callback) {
         }
     }
 
+    if (!required) {
+        keyboard.push([
+            {
+                text: `NONE`,
+                callback_data: menuBase.makeMenuButton(prevMenu, { ...returnButtonArgs, [outArg]: null })
+            }
+        ]);
+    }
     keyboard.push([
-        {
-            text: `NONE`,
-            callback_data: menuBase.makeMenuButton(prevMenu, { ...returnButtonArgs, [outArg]: null })
-        }
-    ], [
         {
             text: `<< Back`,
             callback_data: menuBase.makeMenuButton(prevMenu, returnButtonArgs)
@@ -486,11 +503,13 @@ function createMenuData_pickTime(user, userData, args, callback) {
     // @ts-ignore
     const prevMenu = typeof args.from === 'string' ? walletMenu.getNameByShortName(args.from) : 'main';
     const outArg = typeof args.out === 'string' ? args.out : 'time';
+    const required = args[ARG_REQUIRED] ? true : false;
     var returnButtonArgs = { ...args };
     delete returnButtonArgs._c;
     delete returnButtonArgs._t;
     delete returnButtonArgs.from;
     delete returnButtonArgs.out;
+    delete returnButtonArgs[ARG_REQUIRED];
 
     const cursor = typeof args._c === 'number' ? Math.max(0, Math.min(3, args._c)) : 0;
     const prevTime = args[outArg];
@@ -607,16 +626,26 @@ function createMenuData_pickTime(user, userData, args, callback) {
     }
     keyboard.push(keyboardNumbers);
 
+    if (!required) {
+        keyboard.push([
+            {
+                text: `NONE`,
+                callback_data: menuBase.makeMenuButton(prevMenu, { ...returnButtonArgs, [outArg]: null })
+            },
+            {
+                text: `Done`,
+                callback_data: menuBase.makeMenuButton(prevMenu, { ...returnButtonArgs, [outArg]: menuBase.encodeTime(currentTime) })
+            }
+        ]);
+    } else {
+        keyboard.push([
+            {
+                text: `Done`,
+                callback_data: menuBase.makeMenuButton(prevMenu, { ...returnButtonArgs, [outArg]: menuBase.encodeTime(currentTime) })
+            }
+        ]);
+    }
     keyboard.push([
-        {
-            text: `NONE`,
-            callback_data: menuBase.makeMenuButton(prevMenu, { ...returnButtonArgs, [outArg]: null })
-        },
-        {
-            text: `Done`,
-            callback_data: menuBase.makeMenuButton(prevMenu, { ...returnButtonArgs, [outArg]: menuBase.encodeTime(currentTime) })
-        }
-    ], [
         {
             text: `<< Back`,
             callback_data: menuBase.makeMenuButton(prevMenu, returnButtonArgs)

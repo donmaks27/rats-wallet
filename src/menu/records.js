@@ -286,11 +286,11 @@ function onTempRecordReady(user, userData, args, callback) {
             }], [
                 {
                     text: dateFormat.to_readable_string(tempRecordData.date, { date: true }),
-                    callback_data: menuBase.makeMenuButton('pickDate', { from: currentMenu, out: ARG_TEMP_DATE, _d: menuBase.encodeDate(tempRecordData.date) })
+                    callback_data: menuBase.makeMenuButton('pickDate', { r: true, from: currentMenu, out: ARG_TEMP_DATE, _d: menuBase.encodeDate(tempRecordData.date) })
                 },
                 {
                     text: dateFormat.to_readable_string(tempRecordData.date, { time: true }),
-                    callback_data: menuBase.makeMenuButton('pickTime', { from: currentMenu, out: ARG_TEMP_TIME, _t: menuBase.encodeTime(tempRecordData.date) })
+                    callback_data: menuBase.makeMenuButton('pickTime', { r: true, from: currentMenu, out: ARG_TEMP_TIME, _t: menuBase.encodeTime(tempRecordData.date) })
                 }
             ], [{
                 text: `<< Back to Records`, 
