@@ -1178,6 +1178,7 @@ function record_delete(id, callback) {
 function record_getOrCreateTemp(userID, callback) {
     record_getTemp(userID, (data, error) => {
         if (error || !data) {
+            debug_log(`failed to get temp record for user ${userID} (${error}), creating the new one...`);
             db.run(query_createTempRecord(userID), (error) => {
                 if (error) {
                     callback(null, `failed to create temp filter for user ${userID} (${error})`);
