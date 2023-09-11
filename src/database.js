@@ -1964,7 +1964,7 @@ function query_getTempRecord(userID) {
     }
     const labelColumnNames = Object.getOwnPropertyNames(parseLabelRow({}));
     for (var i = 0; i < labelColumnNames.length; i++) {
-        labelColumns.push(`'${labelColumnNames[i]}', temp_record_labels.${labelColumnNames[i]}`);
+        labelColumns.push(`'${labelColumnNames[i]}', labels.${labelColumnNames[i]}`);
     }
     return `SELECT temp_records.*, ${srcAccountColumns.join(', ')}, ${dstAccountColumns.join(', ')}, 
         ${srcCurrencyColumns.join(', ')}, ${dstCurrencyColumns.join(', ')}, ${categoryColumns.join(', ')}, 
@@ -1976,6 +1976,7 @@ function query_getTempRecord(userID) {
         LEFT JOIN currencies AS dst_currency ON dst_account.currency_code = dst_currency.code
         LEFT JOIN categories ON temp_records.category_id = categories.id
         LEFT JOIN temp_record_labels ON temp_records.user_id = temp_record_labels.user_id
+        LEFT JOIN labels ON temp_record_labels.label_id = labels.id
     WHERE temp_records.user_id = ${userID}
     GROUP BY temp_records.user_id
     LIMIT 1;`;
