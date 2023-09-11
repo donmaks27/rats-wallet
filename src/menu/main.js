@@ -16,9 +16,10 @@ const log = {
 module.exports.get = () => {
     return {
         main: createMenuData_main,
-        settings: createMenuData_settings,
         wallet: createMenuData_wallet,
-        changeColor: createMenuData_changeColor
+        changeColor: createMenuData_changeColor,
+        settings: createMenuData_settings,
+        changeTimeZone: { shortName: 'chTZ', handler: createMenuData_changeTimeZone }
     };
 }
 
@@ -58,28 +59,7 @@ function createMenuData_main(user, userData, args, callback) {
         keyboard: keyboard
     });
 }
-/**
- * @type {menuBase.menu_create_func}
- */
-function createMenuData_settings(user, userData, args, callback) {
-    callback({
-        text: `Welcome, ${userData.name}!\nChoose what you want to do:`,
-        keyboard: [
-            [
-                {
-                    text: 'Change name',
-                    callback_data: menuBase.makeActionButton('renameUser')
-                }
-            ],
-            [
-                {
-                    text: '<< Back to Main',
-                    callback_data: menuBase.makeMenuButton('main')
-                }
-            ]
-        ]
-    });
-}
+
 /**
  * @type {menuBase.menu_create_func}
  */
@@ -199,5 +179,117 @@ function createMenuData_changeColor(user, userData, args, callback) {
             ],
             [ backButton ]
         ]
+    });
+}
+
+/**
+ * @type {menuBase.menu_create_func}
+ */
+function createMenuData_settings(user, userData, args, callback) {
+    callback({
+        text: `Welcome, ${userData.name}!\nChoose what you want to do:`,
+        keyboard: [
+            [
+                {
+                    text: 'Change name',
+                    callback_data: menuBase.makeActionButton('renameUser')
+                }
+            ],
+            [
+                {
+                    text: 'Change time zone',
+                    callback_data: menuBase.makeMenuButton('changeTimeZone')
+                }
+            ],
+            [
+                {
+                    text: '<< Back to Main',
+                    callback_data: menuBase.makeMenuButton('main')
+                }
+            ]
+        ]
+    });
+}
+/**
+ * @type {menuBase.menu_create_func}
+ */
+function createMenuData_changeTimeZone(user, userData, args, callback) {
+    const userID = user.id;
+    const currentRegion = typeof args._r === 'string' ? args._r : null;
+    
+    /** @type {string[]} */
+    // @ts-ignore
+    const timeZones = Intl.supportedValuesOf('timeZone');
+    /** @type {{ [region: string]: string[] }} */
+    var timeZonesMap = {};
+    for (var i = 0; i < timeZones.length; i++) {
+        const components = timeZones[i].split('/');
+        if (components.length != 2) {
+            continue;
+        }
+        const region = components[0];
+        const location = components[1];
+        if (!timeZonesMap[region]) {
+            timeZonesMap[region] = [ location ];
+        } else {
+            timeZonesMap[region].push(location);
+        }
+    }
+
+    var menuText = `*Changing time zone*`;
+    /** @type {bot.keyboard_button_inline_data[][]} */
+    var keyboard = [];
+    if (currentRegion == null) {
+        menuText += `\nPlease, choose your region:`;
+        /** @type {bot.keyboard_button_inline_data[]} */
+        var keyboardRow = [];
+        const regions = Object.getOwnPropertyNames(timeZonesMap);
+        for (var i = 0; i < regions.length; i++) {
+            keyboardRow.push({
+                text: regions[i],
+                callback_data: menuBase.makeMenuButton('changeTimeZone', { _r: regions[i] })
+            });
+            if (keyboardRow.length == 3) {
+                keyboard.push(keyboardRow);
+                keyboardRow = [];
+            }
+        }
+        if (keyboardRow.length > 0) {
+            keyboard.push(keyboardRow);
+            keyboardRow = [];
+        }
+    } else {
+        menuText += `\n*Region:* ${bot.escapeMarkdown(currentRegion)}\nPlease, choose your location:`;
+        const locations = timeZonesMap[currentRegion];
+        if (locations && (locations.length > 0)) {
+            /** @type {bot.keyboard_button_inline_data[]} */
+            var keyboardRow = [];
+            for (var i = 0; i < locations.length; i++) {
+                keyboardRow.push({
+                    text: locations[i],
+                    callback_data: menuBase.makeDummyButton()
+                });
+                if (keyboardRow.length == 4) {
+                    keyboard.push(keyboardRow);
+                    keyboardRow = [];
+                }
+            }
+            if (keyboardRow.length > 0) {
+                keyboard.push(keyboardRow);
+                keyboardRow = [];
+            }
+        }
+        keyboard.push([{
+            text: `<< Change region`,
+            callback_data: menuBase.makeMenuButton('changeTimeZone')
+        }]);
+    }
+    keyboard.push([{
+        text: `<< Back to Settings`,
+        callback_data: menuBase.makeMenuButton('settings')
+    }]);
+    callback({
+        text: menuText, parseMode: 'MarkdownV2',
+        keyboard: keyboard
     });
 }

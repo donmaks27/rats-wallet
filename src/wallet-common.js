@@ -13,7 +13,7 @@ var db = require('./database');
  *          } action_type
  * @typedef {'debug'|'debugPickDate'|'debugPickTime'|'debugNumpad'|'debugChooseAccount'|
  *           'pickDate'|'pickTime'|'enterNumber'|
- *           'main'|'settings'|'wallet'|'changeColor'|
+ *           'main'|'wallet'|'changeColor'|'settings'|'changeTimeZone'|
  *           'accounts'|'account'|'createAccount'|'deleteAccount'|'chooseAccount'|
  *           'currencies'|'currency'|'deleteCurrency'|
  *           'labels'|'label'|'deleteLabel'|'makeLabelGlobal'|
