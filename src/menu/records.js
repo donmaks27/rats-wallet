@@ -30,6 +30,7 @@ const PAGE_SIZE = 10;
 const ARG_PREV_PAGE = 'pP';
 const ARG_PREV_FILTER_ID = 'pF';
 
+const ARG_TEMP_RESET = 'reset';
 const ARG_TEMP_ACCOUNT_ID = 'aID';
 const ARG_TEMP_DATE = 'aD';
 const ARG_TEMP_TIME = 'aT';
@@ -175,7 +176,7 @@ function createMenuData_records(user, userData, args, callback) {
                         callback_data: menuBase.makeMenuButton('filter', { [ARG_PREV_PAGE]: page, [ARG_PREV_FILTER_ID]: filterID, reset: true })
                     }], [{
                         text: 'Create new record',
-                        callback_data: menuBase.makeMenuButton('createRecord', { [ARG_PREV_PAGE]: page, [ARG_PREV_FILTER_ID]: filterID })
+                        callback_data: menuBase.makeMenuButton('createRecord', { [ARG_PREV_PAGE]: page, [ARG_PREV_FILTER_ID]: filterID, [ARG_TEMP_RESET]: true })
                     }], [{
                         text: '<< Back to Wallet',
                         callback_data: menuBase.makeMenuButton('wallet')
@@ -191,13 +192,24 @@ function createMenuData_records(user, userData, args, callback) {
  */
 function createMenuData_createRecord(user, userData, args, callback) {
     const userID = user.id;
+    const shouldReset = args[ARG_TEMP_RESET] ? true : false;
     const accountID = args[ARG_TEMP_ACCOUNT_ID];
     const recordDate = args[ARG_TEMP_DATE];
     const recordTime = args[ARG_TEMP_TIME];
+    delete args[ARG_TEMP_RESET];
     delete args[ARG_TEMP_ACCOUNT_ID];
     delete args[ARG_TEMP_DATE];
     delete args[ARG_TEMP_TIME];
-    if (typeof accountID === 'number') {
+    if (shouldReset) {
+        db.record_editTemp(userID, { src_account_id: db.invalid_id, src_amount: 0, date: new Date(), category_id: db.invalid_id }, (error) => {
+            if (error) {
+                log.error(userID, `[createRecord] failed to reset temp record (${error})`);
+                onTempRecordError(user, userData, args, callback);
+            } else {
+                onTempRecordReady(user, userData, args, callback);
+            }
+        });
+    } else if (typeof accountID === 'number') {
         db.record_editTemp(userID, { src_account_id: accountID }, (error) => {
             if (error) {
                 log.error(userID, `[createRecord] failed to edit temp record (${error})`);
