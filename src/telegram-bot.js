@@ -265,7 +265,23 @@ function command_deleteMessage(params, callback) {
     sendRequest("deleteMessage", {
         chat_id: params.chatID,
         message_id: params.messageID
-    }, null, wrapDefaultCallback(callback));
+    }, null, (response, error) => {
+        if (!response) {
+            command_editMessage({ 
+                message: { chatID: params.chatID, id: params.messageID }, 
+                text: '_[deleted]_', 
+                inlineKeyboard: { inline_keyboard: [] } 
+            }, callback ? (message, error) => {
+                if (error) {
+                    callback(false, error);
+                } else {
+                    callback(true);
+                }
+            } : undefined);
+        } else if (callback) {
+            callback(true);
+        }
+    });
 }
 
 /**
