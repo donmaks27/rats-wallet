@@ -269,7 +269,7 @@ function command_deleteMessage(params, callback) {
         if (!response) {
             command_editMessage({ 
                 message: { chatID: params.chatID, id: params.messageID }, 
-                text: '_[deleted]_', 
+                text: '_[deleted]_', parseMode: 'MarkdownV2', 
                 inlineKeyboard: { inline_keyboard: [] } 
             }, callback ? (message, error) => {
                 if (error) {
