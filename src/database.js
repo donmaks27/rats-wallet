@@ -1963,7 +1963,7 @@ function query_getTempRecord(userID) {
     }
     const labelColumnNames = Object.getOwnPropertyNames(parseLabelRow({}));
     for (var i = 0; i < labelColumnNames.length; i++) {
-        labelColumns.push(`'${labelColumnNames[i]}', labels.${labelColumnNames[i]}`);
+        labelColumns.push(`'${labelColumnNames[i]}', temp_record_labels.${labelColumnNames[i]}`);
     }
     return `SELECT temp_records.*, ${srcAccountColumns.join(', ')}, ${dstAccountColumns.join(', ')}, 
         ${srcCurrencyColumns.join(', ')}, ${dstCurrencyColumns.join(', ')}, ${categoryColumns.join(', ')}, 
