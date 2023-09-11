@@ -200,6 +200,8 @@ function createMenuData_createRecord(user, userData, args, callback) {
                 onTempRecordReady(user, userData, args, callback);
             }
         });
+    } else {
+        onTempRecordReady(user, userData, args, callback);
     }
 }
 /**
