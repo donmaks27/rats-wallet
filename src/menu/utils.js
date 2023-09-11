@@ -559,7 +559,7 @@ function createMenuData_pickTime(user, userData, args, callback) {
         }
         break;
     case 2:
-        maxNumber = 6;
+        maxNumber = 5;
         break;
     default: 
         break;
