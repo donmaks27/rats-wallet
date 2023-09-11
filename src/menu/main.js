@@ -215,6 +215,7 @@ function createMenuData_settings(user, userData, args, callback) {
  */
 function createMenuData_changeTimeZone(user, userData, args, callback) {
     const MAX_ROWS = 8;
+    const ROW_SIZE = 3;
 
     const userID = user.id;
     const currentRegion = typeof args._r === 'string' ? args._r : null;
@@ -243,8 +244,6 @@ function createMenuData_changeTimeZone(user, userData, args, callback) {
     /** @type {bot.keyboard_button_inline_data[][]} */
     var keyboard = [];
     if (currentRegion == null) {
-        const ROW_SIZE = 3;
-
         menuText += `\nPlease, choose your region:`;
         /** @type {bot.keyboard_button_inline_data[]} */
         var keyboardRow = [];
@@ -293,8 +292,6 @@ function createMenuData_changeTimeZone(user, userData, args, callback) {
             keyboard.push(controlRow);
         }
     } else {
-        const ROW_SIZE = 4;
-
         menuText += `\n*Region:* ${bot.escapeMarkdown(currentRegion)}\nPlease, choose your location:`;
         const locations = timeZonesMap[currentRegion];
         if (locations && (locations.length > 0)) {
