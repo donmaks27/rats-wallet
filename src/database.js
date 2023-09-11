@@ -1940,7 +1940,7 @@ function query_deleteRecord(id) {
  */
 function query_createTempRecord(userID) {
     return `INSERT INTO temp_records(user_id, src_account_id, src_amount, dst_account_id, dst_amount, category_id, date)
-    VALUES (${userID}, NULL, 0, NULL, 0, NULL, 0);`;
+    VALUES (${userID}, NULL, 0, NULL, 0, NULL, ${(new Date()).valueOf()});`;
 }
 /**
  * @param {number} userID 

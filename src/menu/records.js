@@ -31,6 +31,8 @@ const ARG_PREV_PAGE = 'pP';
 const ARG_PREV_FILTER_ID = 'pF';
 
 const ARG_TEMP_ACCOUNT_ID = 'aID';
+const ARG_TEMP_DATE = 'aD';
+const ARG_TEMP_TIME = 'aT';
 
 /**
  * @type {menuBase.menu_create_func}
@@ -190,7 +192,11 @@ function createMenuData_records(user, userData, args, callback) {
 function createMenuData_createRecord(user, userData, args, callback) {
     const userID = user.id;
     const accountID = args[ARG_TEMP_ACCOUNT_ID];
+    const recordDate = args[ARG_TEMP_DATE];
+    const recordTime = args[ARG_TEMP_TIME];
     delete args[ARG_TEMP_ACCOUNT_ID];
+    delete args[ARG_TEMP_DATE];
+    delete args[ARG_TEMP_TIME];
     if (typeof accountID === 'number') {
         db.record_editTemp(userID, { src_account_id: accountID }, (error) => {
             if (error) {
@@ -198,6 +204,30 @@ function createMenuData_createRecord(user, userData, args, callback) {
                 onTempRecordError(user, userData, args, callback);
             } else {
                 onTempRecordReady(user, userData, args, callback);
+            }
+        });
+    } else if ((typeof recordDate === 'number') || (typeof recordTime === 'number')) {
+        db.record_getTemp(userID, (tempRecordData, error) => {
+            if (error || !tempRecordData) {
+                log.error(userID, `[createRecord] failed to get temp record for updating date (${error})`);
+                onTempRecordError(user, userData, args, callback);
+            } else {
+                var newRecordDateTime = tempRecordData.date;
+                if (typeof recordDate === 'number') {
+                    const newRecordDate = menuBase.decodeDate(recordDate);
+                    newRecordDateTime.setUTCFullYear(newRecordDate.getUTCFullYear(), newRecordDate.getUTCMonth(), newRecordDate.getUTCDate());
+                } else if (typeof recordTime === 'number') {
+                    const newRecordTime = menuBase.decodeTime(recordTime);
+                    newRecordDateTime.setUTCHours(newRecordTime.getUTCHours(), newRecordTime.getUTCMinutes(), 0, 0);
+                }
+                db.record_editTemp(userID, { date: newRecordDateTime }, (error) => {
+                    if (error) {
+                        log.error(userID, `[createRecord] failed to edit date of temp record (${error})`);
+                        onTempRecordError(user, userData, args, callback);
+                    } else {
+                        onTempRecordReady(user, userData, args, callback);
+                    }
+                });
             }
         });
     } else {
@@ -235,12 +265,22 @@ function onTempRecordReady(user, userData, args, callback) {
             log.error(userID, `[createRecord] failed to get temp record data (${error})`);
             onTempRecordError(user, userData, args, callback);
         } else {
+            const currentMenu = walletMenu.getShortName('createRecord');
             /** @type {bot.keyboard_button_inline_data[][]} */
             var keyboard = [];
             keyboard.push([{
                 text: `Account: ` + (tempRecordData.src_account ? (walletCommon.getColorMarker(tempRecordData.src_account.color, ' ') + tempRecordData.src_account.name) : '--'),
-                callback_data: menuBase.makeMenuButton('chooseAccount', { from: walletMenu.getShortName('createRecord'), out: ARG_TEMP_ACCOUNT_ID, eID: tempRecordData.src_account_id })
-            }], [{
+                callback_data: menuBase.makeMenuButton('chooseAccount', { from: currentMenu, out: ARG_TEMP_ACCOUNT_ID, eID: tempRecordData.src_account_id })
+            }], [
+                {
+                    text: dateFormat.to_readable_string(tempRecordData.date, { date: true }),
+                    callback_data: menuBase.makeMenuButton('pickDate', { from: currentMenu, out: ARG_TEMP_DATE, _d: menuBase.encodeDate(tempRecordData.date) })
+                },
+                {
+                    text: dateFormat.to_readable_string(tempRecordData.date, { time: true }),
+                    callback_data: menuBase.makeMenuButton('pickTime', { from: currentMenu, out: ARG_TEMP_TIME, _t: menuBase.encodeTime(tempRecordData.date) })
+                }
+            ], [{
                 text: `<< Back to Records`, 
                 callback_data: menuBase.makeMenuButton('records', { [ARG_PAGE]: prevPage, [ARG_FILTER_ID]: prevFilterID })
             }]);
