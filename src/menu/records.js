@@ -32,8 +32,9 @@ const ARG_PREV_FILTER_ID = 'pF';
 
 const ARG_TEMP_RESET = 'reset';
 const ARG_TEMP_ACCOUNT_ID = 'aID';
-const ARG_TEMP_DATE = 'aD';
-const ARG_TEMP_TIME = 'aT';
+const ARG_TEMP_DATE = 'rD';
+const ARG_TEMP_TIME = 'rT';
+const ARG_TEMP_AMOUNT = 'rA';
 
 /**
  * @type {menuBase.menu_create_func}
@@ -196,10 +197,12 @@ function createMenuData_createRecord(user, userData, args, callback) {
     const accountID = args[ARG_TEMP_ACCOUNT_ID];
     const recordDate = args[ARG_TEMP_DATE];
     const recordTime = args[ARG_TEMP_TIME];
+    const recordAmount = args[ARG_TEMP_AMOUNT];
     delete args[ARG_TEMP_RESET];
     delete args[ARG_TEMP_ACCOUNT_ID];
     delete args[ARG_TEMP_DATE];
     delete args[ARG_TEMP_TIME];
+    delete args[ARG_TEMP_AMOUNT];
     if (shouldReset) {
         db.record_editTemp(userID, { src_account_id: db.invalid_id, src_amount: 0, date: new Date(), category_id: db.invalid_id }, (error) => {
             if (error) {
@@ -212,7 +215,7 @@ function createMenuData_createRecord(user, userData, args, callback) {
     } else if (typeof accountID === 'number') {
         db.record_editTemp(userID, { src_account_id: accountID }, (error) => {
             if (error) {
-                log.error(userID, `[createRecord] failed to edit temp record (${error})`);
+                log.error(userID, `[createRecord] failed to change src account for temp record (${error})`);
                 onTempRecordError(user, userData, args, callback);
             } else {
                 onTempRecordReady(user, userData, args, callback);
@@ -240,6 +243,15 @@ function createMenuData_createRecord(user, userData, args, callback) {
                         onTempRecordReady(user, userData, args, callback);
                     }
                 });
+            }
+        });
+    } else if (typeof recordAmount === 'number') {
+        db.record_editTemp(userID, { src_amount: recordAmount }, (error) => {
+            if (error) {
+                log.error(userID, `[createRecord] failed to change src amount for temp record (${error})`);
+                onTempRecordError(user, userData, args, callback);
+            } else {
+                onTempRecordReady(user, userData, args, callback);
             }
         });
     } else {
@@ -283,6 +295,9 @@ function onTempRecordReady(user, userData, args, callback) {
             keyboard.push([{
                 text: `Account: ` + (tempRecordData.src_account ? (walletCommon.getColorMarker(tempRecordData.src_account.color, ' ') + tempRecordData.src_account.name) : '--'),
                 callback_data: menuBase.makeMenuButton('chooseAccount', { from: currentMenu, out: ARG_TEMP_ACCOUNT_ID, eID: tempRecordData.src_account_id })
+            }], [{
+                text: `Amount: ${Math.floor(tempRecordData.src_amount / 100)}`,
+                callback_data: menuBase.makeActionButton('enterRecordAmount', { [ARG_PREV_PAGE]: prevPage, [ARG_PREV_FILTER_ID]: prevFilterID })
             }], [
                 {
                     text: dateFormat.to_readable_string(tempRecordData.date, { date: true }),

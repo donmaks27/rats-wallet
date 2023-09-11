@@ -9,7 +9,7 @@ var db = require('./database');
  *           'renameCurrency'|'archiveCurrency'|'createCurrency'|'deleteCurrency'|
  *           'renameLabel'|'archiveLabel'|'createLabel'|'deleteLabel'|'makeLabelGlobal'|
  *           'renameCategory'|'archiveCategory'|'createCategory'|'deleteCategory'|'makeCategoryGlobal'|
- *           'changeRecordsPage'|'applyTempFilter'
+ *           'changeRecordsPage'|'applyTempFilter'|'enterRecordAmount'
  *          } action_type
  * @typedef {'debug'|'debugPickDate'|'debugPickTime'|'debugNumpad'|'debugChooseAccount'|
  *           'pickDate'|'pickTime'|'enterNumber'|
