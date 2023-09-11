@@ -176,7 +176,7 @@ function createMenu_debugChooseAccount(user, userData, args, callback) {
                 [
                     {
                         text: 'Account',
-                        callback_data: menuBase.makeMenuButton('chooseAccount', { from: walletMenu.getShortName('debugChooseAccount'), out: 'aID', eID: accountIDArg })
+                        callback_data: menuBase.makeMenuButton('chooseAccount', { from: walletMenu.getShortName('debugChooseAccount'), out: 'aID', eID: accountIDArg, aID: accountIDArg })
                     }
                 ],
                 [

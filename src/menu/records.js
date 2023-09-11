@@ -30,6 +30,8 @@ const PAGE_SIZE = 10;
 const ARG_PREV_PAGE = 'pP';
 const ARG_PREV_FILTER_ID = 'pF';
 
+const ARG_TEMP_ACCOUNT_ID = 'aID';
+
 /**
  * @type {menuBase.menu_create_func}
  */
@@ -168,7 +170,10 @@ function createMenuData_records(user, userData, args, callback) {
                     parseMode: 'MarkdownV2',
                     keyboard: [ controlButtons, [{
                         text: `Filter`,
-                        callback_data: menuBase.makeMenuButton('filter', { pP: page, pF: filterID, reset: true })
+                        callback_data: menuBase.makeMenuButton('filter', { [ARG_PREV_PAGE]: page, [ARG_PREV_FILTER_ID]: filterID, reset: true })
+                    }], [{
+                        text: 'Create new record',
+                        callback_data: menuBase.makeMenuButton('createRecord', { [ARG_PREV_PAGE]: page, [ARG_PREV_FILTER_ID]: filterID })
                     }], [{
                         text: '<< Back to Wallet',
                         callback_data: menuBase.makeMenuButton('wallet')
@@ -184,29 +189,55 @@ function createMenuData_records(user, userData, args, callback) {
  */
 function createMenuData_createRecord(user, userData, args, callback) {
     const userID = user.id;
+    const accountID = args[ARG_TEMP_ACCOUNT_ID];
+    delete args[ARG_TEMP_ACCOUNT_ID];
+    if (typeof accountID === 'number') {
+        db.record_editTemp(userID, { src_account_id: accountID }, (error) => {
+            if (error) {
+                log.error(userID, `[createRecord] failed to edit temp record (${error})`);
+                onTempRecordError(user, userData, args, callback);
+            } else {
+                onTempRecordReady(user, userData, args, callback);
+            }
+        });
+    }
+}
+/**
+ * @type {menuBase.menu_create_func}
+ */
+function onTempRecordError(user, userData, args, callback) {
+    const userID = user.id;
+    const prevPage = typeof args[ARG_PREV_PAGE] === 'number' ? args[ARG_PREV_PAGE] : 0;
+    const prevFilterID = typeof args[ARG_PREV_FILTER_ID] === 'number' ? args[ARG_PREV_FILTER_ID] : null;
+    callback({
+        text: `_${bot.escapeMarkdown(`Hmm, something wrong...`)}_`, parseMode: 'MarkdownV2',
+        keyboard: [
+            [
+                { 
+                    text: `<< Back to Records`, 
+                    callback_data: menuBase.makeMenuButton('records', { [ARG_PAGE]: prevPage, [ARG_FILTER_ID]: prevFilterID }) 
+                }
+            ]
+        ]
+    });
+}
+/**
+ * @type {menuBase.menu_create_func}
+ */
+function onTempRecordReady(user, userData, args, callback) {
+    const userID = user.id;
     const prevPage = typeof args[ARG_PREV_PAGE] === 'number' ? args[ARG_PREV_PAGE] : 0;
     const prevFilterID = typeof args[ARG_PREV_FILTER_ID] === 'number' ? args[ARG_PREV_FILTER_ID] : null;
     db.record_getTemp(userID, (tempRecordData, error) => {
         if (error || !tempRecordData) {
-            log.error(userID, `[createRecord] failed to get data of temp record`);
-            callback({
-                text: `_${bot.escapeMarkdown(`Hmm, something wrong...`)}_`, parseMode: 'MarkdownV2',
-                keyboard: [
-                    [
-                        { 
-                            text: `<< Back to Records`, 
-                            callback_data: menuBase.makeMenuButton('records', { [ARG_PAGE]: prevPage, [ARG_FILTER_ID]: prevFilterID }) 
-                        }
-                    ]
-                ]
-            });
+            log.error(userID, `[createRecord] failed to get temp record data (${error})`);
+            onTempRecordError(user, userData, args, callback);
         } else {
             /** @type {bot.keyboard_button_inline_data[][]} */
             var keyboard = [];
-            // TODO: Add menu for input numbers
             keyboard.push([{
-                text: `From: ` + (tempRecordData.src_account ? (walletCommon.getColorMarker(tempRecordData.src_account.color, ' ') + tempRecordData.src_account.name) : '--'),
-                callback_data: menuBase.makeMenuButton('chooseAccount', { from: walletMenu.getShortName('createRecord'), out: 'acF', eID: tempRecordData.dst_account_id })
+                text: `Account: ` + (tempRecordData.src_account ? (walletCommon.getColorMarker(tempRecordData.src_account.color, ' ') + tempRecordData.src_account.name) : '--'),
+                callback_data: menuBase.makeMenuButton('chooseAccount', { from: walletMenu.getShortName('createRecord'), out: ARG_TEMP_ACCOUNT_ID, eID: tempRecordData.src_account_id })
             }], [{
                 text: `<< Back to Records`, 
                 callback_data: menuBase.makeMenuButton('records', { [ARG_PAGE]: prevPage, [ARG_FILTER_ID]: prevFilterID })
