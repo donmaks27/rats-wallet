@@ -296,7 +296,7 @@ function onTempRecordReady(user, userData, args, callback) {
                 text: `Account: ` + (tempRecordData.src_account ? (walletCommon.getColorMarker(tempRecordData.src_account.color, ' ') + tempRecordData.src_account.name) : '--'),
                 callback_data: menuBase.makeMenuButton('chooseAccount', { from: currentMenu, out: ARG_TEMP_ACCOUNT_ID, eID: tempRecordData.src_account_id })
             }], [{
-                text: `Amount: ${Math.floor(tempRecordData.src_amount / 100)}`,
+                text: `Amount: ${tempRecordData.src_amount / 100}`,
                 callback_data: menuBase.makeActionButton('enterRecordAmount', { [ARG_PREV_PAGE]: prevPage, [ARG_PREV_FILTER_ID]: prevFilterID })
             }], [
                 {
