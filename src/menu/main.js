@@ -214,8 +214,11 @@ function createMenuData_settings(user, userData, args, callback) {
  * @type {menuBase.menu_create_func}
  */
 function createMenuData_changeTimeZone(user, userData, args, callback) {
+    const MAX_ROWS = 8;
+
     const userID = user.id;
     const currentRegion = typeof args._r === 'string' ? args._r : null;
+    const currentPage = typeof args._p === 'number' ? args._p : 0;
     
     /** @type {string[]} */
     // @ts-ignore
@@ -240,16 +243,20 @@ function createMenuData_changeTimeZone(user, userData, args, callback) {
     /** @type {bot.keyboard_button_inline_data[][]} */
     var keyboard = [];
     if (currentRegion == null) {
+        const ROW_SIZE = 3;
+
         menuText += `\nPlease, choose your region:`;
         /** @type {bot.keyboard_button_inline_data[]} */
         var keyboardRow = [];
         const regions = Object.getOwnPropertyNames(timeZonesMap);
-        for (var i = 0; i < regions.length; i++) {
+        const firstRegionIndex = regions.length <= (ROW_SIZE * MAX_ROWS) ? 0 : currentPage * ROW_SIZE * MAX_ROWS;
+        const lastRegionIndex = Math.min(regions.length, firstRegionIndex + ROW_SIZE * MAX_ROWS) - 1;
+        for (var i = firstRegionIndex; i <= lastRegionIndex; i++) {
             keyboardRow.push({
                 text: regions[i],
                 callback_data: menuBase.makeMenuButton('changeTimeZone', { _r: regions[i] })
             });
-            if (keyboardRow.length == 3) {
+            if (keyboardRow.length == ROW_SIZE) {
                 keyboard.push(keyboardRow);
                 keyboardRow = [];
             }
@@ -258,13 +265,44 @@ function createMenuData_changeTimeZone(user, userData, args, callback) {
             keyboard.push(keyboardRow);
             keyboardRow = [];
         }
+        if (regions.length > (ROW_SIZE * MAX_ROWS)) {
+            /** @type {bot.keyboard_button_inline_data[]} */
+            var controlRow = [];
+            if (currentPage > 0) {
+                controlRow.push({
+                    text: `<`,
+                    callback_data: menuBase.makeMenuButton('changeTimeZone', { _p: currentPage - 1 })
+                });
+            } else {
+                controlRow.push({
+                    text: ' ',
+                    callback_data: menuBase.makeDummyButton()
+                });
+            }
+            if (lastRegionIndex < regions.length - 1) {
+                controlRow.push({
+                    text: `>`,
+                    callback_data: menuBase.makeMenuButton('changeTimeZone', { _p: currentPage + 1 })
+                });
+            } else {
+                controlRow.push({
+                    text: ' ',
+                    callback_data: menuBase.makeDummyButton()
+                });
+            }
+            keyboard.push(controlRow);
+        }
     } else {
+        const ROW_SIZE = 4;
+
         menuText += `\n*Region:* ${bot.escapeMarkdown(currentRegion)}\nPlease, choose your location:`;
         const locations = timeZonesMap[currentRegion];
         if (locations && (locations.length > 0)) {
             /** @type {bot.keyboard_button_inline_data[]} */
             var keyboardRow = [];
-            for (var i = 0; i < locations.length; i++) {
+            const firstLocationIndex = locations.length <= (ROW_SIZE * MAX_ROWS) ? 0 : currentPage * ROW_SIZE * MAX_ROWS;
+            const lastLocationIndex = Math.min(locations.length, firstLocationIndex + ROW_SIZE * MAX_ROWS) - 1;
+            for (var i = firstLocationIndex; i <= lastLocationIndex; i++) {
                 keyboardRow.push({
                     text: locations[i],
                     callback_data: menuBase.makeDummyButton()
@@ -277,6 +315,33 @@ function createMenuData_changeTimeZone(user, userData, args, callback) {
             if (keyboardRow.length > 0) {
                 keyboard.push(keyboardRow);
                 keyboardRow = [];
+            }
+            if (locations.length > (ROW_SIZE * MAX_ROWS)) {
+                /** @type {bot.keyboard_button_inline_data[]} */
+                var controlRow = [];
+                if (currentPage > 0) {
+                    controlRow.push({
+                        text: `<`,
+                        callback_data: menuBase.makeMenuButton('changeTimeZone', { _r: currentRegion, _p: currentPage - 1 })
+                    });
+                } else {
+                    controlRow.push({
+                        text: ' ',
+                        callback_data: menuBase.makeDummyButton()
+                    });
+                }
+                if (lastLocationIndex < locations.length - 1) {
+                    controlRow.push({
+                        text: `>`,
+                        callback_data: menuBase.makeMenuButton('changeTimeZone', { _r: currentRegion, _p: currentPage + 1 })
+                    });
+                } else {
+                    controlRow.push({
+                        text: ' ',
+                        callback_data: menuBase.makeDummyButton()
+                    });
+                }
+                keyboard.push(controlRow);
             }
         }
         keyboard.push([{
