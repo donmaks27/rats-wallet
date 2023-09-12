@@ -134,7 +134,7 @@ function createMenuData_records(user, userData, args, callback) {
                         messageText += `\`   \`_Labels_: ${labelsNames.join(', ')}\n`;
                     }
 
-                    messageText += `\`   \`_Date_: __${bot.escapeMarkdown(dateFormat.to_readable_string(record.date, { date: true, time: true }))}__\n`;
+                    messageText += `\`   \`_Date_: __${bot.escapeMarkdown(dateFormat.to_readable_string(record.date, { date: true, time: true, timezone: userData.timezone }))}__\n`;
 
                     if (record.src_account) {
                         accountBallances[record.src_account_id] += record.src_amount;
