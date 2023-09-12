@@ -7,7 +7,7 @@ var log = require('./log');
 
 /**
  * @typedef {{ users: user_data[], currencies: currency_data[], labels: label_data[], categories: category_data[], accounts: account_data[], records: record_data[], record_labels: record_label_data[], user_invites: user_invite_data[], filters: filter_data[] }} full_data
- * @typedef {{ id: number, name: string, create_date: Date }} user_data
+ * @typedef {{ id: number, name: string, timezone: string | null, create_date: Date }} user_data
  * @typedef {{ code: string, name: string | null, symbol: string | null, is_active: boolean, create_date: Date }} currency_data
  * @typedef {'red'|'orange'|'yellow'|'green'|'blue'|'purple'|'black'|'white'|'brown'|null} color_type
  * @typedef {{ id: number, user_id: number, name: string, color: color_type, is_active: boolean, create_date: Date }} label_data
@@ -260,6 +260,7 @@ function parseUserRow(row, prefix) {
     return {
         id: row[prefix + 'id'],
         name: row[prefix + 'name'],
+        timezone: row[prefix + 'timezone'],
         create_date: new Date(row[prefix + 'create_date'])
     };
 }
@@ -462,27 +463,27 @@ function user_create(params, callback) {
     } : undefined);
 }
 /**
- * @param {number} id 
+ * @param {number} userID 
  * @param {(data: user_data | null, error?: string) => any} callback 
  */
-function user_get(id, callback) {
-    if (cached_data.users.hasOwnProperty(id)) {
-        var userData = cached_data.users[id];
+function user_get(userID, callback) {
+    if (cached_data.users.hasOwnProperty(userID)) {
+        var userData = cached_data.users[userID];
         if (!userData) {
-            callback(null, `can't find data of user ${id}`);
+            callback(null, `can't find data of user ${userID}`);
         } else {
             callback(userData);
         }
         return;
     }
-    db.get(query_getUser(id), (error, row) => {
+    db.get(query_getUser(userID), (error, row) => {
         if (error) {
-            callback(null, `failed to get data of user ${id}: ` + error);
+            callback(null, `failed to get data of user ${userID}: ` + error);
         } else if (!row) {
-            callback(null, `can't find data of user ${id}`);
+            callback(null, `can't find data of user ${userID}`);
         } else {
             var userData = parseUserRow(row);
-            cached_data.users[id] = userData;
+            cached_data.users[userID] = userData;
             callback(userData);
         }
     });
@@ -507,21 +508,21 @@ function user_getAll(callback) {
     });
 }
 /**
- * @param {number} id 
- * @param {{ name: string }} params 
+ * @param {number} userID 
+ * @param {{ name?: string, timezone?: string | null }} params 
  * @param {(data: user_data | null, error?: string) => any} [callback] 
  */
-function user_edit(id, params, callback) {
-    db.run(query_updateUser(id, params), (error) => {
+function user_edit(userID, params, callback) {
+    db.run(query_updateUser(userID, params), (error) => {
         if (error) {
             if (callback) {
-                callback(null, `failed to update user ${id}: ` + error);
+                callback(null, `failed to update user ${userID}: ` + error);
             }
         } else {
-            debug_log(`updated user ${id}: ` + JSON.stringify(params));
-            delete cached_data.users[id];
+            debug_log(`updated user ${userID}: ` + JSON.stringify(params));
+            delete cached_data.users[userID];
             if (callback) {
-                user_get(id, callback);
+                user_get(userID, callback);
             }
         }
     });
@@ -1545,11 +1546,33 @@ function query_getUser(id) {
     return `SELECT * FROM users WHERE id = ${id} LIMIT 1;`;
 }
 /**
- * @param {number} id
- * @param {{ name: string }} params 
+ * @param {number} userID
+ * @param {{ name?: string, timezone?: string | null }} params 
  */
-function query_updateUser(id, params) {
-    return `UPDATE users SET name = '${query_handle_string(params.name)}' WHERE id = ${id};`;
+function query_updateUser(userID, params) {
+    /** @type {string[]} */
+    var statements = [];
+    const properties = Object.getOwnPropertyNames(params);
+    if (properties.includes('name')) {
+        statements.push(`name = '${query_handle_string(params.name)}'`);
+    }
+    if (properties.includes('timezone')) {
+        var checkedTimezone = params.timezone;
+        if (checkedTimezone) {
+            // @ts-ignore
+            if (!Intl.supportedValuesOf('timeZone').includes(checkedTimezone)) {
+                checkedTimezone = null;
+            }
+        } else {
+            checkedTimezone = null;
+        }
+        if (checkedTimezone) {
+            statements.push(`timezone = '${query_handle_string(checkedTimezone)}'`);
+        } else {
+            statements.push(`timezone = NULL`);
+        }
+    }
+    return `UPDATE users SET ${statements.join(', ')} WHERE id = ${userID};`;
 }
 
 /**

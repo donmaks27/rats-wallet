@@ -240,7 +240,7 @@ function createMenuData_changeTimeZone(user, userData, args, callback) {
         }
     }
 
-    var menuText = `*Changing time zone*`;
+    var menuText = `*Changing time zone*\n_Current timezone: ${userData.timezone ? bot.escapeMarkdown(userData.timezone.replace(/\_/g, ' '). replace('/', ' / ')) : 'UTC'}_`;
     /** @type {bot.keyboard_button_inline_data[][]} */
     var keyboard = [];
     if (currentRegion == null) {
@@ -291,6 +291,10 @@ function createMenuData_changeTimeZone(user, userData, args, callback) {
             }
             keyboard.push(controlRow);
         }
+        keyboard.push([{
+            text: 'UTC',
+            callback_data: menuBase.makeActionButton('changeTimezone', { tz: null })
+        }]);
     } else {
         menuText += `\n*Region:* ${bot.escapeMarkdown(currentRegion)}\nPlease, choose your location:`;
         const locations = timeZonesMap[currentRegion];
@@ -300,9 +304,10 @@ function createMenuData_changeTimeZone(user, userData, args, callback) {
             const firstLocationIndex = locations.length <= (ROW_SIZE * MAX_ROWS) ? 0 : currentPage * ROW_SIZE * MAX_ROWS;
             const lastLocationIndex = Math.min(locations.length, firstLocationIndex + ROW_SIZE * MAX_ROWS) - 1;
             for (var i = firstLocationIndex; i <= lastLocationIndex; i++) {
+                const timezone = `${currentRegion}/${locations[i]}`;
                 keyboardRow.push({
                     text: locations[i].replace(/\_/g, ' '),
-                    callback_data: menuBase.makeDummyButton()
+                    callback_data: timezone == userData.timezone ? menuBase.makeDummyButton() : menuBase.makeActionButton('changeTimezone', { tz: timezone })
                 });
                 if (keyboardRow.length == ROW_SIZE) {
                     keyboard.push(keyboardRow);
@@ -344,6 +349,9 @@ function createMenuData_changeTimeZone(user, userData, args, callback) {
         keyboard.push([{
             text: `<< Change region`,
             callback_data: menuBase.makeMenuButton('changeTimeZone')
+        }, {
+            text: 'UTC',
+            callback_data: menuBase.makeActionButton('changeTimezone', { tz: null })
         }]);
     }
     keyboard.push([{

@@ -4,7 +4,7 @@ var db = require('./database');
 
 /**
  * @typedef {{ [key: string]: string|number|boolean|null }} args_data
- * @typedef {'invite'|'renameUser'|'changeColor'|
+ * @typedef {'invite'|'renameUser'|'changeColor'|'changeTimezone'|
  *           'renameAccount'|'archiveAccount'|'createAccount'|'deleteAccount'|
  *           'renameCurrency'|'archiveCurrency'|'createCurrency'|'deleteCurrency'|
  *           'renameLabel'|'archiveLabel'|'createLabel'|'deleteLabel'|'makeLabelGlobal'|
