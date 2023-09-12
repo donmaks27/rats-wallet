@@ -73,7 +73,7 @@ function createMenuData_filter(user, userData, args, callback) {
                 }
             } else if (argsKeys.includes(ARG_DATE_FROM)) {
                 const dateFrom = typeof args[ARG_DATE_FROM] === 'number' ? menuBase.decodeDate(args[ARG_DATE_FROM]) : null;
-                db.filter_editTemp(userID, { date_from: dateFrom }, (filterData, error) => {
+                db.filter_editTemp(userID, { date_from: dateFrom ? dateFormat.utc_date(dateFrom, userData.timezone) : null }, (filterData, error) => {
                     if (error || !filterData) {
                         log.error(userID, `[filter] failed to update field "date_from" of temp filter: ${error}`);
                         onTempFilterError(user, userData, args, callback);
@@ -87,7 +87,7 @@ function createMenuData_filter(user, userData, args, callback) {
                 if (dateUntil != null) {
                     dateUntil.setUTCHours(23, 59, 59, 999);
                 }
-                db.filter_editTemp(userID, { date_until: dateUntil }, (filterData, error) => {
+                db.filter_editTemp(userID, { date_until: dateUntil ? dateFormat.utc_date(dateUntil, userData.timezone) : null }, (filterData, error) => {
                     if (error || !filterData) {
                         log.error(userID, `[filter] failed to update field "date_until" of temp filter: ${error}`);
                         onTempFilterError(user, userData, args, callback);
@@ -109,7 +109,7 @@ function onTempFilterError(user, userData, args, callback) {
     const prevPage = args[ARG_PREV_PAGE];
     const prevFilter = args[ARG_PREV_FILTER_ID];
     /** @type {walletCommon.args_data} */
-    var backButtonArgs = { [ARG_RECORDS_PAGE]: (args[ARG_PREV_PAGE] ? args[ARG_PREV_PAGE] : 0) };
+    var backButtonArgs = { [ARG_RECORDS_PAGE]: (prevPage ? prevPage : 0) };
     if (prevFilter) {
         backButtonArgs[ARG_RECORDS_FILTER_ID] = prevFilter;
     }
@@ -133,13 +133,25 @@ function onTempFilterUpdated(user, userData, args, tempFilterData, callback) {
         keyboard: [
             [
                 {
-                    text: `From: ${tempFilterData.date_from ? dateFormat.to_readable_string(tempFilterData.date_from, { date: true }) : '--'}`,
-                    callback_data: menuBase.makeMenuButton('pickDate', { ...args, from: walletMenu.getShortName('filter'), out: ARG_DATE_FROM, max: tempFilterData.date_until ? menuBase.encodeDate(tempFilterData.date_until) : null })
+                    text: `From: ${tempFilterData.date_from ? dateFormat.to_readable_string(tempFilterData.date_from, { date: true, timezone: userData.timezone }) : '--'}`,
+                    callback_data: menuBase.makeMenuButton('pickDate', { 
+                        ...args, 
+                        from: walletMenu.getShortName('filter'), 
+                        out: ARG_DATE_FROM, 
+                        max: tempFilterData.date_until ? menuBase.encodeDate(dateFormat.timezone_date(tempFilterData.date_until, userData.timezone)) : null,
+                        _d: menuBase.encodeDate(dateFormat.timezone_date(tempFilterData.date_from ? tempFilterData.date_from : new Date(), userData.timezone))
+                    })
                 }
             ], [
                 {
-                    text: `Until: ${tempFilterData.date_until ? dateFormat.to_readable_string(tempFilterData.date_until, { date: true }) : '--'}`,
-                    callback_data: menuBase.makeMenuButton('pickDate', { ...args, from: walletMenu.getShortName('filter'), out: ARG_DATE_UNTIL, min: tempFilterData.date_from ? menuBase.encodeDate(tempFilterData.date_from) : null })
+                    text: `Until: ${tempFilterData.date_until ? dateFormat.to_readable_string(tempFilterData.date_until, { date: true, timezone: userData.timezone }) : '--'}`,
+                    callback_data: menuBase.makeMenuButton('pickDate', { 
+                        ...args, 
+                        from: walletMenu.getShortName('filter'), 
+                        out: ARG_DATE_UNTIL, 
+                        min: tempFilterData.date_from ? menuBase.encodeDate(dateFormat.timezone_date(tempFilterData.date_from, userData.timezone)) : null,
+                        _d: menuBase.encodeDate(dateFormat.timezone_date(tempFilterData.date_until ? tempFilterData.date_until : new Date(), userData.timezone))
+                    })
                 }
             ], [
                 {

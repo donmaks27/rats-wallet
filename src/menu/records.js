@@ -227,7 +227,7 @@ function createMenuData_createRecord(user, userData, args, callback) {
                 log.error(userID, `[createRecord] failed to get temp record for updating date (${error})`);
                 onTempRecordError(user, userData, args, callback);
             } else {
-                var newRecordDateTime = tempRecordData.date;
+                var newRecordDateTime = dateFormat.timezone_date(tempRecordData.date, userData.timezone);
                 if (typeof recordDate === 'number') {
                     const newRecordDate = menuBase.decodeDate(recordDate);
                     newRecordDateTime.setUTCFullYear(newRecordDate.getUTCFullYear(), newRecordDate.getUTCMonth(), newRecordDate.getUTCDate());
@@ -235,7 +235,7 @@ function createMenuData_createRecord(user, userData, args, callback) {
                     const newRecordTime = menuBase.decodeTime(recordTime);
                     newRecordDateTime.setUTCHours(newRecordTime.getUTCHours(), newRecordTime.getUTCMinutes(), 0, 0);
                 }
-                db.record_editTemp(userID, { date: newRecordDateTime }, (error) => {
+                db.record_editTemp(userID, { date: dateFormat.utc_date(newRecordDateTime, userData.timezone) }, (error) => {
                     if (error) {
                         log.error(userID, `[createRecord] failed to edit date of temp record (${error})`);
                         onTempRecordError(user, userData, args, callback);
@@ -300,12 +300,22 @@ function onTempRecordReady(user, userData, args, callback) {
                 callback_data: menuBase.makeActionButton('enterRecordAmount', { [ARG_PREV_PAGE]: prevPage, [ARG_PREV_FILTER_ID]: prevFilterID })
             }], [
                 {
-                    text: dateFormat.to_readable_string(tempRecordData.date, { date: true }),
-                    callback_data: menuBase.makeMenuButton('pickDate', { r: true, from: currentMenu, out: ARG_TEMP_DATE, _d: menuBase.encodeDate(tempRecordData.date) })
+                    text: dateFormat.to_readable_string(tempRecordData.date, { date: true, timezone: userData.timezone }),
+                    callback_data: menuBase.makeMenuButton('pickDate', { 
+                        r: true, 
+                        from: currentMenu, 
+                        out: ARG_TEMP_DATE, 
+                        _d: menuBase.encodeDate(dateFormat.timezone_date(tempRecordData.date, userData.timezone)) 
+                    })
                 },
                 {
-                    text: dateFormat.to_readable_string(tempRecordData.date, { time: true }),
-                    callback_data: menuBase.makeMenuButton('pickTime', { r: true, from: currentMenu, out: ARG_TEMP_TIME, _t: menuBase.encodeTime(tempRecordData.date) })
+                    text: dateFormat.to_readable_string(tempRecordData.date, { time: true, timezone: userData.timezone }),
+                    callback_data: menuBase.makeMenuButton('pickTime', { 
+                        r: true, 
+                        from: currentMenu, 
+                        out: ARG_TEMP_TIME, 
+                        _t: menuBase.encodeTime(dateFormat.timezone_date(tempRecordData.date, userData.timezone))
+                    })
                 }
             ], [{
                 text: `<< Back to Records`, 
