@@ -37,6 +37,8 @@ const ARG_TEMP_AMOUNT = 'rA';
 const ARG_TEMP_CATEGORY_ID = 'cID';
 const ARG_TEMP_DATE = 'rD';
 const ARG_TEMP_TIME = 'rT';
+const ARG_TEMP_ADD_LABEL = 'lIDa';
+const ARG_TEMP_REMOVE_LABEL = 'lIDr';
 
 /**
  * @type {menuBase.menu_create_func}
@@ -201,12 +203,16 @@ function createMenuData_createRecord(user, userData, args, callback) {
     const categoryID = args[ARG_TEMP_CATEGORY_ID];
     const recordDate = args[ARG_TEMP_DATE];
     const recordTime = args[ARG_TEMP_TIME];
+    const lebelID_add = args[ARG_TEMP_ADD_LABEL];
+    const lebelID_remove = args[ARG_TEMP_REMOVE_LABEL];
     delete args[ARG_TEMP_RESET];
     delete args[ARG_TEMP_ACCOUNT_ID];
     delete args[ARG_TEMP_AMOUNT];
     delete args[ARG_TEMP_CATEGORY_ID];
     delete args[ARG_TEMP_DATE];
     delete args[ARG_TEMP_TIME];
+    delete args[ARG_TEMP_ADD_LABEL];
+    delete args[ARG_TEMP_REMOVE_LABEL];
     if (shouldReset) {
         db.record_editTemp(userID, { src_account_id: db.invalid_id, src_amount: 0, date: new Date(), category_id: db.invalid_id }, (error) => {
             if (error) {
@@ -274,6 +280,29 @@ function createMenuData_createRecord(user, userData, args, callback) {
                 onTempRecordReady(user, userData, args, callback);
             }
         });
+    } else if ((typeof lebelID_add === 'number') && (lebelID_add != db.invalid_id)) {
+        db.record_addTempLabel(userID, lebelID_add, (error) => {
+            if (error) {
+                log.error(userID, `[createRecord] failed to add label to temp record (${error})`);
+                onTempRecordError(user, userData, args, callback);
+            } else {
+                onTempRecordReady(user, userData, args, callback);
+            }
+        });
+    } else if (typeof lebelID_remove === 'number') {
+        if (lebelID_remove != db.invalid_id) {
+            db.record_removeTempLabel(userID, lebelID_remove, (error) => {
+                if (error) {
+                    log.error(userID, `[createRecord] failed to remove label from temp record (${error})`);
+                    onTempRecordError(user, userData, args, callback);
+                } else {
+                    onTempRecordReady(user, userData, args, callback);
+                }
+            });
+        } else {
+            log.error(userID, `[createRecord] empty temp label ID for remove`)
+            onTempRecordError(user, userData, args, callback);
+        }
     } else {
         onTempRecordReady(user, userData, args, callback);
     }
@@ -356,14 +385,14 @@ function onTempRecordReady(user, userData, args, callback) {
                             },
                             {
                                 text: `✖️ Remove label`,
-                                callback_data: menuBase.makeDummyButton()
+                                callback_data: menuBase.makeMenuButton('createRecord', { [ARG_TEMP_REMOVE_LABEL]: labelData.id })
                             }
                         ]);
                     }
                     if (labelsAmount < TEMP_RECORD_LABELS_MAX) {
                         keyboard.push([{
                             text: `➕ Add label...`,
-                            callback_data: menuBase.makeDummyButton()
+                            callback_data: menuBase.makeMenuButton('chooseLabel', { from: currentMenu, out: ARG_TEMP_ADD_LABEL, r: true })
                         }]);
                     }
                     keyboard.push([{
