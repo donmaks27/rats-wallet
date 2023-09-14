@@ -32,9 +32,10 @@ const ARG_PREV_FILTER_ID = 'pF';
 
 const ARG_TEMP_RESET = 'reset';
 const ARG_TEMP_ACCOUNT_ID = 'aID';
+const ARG_TEMP_AMOUNT = 'rA';
+const ARG_TEMP_CATEGORY_ID = 'cID';
 const ARG_TEMP_DATE = 'rD';
 const ARG_TEMP_TIME = 'rT';
-const ARG_TEMP_AMOUNT = 'rA';
 
 /**
  * @type {menuBase.menu_create_func}
@@ -195,14 +196,16 @@ function createMenuData_createRecord(user, userData, args, callback) {
     const userID = user.id;
     const shouldReset = args[ARG_TEMP_RESET] ? true : false;
     const accountID = args[ARG_TEMP_ACCOUNT_ID];
+    const recordAmount = args[ARG_TEMP_AMOUNT];
+    const categoryID = args[ARG_TEMP_CATEGORY_ID];
     const recordDate = args[ARG_TEMP_DATE];
     const recordTime = args[ARG_TEMP_TIME];
-    const recordAmount = args[ARG_TEMP_AMOUNT];
     delete args[ARG_TEMP_RESET];
     delete args[ARG_TEMP_ACCOUNT_ID];
+    delete args[ARG_TEMP_AMOUNT];
+    delete args[ARG_TEMP_CATEGORY_ID];
     delete args[ARG_TEMP_DATE];
     delete args[ARG_TEMP_TIME];
-    delete args[ARG_TEMP_AMOUNT];
     if (shouldReset) {
         db.record_editTemp(userID, { src_account_id: db.invalid_id, src_amount: 0, date: new Date(), category_id: db.invalid_id }, (error) => {
             if (error) {
@@ -221,7 +224,16 @@ function createMenuData_createRecord(user, userData, args, callback) {
                 onTempRecordReady(user, userData, args, callback);
             }
         });
-    } else if ((typeof recordDate === 'number') || (typeof recordTime === 'number')) {
+    } else if (typeof categoryID === 'number') {
+        db.record_editTemp(userID, { category_id: categoryID }, (error) => {
+            if (error) {
+                log.error(userID, `[createRecord] failed to change category for temp record (${error})`);
+                onTempRecordError(user, userData, args, callback);
+            } else {
+                onTempRecordReady(user, userData, args, callback);
+            }
+        });
+    } if ((typeof recordDate === 'number') || (typeof recordTime === 'number')) {
         db.record_getTemp(userID, (tempRecordData, error) => {
             if (error || !tempRecordData) {
                 log.error(userID, `[createRecord] failed to get temp record for updating date (${error})`);
@@ -298,6 +310,9 @@ function onTempRecordReady(user, userData, args, callback) {
             }], [{
                 text: `Amount: ${tempRecordData.src_amount / 100}`,
                 callback_data: menuBase.makeActionButton('enterRecordAmount', { [ARG_PREV_PAGE]: prevPage, [ARG_PREV_FILTER_ID]: prevFilterID })
+            }], [{
+                text: `Category: ` + (tempRecordData.category ? (walletCommon.getColorMarker(tempRecordData.category.color, ' ') + tempRecordData.category.name) : '--'),
+                callback_data: menuBase.makeMenuButton('chooseCategory', { from: currentMenu, out: ARG_TEMP_CATEGORY_ID, pID: tempRecordData.category_id })
             }], [
                 {
                     text: dateFormat.to_readable_string(tempRecordData.date, { date: true, timezone: userData.timezone }),
