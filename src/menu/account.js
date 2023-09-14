@@ -25,6 +25,8 @@ module.exports.get = () => {
     };
 }
 
+const CHOOSE_ACCOUNT_PAGE_SIZE = 10;
+
 /**
  * @param {db.account_data} accountData 
  */
@@ -219,24 +221,61 @@ function createMenuData_chooseAccount(user, userData, args, callback) {
     const fromMenu = typeof args.from ==='string' ? walletMenu.getNameByShortName(args.from) : 'main';
     const outArg = typeof args.out === 'string' ? args.out : 'id';
     const excludeID = typeof args.eID === 'number' ? args.eID : db.invalid_id;
+    const currentPage = typeof args._p === 'number' ? args._p : 0;
     var backButtonArgs = { ...args };
     delete backButtonArgs.from;
     delete backButtonArgs.out;
     delete backButtonArgs.eID;
-    db.account_getAll(userID, (accountDatas, error) => {
+    db.account_getAll(userID, (accounts, error) => {
         if (error) {
             log.error(userID, `[chooseAccount] failed to get list of accounts (${error})`);
         }
+
+        const activeAccounts = accounts.filter(v => v.is_active);
+        const firstAccountIndex = activeAccounts.length <= CHOOSE_ACCOUNT_PAGE_SIZE ? 0 : currentPage * CHOOSE_ACCOUNT_PAGE_SIZE;
+        const lastAccountIndex = Math.min(activeAccounts.length, firstAccountIndex + CHOOSE_ACCOUNT_PAGE_SIZE) - 1;
+
         /** @type {bot.keyboard_button_inline_data[][]} */
         var keyboard = [];
-        for (var i = 0; i < accountDatas.length; i++) {
-            const accountData = accountDatas[i];
+        for (var i = firstAccountIndex; i <= lastAccountIndex; i++) {
+            const accountData = activeAccounts[i];
             if (accountData.is_active && (accountData.id != excludeID)) {
                 keyboard.push([{
                     text: getAccountName(accountData),
                     callback_data: menuBase.makeMenuButton(fromMenu, { ...backButtonArgs, [outArg]: accountData.id })
                 }]);
             }
+        }
+        if (activeAccounts.length > CHOOSE_ACCOUNT_PAGE_SIZE) {
+            /** @type {bot.keyboard_button_inline_data[]} */
+            var controlKeyboardRow = [];
+            if (currentPage > 0) {
+                controlKeyboardRow.push({
+                    text: `< ${currentPage}`,
+                    callback_data: menuBase.makeMenuButton('chooseAccount', { ...args, _p: currentPage - 1 })
+                });
+            } else {
+                controlKeyboardRow.push({
+                    text: ` `,
+                    callback_data: menuBase.makeDummyButton()
+                });
+            }
+            controlKeyboardRow.push({
+                text: `${currentPage + 1}`,
+                callback_data: menuBase.makeDummyButton()
+            });
+            if (lastAccountIndex < activeAccounts.length - 1) {
+                controlKeyboardRow.push({
+                    text: `${currentPage + 2} >`,
+                    callback_data: menuBase.makeMenuButton('chooseAccount', { ...args, _p: currentPage + 1 })
+                });
+            } else {
+                controlKeyboardRow.push({
+                    text: ` `,
+                    callback_data: menuBase.makeDummyButton()
+                });
+            }
+            keyboard.push(controlKeyboardRow);
         }
         keyboard.push([{
             text: 'NONE',
