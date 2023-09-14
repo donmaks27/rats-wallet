@@ -24,6 +24,9 @@ module.exports.get = () => {
     };
 }
 
+const ARG_CHOOSE_PREV_CATEGORY = 'pID';
+const CHOOSE_CATEGORY_PAGE_SIZE = 10;
+
 /**
  * @param {db.category_data} categoryData 
  */
@@ -251,9 +254,6 @@ function createMenuData_deleteCategory(user, userData, args, callback) {
         }
     });
 }
-
-const ARG_CHOOSE_PREV_CATEGORY = 'pID';
-const CHOOSE_CATEGORY_PAGE_SIZE = 3;
 
 /**
  * @type {menuBase.menu_create_func}
