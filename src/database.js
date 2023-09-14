@@ -1718,11 +1718,10 @@ function query_getCategory(id) {
 function query_getCategoriesList(user_id, params) {
     const includeChildren = params.include_children ? true : false;
     const excludeArchived = params.exclude_archived ? true : false;
-    return `SELECT categories.* ${includeChildren ? `, COUNT(children.id) AS childrenAmount` : ''}
-    FROM categories ${includeChildren ? `LEFT JOIN categories AS children ON categories.id = children.parent_id` : ''}
-    WHERE (categories.user_id = ${user_id} OR categories.user_id IS NULL) 
-        AND (categories.parent_id ${params.parent_category_id != invalid_id ? `= ${params.parent_category_id}` : `IS NULL`})
-        ${excludeArchived ? `AND (categories.is_active != 0)` + (includeChildren ? ` AND (children.is_active != 0)` : '') : ''}
+    return `SELECT parents.* ${includeChildren ? `, COUNT(children.id) AS childrenAmount` : ''}
+    FROM categories AS parents ${includeChildren ? `LEFT JOIN categories AS children ON (parents.id = children.parent_id)` + (excludeArchived ? ` AND (children.is_active != 0)` : '') : ''}
+    WHERE (parents.user_id = ${user_id} OR parents.user_id IS NULL) 
+        AND (parents.parent_id ${params.parent_category_id != invalid_id ? `= ${params.parent_category_id}` : `IS NULL`}) ${excludeArchived ? `AND (parents.is_active != 0)` : ''}
     ${includeChildren ? `GROUP BY categories.id` : ''}
     ORDER BY categories.is_active DESC, categories.id ASC;`;
 }
