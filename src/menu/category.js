@@ -324,6 +324,8 @@ function onChooseCategory_ready(user, userData, prevCatergoryData, parentCategor
     db.category_getList(userID, { parent_category_id: parentCategoryID, include_children: true, exclude_archived: true }, (categories, error) => {
         if (error) {
             log.error(userID, `[chooseCategory] failed to get child categories list from ${parentCategoryID} (${error})`);
+        } else if (categories.length == 0) {
+            log.warning(userID, `[chooseCategory] empty list of categories from ${parentCategoryID}`);
         }
 
         var menuText = `*Choose a category*`;

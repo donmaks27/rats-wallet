@@ -240,7 +240,7 @@ function createMenuData_chooseAccount(user, userData, args, callback) {
         }
         keyboard.push([{
             text: 'NONE',
-            callback_data: menuBase.makeMenuButton(fromMenu, { ...backButtonArgs, [outArg]: null })
+            callback_data: menuBase.makeMenuButton(fromMenu, { ...backButtonArgs, [outArg]: db.invalid_id })
         }], [{
             text: `<< Back`,
             callback_data: menuBase.makeMenuButton(fromMenu, backButtonArgs)
