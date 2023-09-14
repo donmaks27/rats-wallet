@@ -4,6 +4,7 @@ var db  = require('../database');
 var bot = require('../telegram-bot');
 var menuBase = require('./wallet-menu-base');
 var walletCommon = require('../wallet-common');
+var walletMenu = require('../wallet-menu');
 
 const log = {
     info: menuBase.info,
@@ -19,15 +20,20 @@ module.exports.get = () => {
         labels: createMenuData_labels,
         label: createMenuData_label,
         deleteLabel: createMenuData_deleteLabel,
-        makeLabelGlobal: createMenuData_makeLabelGlobal
+        makeLabelGlobal: createMenuData_makeLabelGlobal,
+        chooseLabel: { shortName: 'chL', handler: createMenuData_chooseLabel }
     };
 }
+
+const CHOOSE_LABEL_ROW_SIZE = 3;
+const CHOOSE_LABEL_ROWS = 10;
+const CHOOSE_LABEL_PAGE_SIZE = CHOOSE_LABEL_ROW_SIZE * CHOOSE_LABEL_ROWS;
 
 /**
  * @param {db.label_data} labelData 
  */
 function getLabelName(labelData) {
-    return `${walletCommon.getColorMarker(labelData.color)} ${labelData.name}`;
+    return walletCommon.getColorMarker(labelData.color, ' ') + labelData.name;
 }
 
 /**
@@ -215,5 +221,113 @@ function createMenuData_makeLabelGlobal(user, userData, args, callback) {
                 ]] 
             });
         }
+    });
+}
+
+/**
+ * @type {menuBase.menu_create_func}
+ */
+function createMenuData_chooseLabel(user, userData, args, callback) {
+    const userID = user.id;
+    db.label_getAllForUser(userID, (labels, error) => {
+        if (error) {
+            log.warning(userID, `[chooseLabel] failed to get list of user's labels (${error})`);
+        }
+        if (labels.length == 0) {
+            onChooseLabelReady(user, userData, [], args, callback);
+        } else {
+            db.record_getTempLabels(userID, (tempLabels, error) => {
+                if (error) {
+                    log.warning(userID, `[chooseLabel] failed to get list of temp user's labels (${error})`);
+                }
+                onChooseLabelReady(user, userData, labels.filter(v => v.is_active && tempLabels.some(v1 => v.id == v1.id)), args, callback);
+            });
+        }
+    });
+}
+/**
+ * @param {bot.user_data} user 
+ * @param {db.user_data} userData 
+ * @param {db.label_data[]} labels 
+ * @param {walletCommon.args_data} args 
+ * @param {(menuData: menuBase.menu_data) => any} callback 
+ */
+function onChooseLabelReady(user, userData, labels, args, callback) {
+    const userID = user.id;
+    /** @type {walletCommon.menu_type} */
+    // @ts-ignore
+    const fromMenu = typeof args.from === 'string' ? walletMenu.getNameByShortName(args.from) : 'main';
+    const outArg = typeof args.out === 'string' ? args.out : 'id';
+    const requiredValidID = typeof args.r === 'boolean' ? args.r : false;
+    const currentPage = typeof args._p === 'number' ? args._p : 0;
+
+    var backButtonArgs = { ...args };
+    delete backButtonArgs.from;
+    delete backButtonArgs.out;
+    delete backButtonArgs._p;
+
+    const firstCategoryIndex = labels.length <= CHOOSE_LABEL_PAGE_SIZE ? 0 : CHOOSE_LABEL_PAGE_SIZE * currentPage;
+    const lastCategoryIndex = Math.min(labels.length, firstCategoryIndex + CHOOSE_LABEL_PAGE_SIZE) - 1;
+
+    /** @type {bot.keyboard_button_inline_data[][]} */
+    var keyboard = [];
+    /** @type {bot.keyboard_button_inline_data[]} */
+    var keyboardRow = [];
+    for (var i = firstCategoryIndex; i <= lastCategoryIndex; i++) {
+        keyboardRow.push({
+            text: getLabelName(labels[i]),
+            callback_data: menuBase.makeMenuButton(fromMenu, { ...backButtonArgs, [outArg]: labels[i].id })
+        });
+        if (keyboardRow.length >= CHOOSE_LABEL_ROW_SIZE) {
+            keyboard.push(keyboardRow);
+            keyboardRow = [];
+        }
+    }
+    if (keyboardRow.length > 0) {
+        keyboard.push(keyboardRow);
+        keyboardRow = [];
+    }
+    if (labels.length > CHOOSE_LABEL_PAGE_SIZE) {
+        if (currentPage > 0) {
+            keyboardRow.push({
+                text: `< ${currentPage}`,
+                callback_data: menuBase.makeMenuButton('chooseLabel', { ...args, _p: currentPage - 1 })
+            });
+        } else {
+            keyboardRow.push({
+                text: ` `,
+                callback_data: menuBase.makeDummyButton()
+            });
+        }
+        keyboardRow.push({
+            text: `${currentPage + 1}`,
+            callback_data: menuBase.makeDummyButton()
+        });
+        if (lastCategoryIndex < labels.length - 1) {
+            keyboardRow.push({
+                text: `${currentPage + 2} >`,
+                callback_data: menuBase.makeMenuButton('chooseCategory', { ...args, _p: currentPage + 1 })
+            });
+        } else {
+            keyboardRow.push({
+                text: ` `,
+                callback_data: menuBase.makeDummyButton()
+            });
+        }
+        keyboard.push(keyboardRow);
+    }
+    if (!requiredValidID) {
+        keyboard.push([{
+            text: 'NONE',
+            callback_data: menuBase.makeMenuButton(fromMenu, { ...backButtonArgs, [outArg]: db.invalid_id })
+        }]);
+    }
+    keyboard.push([{
+        text: '<< Back',
+        callback_data: menuBase.makeMenuButton(fromMenu, backButtonArgs)
+    }]);
+    callback({
+        text: `*Choose a label:*`, parseMode: 'MarkdownV2',
+        keyboard: keyboard
     });
 }

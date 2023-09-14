@@ -23,7 +23,8 @@ module.exports.get = () => {
         debugPickTime: { shortName: 'dPT', handler: createMenuData_debugPickTime },
         debugNumpad:   { shortName: 'dN', handler: createMenu_debugNumpad },
         debugChooseAccount: { shortName: 'dChA', handler: createMenu_debugChooseAccount },
-        debugChooseCategory: { shortName: 'dChC', handler: createMenu_debugChooseCategory }
+        debugChooseCategory: { shortName: 'dChC', handler: createMenu_debugChooseCategory },
+        debugChooseLabel: { shortName: 'dChL', handler: createMenu_debugChooseLabel }
     };
 }
 
@@ -37,26 +38,30 @@ function createMenuData_debug(user, userData, args, callback) {
         keyboard: [
             [
                 {
-                    text: 'Date picker',
+                    text: 'Date picker >>',
                     callback_data: menuBase.makeMenuButton('debugPickDate')
                 },
                 {
-                    text: 'Time picker',
+                    text: 'Time picker >>',
                     callback_data: menuBase.makeMenuButton('debugPickTime')
                 },
                 {
-                    text: 'Numpad',
+                    text: 'Numpad >>',
                     callback_data: menuBase.makeMenuButton('debugNumpad')
                 }
             ],
             [
                 {
-                    text: 'Choose account',
+                    text: 'Account >>',
                     callback_data: menuBase.makeMenuButton('debugChooseAccount')
                 },
                 {
-                    text: 'Choose category',
+                    text: 'Category >>',
                     callback_data: menuBase.makeMenuButton('debugChooseCategory')
+                },
+                {
+                    text: 'Label >>',
+                    callback_data: menuBase.makeMenuButton('debugChooseLabel')
                 }
             ],
             [
@@ -216,6 +221,41 @@ function createMenu_debugChooseCategory(user, userData, args, callback) {
                         text: 'Category',
                         callback_data: menuBase.makeMenuButton('chooseCategory', { 
                             from: walletMenu.getShortName('debugChooseCategory'), out: 'cID', cID: categoryIDArg, pID: categoryIDArg 
+                        })
+                    }
+                ],
+                [
+                    {
+                        text: '<< DEBUG',
+                        callback_data: menuBase.makeMenuButton('debug')
+                    }
+                ]
+            ]
+        });
+    });
+}
+
+/**
+ * @type {menuBase.menu_create_func}
+ */
+function createMenu_debugChooseLabel(user, userData, args, callback) {
+    var labelIDArg = typeof args.lID === 'number' ? args.lID : db.invalid_id;
+    db.label_get(labelIDArg, (labelData, error) => {
+        var menuText = '';
+        if (error || !labelData) {
+            menuText = `*ERROR:* ${error ? bot.escapeMarkdown(error) : 'none'}`;
+            labelIDArg = db.invalid_id;
+        } else {
+            menuText = bot.escapeMarkdown(walletCommon.getColorMarker(labelData.color, ' ') + labelData.name);
+        }
+        callback({
+            text: `*DEBUG _Choose label_*\n${menuText}`, parseMode: 'MarkdownV2',
+            keyboard: [
+                [
+                    {
+                        text: 'Label',
+                        callback_data: menuBase.makeMenuButton('chooseLabel', { 
+                            from: walletMenu.getShortName('debugChooseLabel'), out: 'lID', lID: labelIDArg
                         })
                     }
                 ],
