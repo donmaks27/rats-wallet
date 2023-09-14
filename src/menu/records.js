@@ -233,7 +233,7 @@ function createMenuData_createRecord(user, userData, args, callback) {
                 onTempRecordReady(user, userData, args, callback);
             }
         });
-    } if ((typeof recordDate === 'number') || (typeof recordTime === 'number')) {
+    } else if ((typeof recordDate === 'number') || (typeof recordTime === 'number')) {
         db.record_getTemp(userID, (tempRecordData, error) => {
             if (error || !tempRecordData) {
                 log.error(userID, `[createRecord] failed to get temp record for updating date (${error})`);
