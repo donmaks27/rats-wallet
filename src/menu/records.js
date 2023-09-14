@@ -25,7 +25,8 @@ module.exports.get = () => {
 
 const ARG_PAGE = 'page';
 const ARG_FILTER_ID = 'fID';
-const PAGE_SIZE = 10;
+const RECORDS_PAGE_SIZE = 10;
+const TEMP_RECORD_LABELS_MAX = 10;
 
 const ARG_PREV_PAGE = 'pP';
 const ARG_PREV_FILTER_ID = 'pF';
@@ -42,7 +43,7 @@ const ARG_TEMP_TIME = 'rT';
  */
 function createMenuData_records(user, userData, args, callback) {
     const userID = user.id;
-    const pageSize = PAGE_SIZE;
+    const pageSize = RECORDS_PAGE_SIZE;
     const page = typeof args[ARG_PAGE] === 'number' ? args[ARG_PAGE] : 0;
     const filterID = typeof args[ARG_FILTER_ID] === 'number' ? args[ARG_FILTER_ID] : null;
     db.record_getAmount(userID, filterID, (recordsAmount, error) => {
@@ -212,7 +213,14 @@ function createMenuData_createRecord(user, userData, args, callback) {
                 log.error(userID, `[createRecord] failed to reset temp record (${error})`);
                 onTempRecordError(user, userData, args, callback);
             } else {
-                onTempRecordReady(user, userData, args, callback);
+                db.record_clearTempLabels(userID, (error) => {
+                    if (error) {
+                        log.error(userID, `[createRecord] failed to clear temp record labels (${error})`);
+                        onTempRecordError(user, userData, args, callback);
+                    } else {
+                        onTempRecordReady(user, userData, args, callback);
+                    }
+                });
             }
         });
     } else if (typeof accountID === 'number') {
@@ -301,44 +309,72 @@ function onTempRecordReady(user, userData, args, callback) {
             log.error(userID, `[createRecord] failed to get temp record data (${error})`);
             onTempRecordError(user, userData, args, callback);
         } else {
-            const currentMenu = walletMenu.getShortName('createRecord');
-            /** @type {bot.keyboard_button_inline_data[][]} */
-            var keyboard = [];
-            keyboard.push([{
-                text: `Account: ` + (tempRecordData.src_account ? (walletCommon.getColorMarker(tempRecordData.src_account.color, ' ') + tempRecordData.src_account.name) : '--'),
-                callback_data: menuBase.makeMenuButton('chooseAccount', { from: currentMenu, out: ARG_TEMP_ACCOUNT_ID, eID: tempRecordData.src_account_id })
-            }], [{
-                text: `Amount: ${tempRecordData.src_amount / 100}`,
-                callback_data: menuBase.makeActionButton('enterRecordAmount', { [ARG_PREV_PAGE]: prevPage, [ARG_PREV_FILTER_ID]: prevFilterID })
-            }], [{
-                text: `Category: ` + (tempRecordData.category ? (walletCommon.getColorMarker(tempRecordData.category.color, ' ') + tempRecordData.category.name) : '--'),
-                callback_data: menuBase.makeMenuButton('chooseCategory', { from: currentMenu, out: ARG_TEMP_CATEGORY_ID, pID: tempRecordData.category_id })
-            }], [
-                {
-                    text: dateFormat.to_readable_string(tempRecordData.date, { date: true, timezone: userData.timezone }),
-                    callback_data: menuBase.makeMenuButton('pickDate', { 
-                        r: true, 
-                        from: currentMenu, 
-                        out: ARG_TEMP_DATE, 
-                        _d: menuBase.encodeDate(dateFormat.timezone_date(tempRecordData.date, userData.timezone)) 
-                    })
-                },
-                {
-                    text: dateFormat.to_readable_string(tempRecordData.date, { time: true, timezone: userData.timezone }),
-                    callback_data: menuBase.makeMenuButton('pickTime', { 
-                        r: true, 
-                        from: currentMenu, 
-                        out: ARG_TEMP_TIME, 
-                        _t: menuBase.encodeTime(dateFormat.timezone_date(tempRecordData.date, userData.timezone))
-                    })
+            db.record_getTempLabels(userID, (labels, error) => {
+                if (error) {
+                    log.error(userID, `[createRecord] failed to get temp labels list (${error})`);
+                    onTempRecordError(user, userData, args, callback);
+                } else {
+                    const currentMenu = walletMenu.getShortName('createRecord');
+                    const labelsAmount = Math.min(TEMP_RECORD_LABELS_MAX, labels.length);
+                    /** @type {bot.keyboard_button_inline_data[][]} */
+                    var keyboard = [];
+                    keyboard.push([{
+                        text: `Account: ` + (tempRecordData.src_account ? (walletCommon.getColorMarker(tempRecordData.src_account.color, ' ') + tempRecordData.src_account.name) : '--'),
+                        callback_data: menuBase.makeMenuButton('chooseAccount', { from: currentMenu, out: ARG_TEMP_ACCOUNT_ID, eID: tempRecordData.src_account_id })
+                    }], [{
+                        text: `Amount: ${tempRecordData.src_amount / 100}`,
+                        callback_data: menuBase.makeActionButton('enterRecordAmount', { [ARG_PREV_PAGE]: prevPage, [ARG_PREV_FILTER_ID]: prevFilterID })
+                    }], [{
+                        text: `Category: ` + (tempRecordData.category ? (walletCommon.getColorMarker(tempRecordData.category.color, ' ') + tempRecordData.category.name) : '--'),
+                        callback_data: menuBase.makeMenuButton('chooseCategory', { from: currentMenu, out: ARG_TEMP_CATEGORY_ID, pID: tempRecordData.category_id })
+                    }], [
+                        {
+                            text: dateFormat.to_readable_string(tempRecordData.date, { date: true, timezone: userData.timezone }),
+                            callback_data: menuBase.makeMenuButton('pickDate', { 
+                                r: true, 
+                                from: currentMenu, 
+                                out: ARG_TEMP_DATE, 
+                                _d: menuBase.encodeDate(dateFormat.timezone_date(tempRecordData.date, userData.timezone)) 
+                            })
+                        },
+                        {
+                            text: dateFormat.to_readable_string(tempRecordData.date, { time: true, timezone: userData.timezone }),
+                            callback_data: menuBase.makeMenuButton('pickTime', { 
+                                r: true, 
+                                from: currentMenu, 
+                                out: ARG_TEMP_TIME, 
+                                _t: menuBase.encodeTime(dateFormat.timezone_date(tempRecordData.date, userData.timezone))
+                            })
+                        }
+                    ]);
+                    for (var i = 0; i < labelsAmount; i++) {
+                        const labelData = labels[i];
+                        keyboard.push([
+                            {
+                                text: walletCommon.getColorMarker(labelData.color, ' ') + labelData.name,
+                                callback_data: menuBase.makeDummyButton()
+                            },
+                            {
+                                text: `✖️ Remove label`,
+                                callback_data: menuBase.makeDummyButton()
+                            }
+                        ]);
+                    }
+                    if (labelsAmount < TEMP_RECORD_LABELS_MAX) {
+                        keyboard.push([{
+                            text: `➕ Add label...`,
+                            callback_data: menuBase.makeDummyButton()
+                        }]);
+                    }
+                    keyboard.push([{
+                        text: `<< Back to Records`, 
+                        callback_data: menuBase.makeMenuButton('records', { [ARG_PAGE]: prevPage, [ARG_FILTER_ID]: prevFilterID })
+                    }]);
+                    callback({
+                        text: `*Creating new record:*`, parseMode: 'MarkdownV2',
+                        keyboard: keyboard
+                    });
                 }
-            ], [{
-                text: `<< Back to Records`, 
-                callback_data: menuBase.makeMenuButton('records', { [ARG_PAGE]: prevPage, [ARG_FILTER_ID]: prevFilterID })
-            }]);
-            callback({
-                text: `*Creating new record:*`, parseMode: 'MarkdownV2',
-                keyboard: keyboard
             });
         }
     });

@@ -79,6 +79,7 @@ module.exports.record_clearLabels = record_clearLabels;
 
 module.exports.record_getTemp = record_getOrCreateTemp;
 module.exports.record_editTemp = record_editTemp;
+module.exports.record_getTempLabels = record_getTempLabels;
 module.exports.record_addTempLabel = record_addTempLabel;
 module.exports.record_removeTempLabel = record_removeTempLabel;
 module.exports.record_clearTempLabels = record_clearTempLabels;
@@ -1178,7 +1179,7 @@ function record_delete(id, callback) {
 
 /**
  * @param {number} userID 
- * @param {(tempRecordData: (temp_record_data & { src_account?: account_data, dst_account?: account_data, src_currency?: currency_data, dst_currency?: currency_data, category?: category_data, labels: label_data[] }) | null, error?: string) => any} callback 
+ * @param {(tempRecordData: (temp_record_data & { src_account?: account_data, dst_account?: account_data, src_currency?: currency_data, dst_currency?: currency_data, category?: category_data }) | null, error?: string) => any} callback 
  */
 function record_getOrCreateTemp(userID, callback) {
     record_getTemp(userID, (data, error) => {
@@ -1198,17 +1199,16 @@ function record_getOrCreateTemp(userID, callback) {
 }
 /**
  * @param {number} userID 
- * @param {(tempRecordData: (temp_record_data & { src_account?: account_data, dst_account?: account_data, src_currency?: currency_data, dst_currency?: currency_data, category?: category_data, labels: label_data[] }) | null, error?: string) => any} callback 
+ * @param {(tempRecordData: (temp_record_data & { src_account?: account_data, dst_account?: account_data, src_currency?: currency_data, dst_currency?: currency_data, category?: category_data }) | null, error?: string) => any} callback 
  */
 function record_getTemp(userID, callback) {
     db.get(query_getTempRecord(userID), (error, row) => {
         if (error || !row) {
             callback(null, `failed to get temp filter for user ${userID} (${error})`);
         } else {
-            /** @type {temp_record_data & { src_account?: account_data, dst_account?: account_data, src_currency?: currency_data, dst_currency?: currency_data, category?: category_data, labels: label_data[] }} */
+            /** @type {temp_record_data & { src_account?: account_data, dst_account?: account_data, src_currency?: currency_data, dst_currency?: currency_data, category?: category_data }} */
             var rowData = {
-                ...parseTempRecordRow(row),
-                labels: []
+                ...parseTempRecordRow(row)
             };
             if (rowData.src_account_id != invalid_id) {
                 rowData.src_account = parseAccountRow(row, 'src_account.');
@@ -1220,12 +1220,6 @@ function record_getTemp(userID, callback) {
             }
             if (rowData.category_id != invalid_id) {
                 rowData.category = parseCategoryRow(row, 'category.');
-            }
-            var labelsData = JSON.parse(row.labels);
-            for (var j = 0; j < labelsData.length; j++) {
-                if (labelsData[j].id) {
-                    rowData.labels.push(parseLabelRow(labelsData[j]));
-                }
             }
             callback(rowData);
         }
@@ -1242,6 +1236,24 @@ function record_editTemp(userID, params, callback) {
             callback(`failed to edit temp record for user ${userID} (${error})`);
         } else {
             callback();
+        }
+    });
+}
+/**
+ * @param {number} userID 
+ * @param {(labelIDs: label_data[], error?: string) => any} callback 
+ */
+function record_getTempLabels(userID, callback) {
+    db.all(query_getTempLabels(userID), (error, rows) => {
+        if (error) {
+            callback([], `failed to get list of temp labels for user ${userID} (${error})`);
+        } else {
+            /** @type {label_data[]} */
+            var labels = [];
+            for (var i = 0; i < rows.length; i++) {
+                labels.push(parseLabelRow(rows[i]));
+            }
+            callback(labels);
         }
     });
 }
@@ -2050,6 +2062,14 @@ function query_updateTempRecord(userID, params) {
         statements.push(`date = ${params.date ? params.date.valueOf() : 0}`);
     }
     return `UPDATE temp_records SET ${statements.join(', ')} WHERE user_id = ${userID};`;
+}
+/**
+ * @param {number} userID 
+ */
+function query_getTempLabels(userID) {
+    return `SELECT labels.* 
+    FROM temp_record_labels INNER JOIN labels ON temp_record_labels.label_id = labels.id
+    WHERE (user_id = ${userID});`;
 }
 /**
  * @param {number} userID 
