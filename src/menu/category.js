@@ -328,7 +328,7 @@ function onChooseCategory_ready(user, userData, prevCatergoryData, parentCategor
 
         var menuText = `*Choose a category*`;
         if (prevCatergoryData) {
-            menuText += `\n_Prev. category:_ ${bot.escapeMarkdown(getCategoryName(prevCatergoryData))}`;
+            menuText += `\n_${bot.escapeMarkdown(`Prev. category:`)}_ ${bot.escapeMarkdown(getCategoryName(prevCatergoryData))}`;
         }
         if (parentCategoryData) {
             menuText += `\n*Parent category:* ${bot.escapeMarkdown(getCategoryName(parentCategoryData))}`;
@@ -354,7 +354,7 @@ function onChooseCategory_ready(user, userData, prevCatergoryData, parentCategor
             const childrenAmount = categories[i].childrenAmount;
             if (childrenAmount && (childrenAmount > 0)) {
                 categoryKeyboardRow.push({
-                    text: `>>`,
+                    text: `Open >>`,
                     callback_data: menuBase.makeMenuButton('chooseCategory', { ...args, _c: categories[i].id, _p: 0 })
                 });
             }
@@ -365,7 +365,7 @@ function onChooseCategory_ready(user, userData, prevCatergoryData, parentCategor
             var controlKeyboardRow = [];
             if (currentPage > 0) {
                 controlKeyboardRow.push({
-                    text: `<`,
+                    text: `< ${currentPage}`,
                     callback_data: menuBase.makeMenuButton('chooseCategory', { ...args, _c: parentCategoryID, _p: currentPage - 1 })
                 });
             } else {
@@ -374,9 +374,13 @@ function onChooseCategory_ready(user, userData, prevCatergoryData, parentCategor
                     callback_data: menuBase.makeDummyButton()
                 });
             }
+            controlKeyboardRow.push({
+                text: `${currentPage + 1}`,
+                callback_data: menuBase.makeDummyButton()
+            });
             if (lastCategoryIndex < categories.length - 1) {
                 controlKeyboardRow.push({
-                    text: `>`,
+                    text: `${currentPage + 2} >`,
                     callback_data: menuBase.makeMenuButton('chooseCategory', { ...args, _c: parentCategoryID, _p: currentPage + 1 })
                 });
             } else {
