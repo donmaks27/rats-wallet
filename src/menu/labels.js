@@ -240,7 +240,7 @@ function createMenuData_chooseLabel(user, userData, args, callback) {
                 if (error) {
                     log.error(userID, `[chooseLabel] failed to get list of temp user's labels (${error})`);
                 }
-                onChooseLabelReady(user, userData, labels.filter(v => v.is_active && tempLabels.some(v1 => v.id == v1.id)), args, callback);
+                onChooseLabelReady(user, userData, labels.filter(v => v.is_active && !tempLabels.some(v1 => v.id == v1.id)), args, callback);
             });
         }
     });
