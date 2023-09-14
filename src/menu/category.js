@@ -4,6 +4,7 @@ var db  = require('../database');
 var bot = require('../telegram-bot');
 var menuBase = require('./wallet-menu-base');
 var walletCommon = require('../wallet-common');
+var walletMenu = require('../wallet-menu');
 
 const log = {
     info: menuBase.info,
@@ -251,8 +252,6 @@ function createMenuData_deleteCategory(user, userData, args, callback) {
     });
 }
 
-const ARG_CHOOSE_FROM_MENU = 'from';
-const ARG_CHOOSE_OUT = 'out';
 const ARG_CHOOSE_PREV_CATEGORY = 'pID';
 const CHOOSE_CATEGORY_PAGE_SIZE = 3;
 
@@ -265,7 +264,7 @@ function createMenuData_chooseCategory(user, userData, args, callback) {
     if (typeof prevCategoryID === 'number') {
         db.category_get(prevCategoryID, (prevCatergoryData, error) => {
             if (error || !prevCatergoryData) {
-                log.error(userID, `[chooseCategory] failed to get date of previous category ${prevCategoryID} (${error})`);
+                log.warning(userID, `[chooseCategory] failed to get data of previous category ${prevCategoryID} (${error})`);
                 onChooseCategory_prevCategoryReady(user, userData, null, args, callback);
             } else {
                 onChooseCategory_prevCategoryReady(user, userData, prevCatergoryData, args, callback);
@@ -288,7 +287,7 @@ function onChooseCategory_prevCategoryReady(user, userData, prevCatergoryData, a
     if (!prevCatergoryData || (parentCategoryID != prevCatergoryData.id)) {
         db.category_get(parentCategoryID, (parentCategoryData, error) => {
             if (error || !parentCategoryData) {
-                log.error(userID, `[chooseCategory] failed to get date of parent category ${parentCategoryID} (${error})`);
+                log.warning(userID, `[chooseCategory] failed to get data of parent category ${parentCategoryID} (${error})`);
                 onChooseCategory_ready(user, userData, prevCatergoryData, null, args, callback);
             } else {
                 onChooseCategory_ready(user, userData, prevCatergoryData, parentCategoryData, args, callback);
@@ -311,13 +310,13 @@ function onChooseCategory_ready(user, userData, prevCatergoryData, parentCategor
     const parentCategoryID = parentCategoryData ? parentCategoryData.id : db.invalid_id;
     /** @type {walletCommon.menu_type} */
     // @ts-ignore
-    const fromMenu = typeof args[ARG_CHOOSE_FROM_MENU] === 'string' ? walletMenu.getNameByShortName(args[ARG_CHOOSE_FROM_MENU]) : 'main';
-    const outArg = typeof args[ARG_CHOOSE_OUT] === 'string' ? args[ARG_CHOOSE_OUT] : 'id';
+    const fromMenu = typeof args.from === 'string' ? walletMenu.getNameByShortName(args.from) : 'main';
+    const outArg = typeof args.out === 'string' ? args.out : 'id';
     const currentPage = typeof args._p === 'number' ? args._p : 0;
 
     var backButtonArgs = { ...args };
-    delete backButtonArgs[ARG_CHOOSE_FROM_MENU];
-    delete backButtonArgs[ARG_CHOOSE_OUT];
+    delete backButtonArgs.from;
+    delete backButtonArgs.out;
     delete backButtonArgs[ARG_CHOOSE_PREV_CATEGORY];
     delete backButtonArgs._c;
     delete backButtonArgs._p;
