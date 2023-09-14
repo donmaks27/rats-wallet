@@ -66,7 +66,7 @@ function startAction(user, userData, args, callback) {
             walletCommon.setUserMenuMessageID(userID, 0);
             bot.editMessage({ 
                 message: { chatID: userID, id: menuMessageID }, 
-                text: `*Renaming label*\nLabel *${labelData.name}*\\. Please, enter new name`, 
+                text: `*Renaming label*\nLabel *${bot.escapeMarkdown(labelData.name)}*\\. Please, enter new name`, 
                 parseMode: 'MarkdownV2',
                 inlineKeyboard: { inline_keyboard:[] } 
             }, (message, error) => {
