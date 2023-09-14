@@ -1722,8 +1722,8 @@ function query_getCategoriesList(user_id, params) {
     FROM categories AS parents ${includeChildren ? `LEFT JOIN categories AS children ON (parents.id = children.parent_id)` + (excludeArchived ? ` AND (children.is_active != 0)` : '') : ''}
     WHERE (parents.user_id = ${user_id} OR parents.user_id IS NULL) 
         AND (parents.parent_id ${params.parent_category_id != invalid_id ? `= ${params.parent_category_id}` : `IS NULL`}) ${excludeArchived ? `AND (parents.is_active != 0)` : ''}
-    ${includeChildren ? `GROUP BY categories.id` : ''}
-    ORDER BY categories.is_active DESC, categories.id ASC;`;
+    ${includeChildren ? `GROUP BY parents.id` : ''}
+    ORDER BY parents.is_active DESC, parents.id ASC;`;
 }
 /**
  * @param {number} id 
