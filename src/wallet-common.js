@@ -11,13 +11,13 @@ var db = require('./database');
  *           'renameCategory'|'archiveCategory'|'createCategory'|'deleteCategory'|'makeCategoryGlobal'|
  *           'changeRecordsPage'|'applyTempFilter'|'enterRecordAmount'
  *          } action_type
- * @typedef {'debug'|'debugPickDate'|'debugPickTime'|'debugNumpad'|'debugChooseAccount'|
+ * @typedef {'debug'|'debugPickDate'|'debugPickTime'|'debugNumpad'|'debugChooseAccount'|'debugChooseCategory'|
  *           'pickDate'|'pickTime'|'enterNumber'|
  *           'main'|'wallet'|'changeColor'|'settings'|'changeTimeZone'|
  *           'accounts'|'account'|'createAccount'|'deleteAccount'|'chooseAccount'|
  *           'currencies'|'currency'|'deleteCurrency'|
  *           'labels'|'label'|'deleteLabel'|'makeLabelGlobal'|
- *           'categories'|'category'|'deleteCategory'|
+ *           'categories'|'category'|'deleteCategory'|'chooseCategory'|
  *           'records'|'filter'|'createRecord'
  *          } menu_type
  */

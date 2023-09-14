@@ -817,47 +817,51 @@ function category_create(params, callback) {
     });
 }
 /**
- * @param {number} id 
+ * @param {number} categoryID 
  * @param {(data: category_data | null, error?: string) => any} callback 
  */
-function category_get(id, callback) {
-    if (cached_data.categories.hasOwnProperty(id)) {
-        var data = cached_data.categories[id];
+function category_get(categoryID, callback) {
+    if (cached_data.categories.hasOwnProperty(categoryID)) {
+        var data = cached_data.categories[categoryID];
         if (!data) {
-            callback(null, `can't find data of category ${id}`);
+            callback(null, `can't find data of category ${categoryID}`);
         } else {
             callback(data);
         }
         return;
     }
-    db.get(query_getCategory(id), (error, row) => {
+    db.get(query_getCategory(categoryID), (error, row) => {
         if (error) {
-            callback(null, `failed to get data of category ${id}: ` + error);
+            callback(null, `failed to get data of category ${categoryID}: ` + error);
         } else if (!row) {
-            callback(null, `can't find data of category ${id}`);
+            callback(null, `can't find data of category ${categoryID}`);
         } else {
             var data = parseCategoryRow(row);
-            cached_data.categories[id] = data;
+            cached_data.categories[categoryID] = data;
             callback(data);
         }
     });
 }
 /**
  * @param {number} user_id 
- * @param {number} parent_category_id 
- * @param {(data: category_data[], error?: string) => any} callback 
+ * @param {{ parent_category_id: number, include_children?: boolean, exclude_archived?: boolean }} params 
+ * @param {(data: (category_data & { childrenAmount?: number })[], error?: string) => any} callback 
  */
-function category_getList(user_id, parent_category_id, callback) {
-    db.all(query_getCategoriesList(user_id, parent_category_id), (error, rows) => {
+function category_getList(user_id, params, callback) {
+    db.all(query_getCategoriesList(user_id, params), (error, rows) => {
         if (error) {
-            callback([], `failed to get categories list with parent ${parent_category_id} for user ${user_id} (${error})`);
+            callback([], `failed to get categories list with parent ${params.parent_category_id} for user ${user_id} (${error})`);
         } else {
-            /** @type {category_data[]} */
+            /** @type {(category_data & { childrenAmount?: number })[]} */
             var data = [];
             for (var i = 0; i < rows.length; i++) {
                 var rowData = parseCategoryRow(rows[i]);
                 cached_data.categories[rowData.id] = rowData;
-                data.push(rowData);
+                if (params.include_children) {
+                    data.push({ ...rowData, childrenAmount: rows[i].childrenAmount });
+                } else {
+                    data.push(rowData);
+                }
             }
             callback(data);
         }
@@ -1709,13 +1713,18 @@ function query_getCategory(id) {
 }
 /**
  * @param {number} user_id 
- * @param {number} parent_category_id 
+ * @param {{ parent_category_id: number, include_children?: boolean, exclude_archived?: boolean }} params 
  */
-function query_getCategoriesList(user_id, parent_category_id) {
-    return `SELECT *
-    FROM categories
-    WHERE (user_id = ${user_id} OR user_id IS NULL) AND parent_id ${parent_category_id != invalid_id ? `= ${parent_category_id}` : `IS NULL`}
-    ORDER BY is_active DESC, id ASC;`;
+function query_getCategoriesList(user_id, params) {
+    const includeChildren = params.include_children ? true : false;
+    const excludeArchived = params.exclude_archived ? true : false;
+    return `SELECT categories.* ${includeChildren ? `, COUNT(children.id) AS childrenAmount` : ''}
+    FROM categories ${includeChildren ? `LEFT JOIN categories AS children ON categories.id = children.parent_id` : ''}
+    WHERE (categories.user_id = ${user_id} OR categories.user_id IS NULL) 
+        AND (categories.parent_id ${params.parent_category_id != invalid_id ? `= ${params.parent_category_id}` : `IS NULL`})
+        ${excludeArchived ? `AND (categories.is_active != 0)` + (includeChildren ? ` AND (children.is_active != 0)` : '') : ''}
+    ${includeChildren ? `GROUP BY categories.id` : ''}
+    ORDER BY categories.is_active DESC, categories.id ASC;`;
 }
 /**
  * @param {number} id 

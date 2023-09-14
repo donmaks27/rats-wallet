@@ -222,6 +222,7 @@ function createMenuData_chooseAccount(user, userData, args, callback) {
     var backButtonArgs = { ...args };
     delete backButtonArgs.from;
     delete backButtonArgs.out;
+    delete backButtonArgs.eID;
     db.account_getAll(userID, (accountDatas, error) => {
         if (error) {
             log.error(userID, `[chooseAccount] failed to get list of accounts (${error})`);

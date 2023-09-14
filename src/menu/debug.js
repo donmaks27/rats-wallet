@@ -22,7 +22,8 @@ module.exports.get = () => {
         debugPickDate: { shortName: 'dPD', handler: createMenuData_debugPickDate },
         debugPickTime: { shortName: 'dPT', handler: createMenuData_debugPickTime },
         debugNumpad:   { shortName: 'dN', handler: createMenu_debugNumpad },
-        debugChooseAccount: { shortName: 'dChA', handler: createMenu_debugChooseAccount }
+        debugChooseAccount: { shortName: 'dChA', handler: createMenu_debugChooseAccount },
+        debugChooseCategory: { shortName: 'dChC', handler: createMenu_debugChooseCategory }
     };
 }
 
@@ -52,6 +53,10 @@ function createMenuData_debug(user, userData, args, callback) {
                 {
                     text: 'Choose account',
                     callback_data: menuBase.makeMenuButton('debugChooseAccount')
+                },
+                {
+                    text: 'Choose category',
+                    callback_data: menuBase.makeMenuButton('debugChooseCategory')
                 }
             ],
             [
@@ -177,6 +182,41 @@ function createMenu_debugChooseAccount(user, userData, args, callback) {
                     {
                         text: 'Account',
                         callback_data: menuBase.makeMenuButton('chooseAccount', { from: walletMenu.getShortName('debugChooseAccount'), out: 'aID', eID: accountIDArg, aID: accountIDArg })
+                    }
+                ],
+                [
+                    {
+                        text: '<< DEBUG',
+                        callback_data: menuBase.makeMenuButton('debug')
+                    }
+                ]
+            ]
+        });
+    });
+}
+
+/**
+ * @type {menuBase.menu_create_func}
+ */
+function createMenu_debugChooseCategory(user, userData, args, callback) {
+    var categoryIDArg = typeof args.cID === 'number' ? args.cID : db.invalid_id;
+    db.category_get(categoryIDArg, (category_data, error) => {
+        var menuText = '';
+        if (error || !category_data) {
+            menuText = `*ERROR:* ${error ? bot.escapeMarkdown(error) : 'none'}`;
+            categoryIDArg = db.invalid_id;
+        } else {
+            menuText = bot.escapeMarkdown(walletCommon.getColorMarker(category_data.color, ' ') + category_data.name);
+        }
+        callback({
+            text: `*DEBUG _Choose category_*\n${menuText}`, parseMode: 'MarkdownV2',
+            keyboard: [
+                [
+                    {
+                        text: 'Category',
+                        callback_data: menuBase.makeMenuButton('chooseCategory', { 
+                            from: walletMenu.getShortName('debugChooseCategory'), out: 'cID', cID: categoryIDArg, pID: categoryIDArg 
+                        })
                     }
                 ],
                 [
