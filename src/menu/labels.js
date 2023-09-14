@@ -231,14 +231,14 @@ function createMenuData_chooseLabel(user, userData, args, callback) {
     const userID = user.id;
     db.label_getAllForUser(userID, (labels, error) => {
         if (error) {
-            log.warning(userID, `[chooseLabel] failed to get list of user's labels (${error})`);
+            log.error(userID, `[chooseLabel] failed to get list of user's labels (${error})`);
         }
         if (labels.length == 0) {
             onChooseLabelReady(user, userData, [], args, callback);
         } else {
             db.record_getTempLabels(userID, (tempLabels, error) => {
                 if (error) {
-                    log.warning(userID, `[chooseLabel] failed to get list of temp user's labels (${error})`);
+                    log.error(userID, `[chooseLabel] failed to get list of temp user's labels (${error})`);
                 }
                 onChooseLabelReady(user, userData, labels.filter(v => v.is_active && tempLabels.some(v1 => v.id == v1.id)), args, callback);
             });

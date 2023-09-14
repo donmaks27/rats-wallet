@@ -2068,8 +2068,9 @@ function query_updateTempRecord(userID, params) {
  */
 function query_getTempLabels(userID) {
     return `SELECT labels.* 
-    FROM temp_record_labels INNER JOIN labels ON temp_record_labels.label_id = labels.id
-    WHERE (user_id = ${userID});`;
+    FROM temp_record_labels 
+        INNER JOIN labels ON temp_record_labels.label_id = labels.id
+    WHERE (temp_record_labels.user_id = ${userID});`;
 }
 /**
  * @param {number} userID 
