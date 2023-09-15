@@ -1872,7 +1872,7 @@ function query_getRecord(id) {
 }
 /**
  * @param {number} userID 
- * @param {number | null} filterID
+ * @param {number} filterID
  */
 function query_getRecordsAmount(userID, filterID) {
     return `SELECT COUNT(records.id) AS amount
@@ -1890,7 +1890,7 @@ function query_getRecordsAmount(userID, filterID) {
  * @param {{ recordsPerPage: number, pageIndex: number, filterID?: number }} params 
  */
 function query_getRecordsList(userID, params) {
-    const useFilter = typeof params.filterID === 'number';
+    const useFilter = (typeof params.filterID === 'number') && (params.filterID != invalid_id);
     const recordsPerPage = Math.max(1, params.recordsPerPage);
     const pageIndex = Math.max(0, params.pageIndex);
     /** @type {string[]} */

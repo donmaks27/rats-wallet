@@ -47,7 +47,7 @@ function createMenuData_records(user, userData, args, callback) {
     const userID = user.id;
     const pageSize = RECORDS_PAGE_SIZE;
     const page = typeof args[ARG_PAGE] === 'number' ? args[ARG_PAGE] : 0;
-    const filterID = typeof args[ARG_FILTER_ID] === 'number' ? args[ARG_FILTER_ID] : null;
+    const filterID = typeof args[ARG_FILTER_ID] === 'number' ? args[ARG_FILTER_ID] : db.invalid_id;
     db.record_getAmount(userID, filterID, (recordsAmount, error) => {
         if (error) {
             log.error(userID, `[records] failed to get amount of records (${error})`);
@@ -65,7 +65,7 @@ function createMenuData_records(user, userData, args, callback) {
 
         const pagesCount = Math.floor(recordsAmount / pageSize) + ( (recordsAmount % pageSize) != 0 ? 1 : 0 );
         var recordParams = { recordsPerPage: pageSize, pageIndex: page };
-        if (filterID != null) {
+        if (filterID != db.invalid_id) {
             recordParams.filterID = filterID;
         }
         db.record_getList(userID, recordParams, (records, error) => {
