@@ -64,7 +64,7 @@ function startAction(user, userData, args, callback) {
             db.record_create({
                 src_account_id: tempRecordData.dst_account || (tempRecordData.src_amount < 0) ? tempRecordData.src_account_id : db.invalid_id,
                 src_amount:     tempRecordData.dst_account ? tempRecordData.src_amount : (tempRecordData.src_amount < 0 ? -tempRecordData.src_amount : 0),
-                dst_account_id: tempRecordData.dst_account || (tempRecordData.src_amount >= 0) ? tempRecordData.dst_account_id : db.invalid_id,
+                dst_account_id: tempRecordData.dst_account ? tempRecordData.dst_account_id : (tempRecordData.src_amount >= 0 ? tempRecordData.src_account_id : db.invalid_id),
                 dst_amount:     tempRecordData.dst_account ? tempRecordData.dst_amount : (tempRecordData.src_amount >= 0 ? tempRecordData.src_amount : 0),
                 category_id:    tempRecordData.category_id,
                 date:           tempRecordData.date
