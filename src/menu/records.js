@@ -344,6 +344,7 @@ function onTempRecordReady(user, userData, args, callback) {
                     onTempRecordError(user, userData, args, callback);
                 } else {
                     const currentMenu = walletMenu.getShortName('createRecord');
+                    const currencySymbol = tempRecordData.src_currency && tempRecordData.src_currency.symbol ? tempRecordData.src_currency.symbol : (tempRecordData.src_account ? tempRecordData.src_account.currency_code : null);
                     const labelsAmount = Math.min(TEMP_RECORD_LABELS_MAX, labels.length);
                     const tempRecordValid = tempRecordData.src_account && (tempRecordData.src_amount != 0);
                     /** @type {bot.keyboard_button_inline_data[][]} */
@@ -352,7 +353,7 @@ function onTempRecordReady(user, userData, args, callback) {
                         text: `Account*: ` + (tempRecordData.src_account ? (walletCommon.getColorMarker(tempRecordData.src_account.color, ' ') + tempRecordData.src_account.name) : '--'),
                         callback_data: menuBase.makeMenuButton('chooseAccount', { from: currentMenu, out: ARG_TEMP_ACCOUNT_ID, eID: tempRecordData.src_account_id })
                     }], [{
-                        text: `Amount*: ${tempRecordData.src_amount / 100}`,
+                        text: `Amount*: ${tempRecordData.src_amount / 100} ${currencySymbol}`,
                         callback_data: menuBase.makeActionButton('enterRecordAmount', { [ARG_PREV_PAGE]: prevPage, [ARG_PREV_FILTER_ID]: prevFilterID })
                     }], [{
                         text: `Category: ` + (tempRecordData.category ? (walletCommon.getColorMarker(tempRecordData.category.color, ' ') + tempRecordData.category.name) : '--'),
