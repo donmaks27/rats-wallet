@@ -345,13 +345,14 @@ function onTempRecordReady(user, userData, args, callback) {
                 } else {
                     const currentMenu = walletMenu.getShortName('createRecord');
                     const labelsAmount = Math.min(TEMP_RECORD_LABELS_MAX, labels.length);
+                    const tempRecordValid = tempRecordData.src_account && (tempRecordData.src_amount != 0);
                     /** @type {bot.keyboard_button_inline_data[][]} */
                     var keyboard = [];
                     keyboard.push([{
-                        text: `Account: ` + (tempRecordData.src_account ? (walletCommon.getColorMarker(tempRecordData.src_account.color, ' ') + tempRecordData.src_account.name) : '--'),
+                        text: `Account*: ` + (tempRecordData.src_account ? (walletCommon.getColorMarker(tempRecordData.src_account.color, ' ') + tempRecordData.src_account.name) : '--'),
                         callback_data: menuBase.makeMenuButton('chooseAccount', { from: currentMenu, out: ARG_TEMP_ACCOUNT_ID, eID: tempRecordData.src_account_id })
                     }], [{
-                        text: `Amount: ${tempRecordData.src_amount / 100}`,
+                        text: `Amount*: ${tempRecordData.src_amount / 100}`,
                         callback_data: menuBase.makeActionButton('enterRecordAmount', { [ARG_PREV_PAGE]: prevPage, [ARG_PREV_FILTER_ID]: prevFilterID })
                     }], [{
                         text: `Category: ` + (tempRecordData.category ? (walletCommon.getColorMarker(tempRecordData.category.color, ' ') + tempRecordData.category.name) : '--'),
@@ -391,8 +392,19 @@ function onTempRecordReady(user, userData, args, callback) {
                     }
                     if (labelsAmount < TEMP_RECORD_LABELS_MAX) {
                         keyboard.push([{
-                            text: `➕ Add label...`,
+                            text: `➕ Add label`,
                             callback_data: menuBase.makeMenuButton('chooseLabel', { from: currentMenu, out: ARG_TEMP_ADD_LABEL, r: true })
+                        }]);
+                    }
+                    if (tempRecordValid) {
+                        keyboard.push([{
+                            text: `Add record`,
+                            callback_data: menuBase.makeActionButton('createRecord', { [ARG_PREV_FILTER_ID]: prevFilterID })
+                        }]);
+                    } else {
+                        keyboard.push([{
+                            text: ` `,
+                            callback_data: menuBase.makeDummyButton()
                         }]);
                     }
                     keyboard.push([{

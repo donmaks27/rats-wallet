@@ -2070,7 +2070,8 @@ function query_getTempLabels(userID) {
     return `SELECT labels.* 
     FROM temp_record_labels 
         INNER JOIN labels ON temp_record_labels.label_id = labels.id
-    WHERE (temp_record_labels.user_id = ${userID});`;
+    WHERE (temp_record_labels.user_id = ${userID})
+    ORDER BY labels.name ASC;`;
 }
 /**
  * @param {number} userID 
