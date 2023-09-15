@@ -1099,7 +1099,7 @@ function record_get(id, callback) {
  * @param {(amount: number, error?: string) => any} callback 
  */
 function record_getAmount(userID, filterID, callback) {
-    db.get(query_getRecordsAmount(userID, filterID), (error, row) => {
+    db.get(query_getRecordsAmount(userID, filterID ? filterID : invalid_id), (error, row) => {
         if (error) {
             callback(0, `failed to get amount of records: ` + error);
         } else {
@@ -1876,10 +1876,10 @@ function query_getRecord(id) {
  */
 function query_getRecordsAmount(userID, filterID) {
     return `SELECT COUNT(records.id) AS amount
-    FROM ${filterID != null ? `filters CROSS JOIN` : ''} records
+    FROM ${filterID != invalid_id ? `filters CROSS JOIN` : ''} records
         LEFT JOIN accounts AS src_account ON records.src_account_id = src_account.id
         LEFT JOIN accounts AS dst_account ON records.dst_account_id = dst_account.id
-    WHERE ${filterID != null ? `(filters.id = ${filterID}) AND 
+    WHERE ${filterID != invalid_id ? `(filters.id = ${filterID}) AND 
             (filters.date_from IS NULL OR (records.date >= filters.date_from)) AND 
             (filters.date_until IS NULL OR (records.date <= filters.date_until)) AND` : ''} 
         ((src_account.user_id = ${userID}) OR (dst_account.user_id = ${userID}))
