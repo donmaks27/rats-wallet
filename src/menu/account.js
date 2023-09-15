@@ -25,13 +25,21 @@ module.exports.get = () => {
     };
 }
 
+const ARG_ACCOUNTS_SHOW_ARCHIVED = 'all';
+const ARG_ACCOUNTS_PAGE = 'p';
+
+const ARG_ACCOUNT_ACCOUNT_ID = 'id';
+
+const ACCOUNT_ROW_SIZE = 2;
+const ACCOUNT_MAX_ROWS = 10;
+const ACCOUNT_PAGE_SIZE = ACCOUNT_ROW_SIZE * ACCOUNT_MAX_ROWS;
 const CHOOSE_ACCOUNT_PAGE_SIZE = 10;
 
 /**
  * @param {db.account_data} accountData 
  */
 function getAccountName(accountData) {
-    return `${walletCommon.getColorMarker(accountData.color)} ${accountData.name}`;
+    return walletCommon.getColorMarker(accountData.color, ' ') + accountData.name;
 }
 
 /**
@@ -39,48 +47,90 @@ function getAccountName(accountData) {
  */
 function createMenuData_accounts(user, userData, args, callback) {
     const userID = user.id;
-    const shouldShowArchived = args.showAll ? true : false;
+    const shouldShowArchived = typeof args[ARG_ACCOUNTS_SHOW_ARCHIVED] === 'boolean' ? args[ARG_ACCOUNTS_SHOW_ARCHIVED] : false;
+    const currentPage = typeof args[ARG_ACCOUNTS_PAGE] === 'number' ? args[ARG_ACCOUNTS_PAGE] : 0;
     db.account_getAll(userID, (accounts, error) => {
-        /** @type {bot.keyboard_button_inline_data[][]} */
-        var menuDataKeyboard = [];
-        var archivedAmount = 0;
         if (error) {
             log.error(userID, `[accounts] failed to get accounts list (${error})`);
-        } else {
-            /** @type {bot.keyboard_button_inline_data[]} */
-            var menuDataKeyboardRow = [];
-            for (var i = 0; i < accounts.length; i++) {
-                if (!accounts[i].is_active) {
-                    archivedAmount++;
-                    if (!shouldShowArchived) {
-                        continue;
-                    }
-                }
-                menuDataKeyboardRow.push({
-                    text: `${walletCommon.getAccountStatus(accounts[i])} ${getAccountName(accounts[i])}`,
-                    callback_data: menuBase.makeMenuButton('account', { accountID: accounts[i].id })
-                });
-                if (menuDataKeyboardRow.length == 3) {
-                    menuDataKeyboard.push(menuDataKeyboardRow);
-                    menuDataKeyboardRow = [];
-                }
-            }
-            if (menuDataKeyboardRow.length > 0) {
-                menuDataKeyboard.push(menuDataKeyboardRow);
-            }
         }
-        if (archivedAmount > 0) {
-            menuDataKeyboard.push([{ 
-                text: shouldShowArchived ? `Hide archived` : `Show archived`, 
-                callback_data: menuBase.makeMenuButton('accounts', { showAll: !shouldShowArchived }) 
+
+        const activeAccounts = accounts.filter(v => v.is_active);
+        const archivedAccountsAmount = accounts.length - activeAccounts.length;
+        const filteredAccounts = shouldShowArchived ? accounts : activeAccounts;
+        const firstAccountIndex = filteredAccounts.length > ACCOUNT_PAGE_SIZE ? ACCOUNT_PAGE_SIZE * currentPage : 0;
+        const lastAccountIndex = Math.min(filteredAccounts.length, firstAccountIndex + ACCOUNT_PAGE_SIZE) - 1;
+
+        /** @type {bot.keyboard_button_inline_data[][]} */
+        var keyboard = [];
+        if (archivedAccountsAmount > 0) {
+            keyboard.push([{
+                text: !shouldShowArchived ? `Show archived` : `Hide archived`,
+                callback_data: menuBase.makeMenuButton('accounts', { [ARG_ACCOUNTS_SHOW_ARCHIVED]: !shouldShowArchived, [ARG_ACCOUNTS_PAGE]: 0 })
             }]);
         }
-        menuDataKeyboard.push([{ text: `Create new account >>`, callback_data: menuBase.makeMenuButton('createAccount') }]);
-        menuDataKeyboard.push([{ text: `<< Back to Wallet`, callback_data: menuBase.makeMenuButton('wallet') }]);
+        /** @type {bot.keyboard_button_inline_data[]} */
+        var keyboardRow = [];
+        for (var i = firstAccountIndex; i <= lastAccountIndex; i++) {
+            const accountData = filteredAccounts[i];
+            keyboardRow.push({
+                text: `${walletCommon.getAccountStatus(accountData)} ${getAccountName(accountData)}`,
+                callback_data: menuBase.makeMenuButton('account', { [ARG_ACCOUNT_ACCOUNT_ID]: accountData.id })
+            });
+            if (keyboardRow.length >= ACCOUNT_ROW_SIZE) {
+                keyboard.push(keyboardRow);
+                keyboardRow = [];
+            }
+        }
+        if (keyboardRow.length > 0) {
+            while (keyboardRow.length < ACCOUNT_ROW_SIZE) {
+                keyboardRow.push({
+                    text: ` `,
+                    callback_data: menuBase.makeDummyButton()
+                });
+            }
+            keyboard.push(keyboardRow);
+            keyboardRow = [];
+        }
+        if (filteredAccounts.length > ACCOUNT_PAGE_SIZE) {
+            if (currentPage > 0) {
+                keyboardRow.push({
+                    text: `<< ${currentPage}`,
+                    callback_data: menuBase.makeMenuButton('accounts', { ...args, [ARG_ACCOUNTS_PAGE]: currentPage - 1 })
+                });
+            } else {
+                keyboardRow.push({
+                    text: ` `,
+                    callback_data: menuBase.makeDummyButton()
+                });
+            }
+            keyboardRow.push({
+                text: `${currentPage + 1}`,
+                callback_data: menuBase.makeDummyButton()
+            });
+            if (lastAccountIndex < filteredAccounts.length - 1) {
+                keyboardRow.push({
+                    text: `${currentPage + 2} >>`,
+                    callback_data: menuBase.makeMenuButton('accounts', { ...args, [ARG_ACCOUNTS_PAGE]: currentPage + 1 })
+                });
+            } else {
+                keyboardRow.push({
+                    text: ` `,
+                    callback_data: menuBase.makeDummyButton()
+                });
+            }
+            keyboard.push(keyboardRow);
+        }
+        keyboard.push([{ 
+            text: `Create new account >>`, 
+            callback_data: menuBase.makeMenuButton('createAccount') 
+        }], [{ 
+            text: `<< Back to Wallet`, 
+            callback_data: menuBase.makeMenuButton('wallet') 
+        }]);
         callback({
-            text: menuBase.makeMenuMessageTitle(`Accounts`) + `\nChoose an account:`,
+            text: `*Accounts*\nChoose an account:`,
             parseMode: 'MarkdownV2',
-            keyboard: menuDataKeyboard
+            keyboard: keyboard
         });
     });
 }
@@ -89,19 +139,24 @@ function createMenuData_accounts(user, userData, args, callback) {
  */
 function createMenuData_account(user, userData, args, callback) {
     const userID = user.id;
-    const accountID = typeof args.accountID === 'number' ? args.accountID : db.invalid_id;
+    const accountID = typeof args[ARG_ACCOUNT_ACCOUNT_ID] === 'number' ? args[ARG_ACCOUNT_ACCOUNT_ID] : db.invalid_id;
+    /** @type {walletCommon.args_data} */
+    const backButtonArgs = {};
     db.account_get(accountID, (accountData, error) => {
         if (error || !accountData) {
             log.error(userID, `[account] failed to get data of account ${accountID} (${error})`);
             callback({
                 text: `_${bot.escapeMarkdown(`Hmm, something wrong...`)}_`, parseMode: 'MarkdownV2',
-                keyboard: [[{ text: `<< Back to Accounts`, callback_data: menuBase.makeMenuButton('accounts') }]]
+                keyboard: [[{ 
+                    text: `<< Back to Accounts`, 
+                    callback_data: menuBase.makeMenuButton('accounts', backButtonArgs) 
+                }]]
             });
         } else {
             db.account_getBallance([ accountID ], {}, (ballances, error) => {
                 const ballance = ballances[accountID];
                 if (error || (typeof ballance === 'undefined')) {
-                    log.error(userID, `[account] failed to get ballance of account "${accountData.name}" (${error})`);
+                    log.error(userID, `[account] failed to get ballance of account ${accountData.id} "${accountData.name}" (${error})`);
                 }
                 /** @type {string[]} */
                 var textLines = [];
@@ -139,7 +194,7 @@ function createMenuData_account(user, userData, args, callback) {
                         [
                             { 
                                 text: `<< Back to Accounts`, 
-                                callback_data: menuBase.makeMenuButton('accounts') 
+                                callback_data: menuBase.makeMenuButton('accounts', backButtonArgs) 
                             }
                         ]
                     ]
@@ -199,7 +254,7 @@ function createMenuData_deleteAccount(user, userData, args, callback) {
                 keyboard: [[
                     {
                         text: 'No',
-                        callback_data: menuBase.makeMenuButton('account', { accountID: accountID })
+                        callback_data: menuBase.makeMenuButton('account', { [ARG_ACCOUNT_ACCOUNT_ID]: accountID })
                     },
                     {
                         text: 'Yes',

@@ -26,7 +26,7 @@ module.exports.get = () => {
 const ARG_PAGE = 'page';
 const ARG_FILTER_ID = 'fID';
 const RECORDS_PAGE_SIZE = 10;
-const TEMP_RECORD_LABELS_MAX = 10;
+const TEMP_RECORD_LABELS_MAX = 5;
 
 const ARG_PREV_PAGE = 'pP';
 const ARG_PREV_FILTER_ID = 'pF';

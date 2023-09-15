@@ -43,6 +43,8 @@ module.exports.register = (stopCallback) => {
     };
 }
 
+const ARG_ACCOUNT_ACCOUNT_ID = 'id';
+
 /**
  * @type {actionBase.action_start_func}
  */
@@ -80,7 +82,7 @@ function stopAction(user, userData, args, callback) {
 
     const accountID = args.accountID;
     log.info(userID, `updating menu...`);
-    walletMenu.changeMenuMessage(walletCommon.getUserMenuMessageID(userID), 'account', { accountID: accountID }, user, userData, (message, error) => {
+    walletMenu.changeMenuMessage(walletCommon.getUserMenuMessageID(userID), 'account', { [ARG_ACCOUNT_ACCOUNT_ID]: accountID }, user, userData, (message, error) => {
         if (error) {
             log.error(userID, `failed to update menu message (${error})`);
         } else {

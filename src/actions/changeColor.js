@@ -43,6 +43,8 @@ module.exports.register = (stopCallback) => {
     };
 }
 
+const ARG_ACCOUNT_ACCOUNT_ID = 'id';
+
 /**
  * @type {actionBase.action_start_func}
  */
@@ -141,7 +143,7 @@ function stopAction(user, userData, args, callback) {
         menuArgs = { categoryID: args.categoryID };
     } else if (typeof args.accountID === 'number') {
         menu = 'account';
-        menuArgs = { accountID: args.accountID };
+        menuArgs = { [ARG_ACCOUNT_ACCOUNT_ID]: args.accountID };
     }
     log.info(userID, `updating menu...`);
     walletMenu.changeMenuMessage(walletCommon.getUserMenuMessageID(userID), menu, menuArgs, user, userData, (message, error) => {
