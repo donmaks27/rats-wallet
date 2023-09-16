@@ -180,6 +180,9 @@ function handleMenuButton(callbackQuery) {
     db.user_get(callbackQuery.from.id, (userData, error) => {
         if (error || !userData) {
             log.warning(`[MENU BUTTON] can't find data for user ${callbackQuery.from.id} in database`);
+        } else if (callbackQuery.data == walletCommon.MENU_BUTTON_CANCEL) {
+            log.info(`[MENU BUTTON] canceling current action...`);
+            walletActions.stopUserAction(callbackQuery.from, userData);
         } else if (callbackQuery.data != walletCommon.MENU_BUTTON_DUMMY) {
             log.info(`[MENU BUTTON] found data for user ${callbackQuery.from.id}, handling callback query "${callbackQuery.data}"...`);
             const buttonFirstSeparatorIndex = callbackQuery.data.indexOf(';');
@@ -197,10 +200,6 @@ function handleMenuButton(callbackQuery) {
                 case walletCommon.MENU_BUTTON_ACTION:
                     log.info(`[MENU BUTTON] starting action "${buttonRef[1]}" (args: ${JSON.stringify(buttonArgs)})...`);
                     walletActions.startUserAction(buttonRef[1], buttonArgs, callbackQuery.from, userData);
-                    break;
-                case walletCommon.MENU_BUTTON_CANCEL:
-                    log.info(`[MENU BUTTON] canceling current action...`);
-                    walletActions.stopUserAction(callbackQuery.from, userData);
                     break;
 
                 default:
