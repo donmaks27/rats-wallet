@@ -1300,14 +1300,14 @@ function record_clearTempLabels(userID, callback) {
 }
 
 /**
- * @param {number} record_id 
- * @param {number} label_id 
+ * @param {number} recordID 
+ * @param {number[]} labelIDs 
  * @param {(error?: string) => any} [callback] 
  */
-function record_addLabel(record_id, label_id, callback) {
-    db.run(query_createRecordLabel(record_id, label_id), callback ? (error) => {
+function record_addLabel(recordID, labelIDs, callback) {
+    db.run(query_createRecordLabel(recordID, labelIDs), callback ? (error) => {
         if (error) {
-            callback(`failed to add label ${label_id} to record ${record_id}: ` + error);
+            callback(`failed to add label ${labelIDs} to record ${recordID}: ` + error);
         } else {
             //debug_log(`added label ${label_id} to record ${record_id}`);
             callback();
@@ -2096,10 +2096,16 @@ function query_clearTempLabels(userID) {
 
 /**
  * @param {number} record_id 
- * @param {number} label_id 
+ * @param {number[]} labelIDs 
  */
-function query_createRecordLabel(record_id, label_id) {
-    return `INSERT INTO record_labels(record_id, label_id, create_date) VALUES (${record_id}, ${label_id}, ${Date.now()});`;
+function query_createRecordLabel(record_id, labelIDs) {
+    /** @type {string[]} */
+    var statements = [];
+    const date = Date.now();
+    for (var i = 0; i < labelIDs.length; i++) {
+        statements.push(`(${record_id}, ${labelIDs[i]}, ${date})`);
+    }
+    return `INSERT INTO record_labels(record_id, label_id, create_date) VALUES ${statements.join(', ')};`;
 }
 /**
  * @param {number} record_id 

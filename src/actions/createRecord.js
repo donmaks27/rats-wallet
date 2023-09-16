@@ -74,23 +74,42 @@ function startAction(user, userData, args, callback) {
             log.error(userID, `failed to get temp record data (${error})`);
             callback(false);
         } else {
-            /** @type {{ src_account_id?: number, src_amount?: number, dst_account_id?: number, dst_amount?: number, category_id?: number, date: Date }} */
-            var newRecordData = { category_id: tempRecordData.category_id, date: tempRecordData.date };
-            if (tempRecordType != TEMP_RECORD_TYPE_INCOME) {
-                newRecordData.src_account_id = tempRecordData.src_account_id;
-                newRecordData.src_amount = tempRecordData.src_amount;
-            }if (tempRecordType != TEMP_RECORD_TYPE_EXPENSE) {
-                newRecordData.dst_account_id = tempRecordData.dst_account_id;
-                newRecordData.dst_amount = tempRecordData.dst_amount;
-            }
-            db.record_create(newRecordData, (recordData, error) => {
-                if (error || !recordData) {
-                    log.error(userID, `failed to create new record (${error})`);
+            db.record_getTempLabels(userID, (labels, error) => {
+                if (error) {
+                    log.error(userID, `failed to get temp record labels data (${error})`);
                     callback(false);
                 } else {
-                    log.info(userID, `new record created`);
-                    // TODO: Add all temp labels
-                    ActionStopCallback(user, userData, callback);
+                    /** @type {{ src_account_id?: number, src_amount?: number, dst_account_id?: number, dst_amount?: number, category_id?: number, date: Date }} */
+                    var newRecordData = { category_id: tempRecordData.category_id, date: tempRecordData.date };
+                    if (tempRecordType != TEMP_RECORD_TYPE_INCOME) {
+                        newRecordData.src_account_id = tempRecordData.src_account_id;
+                        newRecordData.src_amount = tempRecordData.src_amount;
+                    }if (tempRecordType != TEMP_RECORD_TYPE_EXPENSE) {
+                        newRecordData.dst_account_id = tempRecordData.dst_account_id;
+                        newRecordData.dst_amount = tempRecordData.dst_amount;
+                    }
+                    db.record_create(newRecordData, (recordData, error) => {
+                        if (error || !recordData) {
+                            log.error(userID, `failed to create new record (${error})`);
+                            callback(false);
+                        } else {
+                            log.info(userID, `new record created`);
+                            if (labels.length > 0) {
+                                var labelIDs = [];
+                                for (var i = 0; i < labels.length; i++) {
+                                    labelIDs.push(labels[i].id);
+                                }
+                                db.record_addLabel(recordData.id, labelIDs, (error) => {
+                                    if (error) {
+                                        log.error(userID, `failed to create labels for new record (${error})`);
+                                    }
+                                    ActionStopCallback(user, userData, callback);
+                                });
+                            } else {
+                                ActionStopCallback(user, userData, callback);
+                            }
+                        }
+                    });
                 }
             });
         }
