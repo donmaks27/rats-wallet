@@ -409,7 +409,7 @@ function createMenuData_createRecord_expense(user, userData, args, callback) {
                         })
                     }], [{
                         text: `Amount*: ${tempRecordData.src_amount != 0 ? tempRecordData.src_amount / 100 : '--'} ${currencySymbol}`,
-                        callback_data: menuBase.makeActionButton('enterRecordAmount', { ...args })
+                        callback_data: menuBase.makeActionButton('enterRecordAmount', { ...args, out: ARG_TEMP_SRC_AMOUNT })
                     }], [{
                         text: `Category: ` + (tempRecordData.category ? (walletCommon.getColorMarker(tempRecordData.category.color, ' ') + tempRecordData.category.name) : '--'),
                         callback_data: menuBase.makeMenuButton('chooseCategory', { 
