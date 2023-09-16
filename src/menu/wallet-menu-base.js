@@ -43,6 +43,9 @@ module.exports.makeMenuButton = function(type, args) {
 module.exports.makeActionButton = function(action, args) {
     return makeButton(walletCommon.MENU_BUTTON_ACTION, walletActions.getActionShortName(action), args);
 }
+module.exports.makeCancelButton = function() {
+    return walletCommon.MENU_BUTTON_CANCEL;
+}
 module.exports.makeDummyButton = function() {
     return walletCommon.MENU_BUTTON_DUMMY;
 }

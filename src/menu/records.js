@@ -31,14 +31,21 @@ const TEMP_RECORD_LABELS_MAX = 5;
 const ARG_PREV_PAGE = 'pP';
 const ARG_PREV_FILTER_ID = 'pF';
 
-const ARG_TEMP_RESET = 'reset';
-const ARG_TEMP_ACCOUNT_ID = 'aID';
-const ARG_TEMP_AMOUNT = 'rA';
+const ARG_TEMP_RESET = 'r';
+const ARG_TEMP_RECORD_TYPE = 't';
+const ARG_TEMP_SRC_ACCOUNT_ID = 'srcID';
+const ARG_TEMP_SRC_AMOUNT = 'srcA';
+const ARG_TEMP_DST_ACCOUNT_ID = 'dstID';
+const ARG_TEMP_DST_AMOUNT = 'dstA';
 const ARG_TEMP_CATEGORY_ID = 'cID';
 const ARG_TEMP_DATE = 'rD';
 const ARG_TEMP_TIME = 'rT';
 const ARG_TEMP_ADD_LABEL = 'lIDa';
 const ARG_TEMP_REMOVE_LABEL = 'lIDr';
+
+const TEMP_RECORD_TYPE_EXPENSE = 'e';
+const TEMP_RECORD_TYPE_INCOME = 'i';
+const TEMP_RECORD_TYPE_TRANSFER = 't';
 
 /**
  * @type {menuBase.menu_create_func}
@@ -181,7 +188,7 @@ function createMenuData_records(user, userData, args, callback) {
                         callback_data: menuBase.makeMenuButton('filter', { [ARG_PREV_PAGE]: page, [ARG_PREV_FILTER_ID]: filterID, reset: true })
                     }], [{
                         text: 'Create new record',
-                        callback_data: menuBase.makeMenuButton('createRecord', { [ARG_PREV_PAGE]: page, [ARG_PREV_FILTER_ID]: filterID, [ARG_TEMP_RESET]: true })
+                        callback_data: menuBase.makeMenuButton('createRecord', { [ARG_PREV_PAGE]: page, [ARG_PREV_FILTER_ID]: filterID, [ARG_TEMP_RESET]: true, [ARG_TEMP_RECORD_TYPE]: TEMP_RECORD_TYPE_EXPENSE })
                     }], [{
                         text: '<< Back to Wallet',
                         callback_data: menuBase.makeMenuButton('wallet')
@@ -197,114 +204,157 @@ function createMenuData_records(user, userData, args, callback) {
  */
 function createMenuData_createRecord(user, userData, args, callback) {
     const userID = user.id;
-    const shouldReset = args[ARG_TEMP_RESET] ? true : false;
-    const accountID = args[ARG_TEMP_ACCOUNT_ID];
-    const recordAmount = args[ARG_TEMP_AMOUNT];
-    const categoryID = args[ARG_TEMP_CATEGORY_ID];
-    const recordDate = args[ARG_TEMP_DATE];
-    const recordTime = args[ARG_TEMP_TIME];
-    const lebelID_add = args[ARG_TEMP_ADD_LABEL];
-    const lebelID_remove = args[ARG_TEMP_REMOVE_LABEL];
+    const argRecordType = typeof args[ARG_TEMP_RECORD_TYPE] === 'string' ? args[ARG_TEMP_RECORD_TYPE] : '';
+    const argReset = typeof args[ARG_TEMP_RESET] === 'boolean' ? args[ARG_TEMP_RESET] : false;
+    switch (argRecordType) {
+    case TEMP_RECORD_TYPE_EXPENSE:
+    case TEMP_RECORD_TYPE_INCOME:
+    case TEMP_RECORD_TYPE_TRANSFER:
+        break;
+    default: 
+        log.error(userID, `[createRecord] invalid record type "${argRecordType}"`);
+        onTempRecordError(user, userData, args, callback);
+        return;
+    }
+
+    if (argReset) {
+        db.record_clearTempLabels(userID, (error) => {
+            if (error) {
+                log.error(userID, `[createRecord] failed to clear temp labels (${error})`);
+                onTempRecordError(user, userData, args, callback);
+            } else {
+                createMenuData_createRecord_onLabelsCleared(user, userData, args, callback);
+            }
+        });
+    } else {
+        createMenuData_createRecord_onLabelsCleared(user, userData, args, callback);
+    }
+}
+/**
+ * @type {menuBase.menu_create_func}
+ */
+function createMenuData_createRecord_onLabelsCleared(user, userData, args, callback) {
+    const userID = user.id;
+    const argLebelID_add    = typeof args[ARG_TEMP_ADD_LABEL] === 'number' ? args[ARG_TEMP_ADD_LABEL] : db.invalid_id;
+    const argLebelID_remove = typeof args[ARG_TEMP_REMOVE_LABEL] === 'number' ? args[ARG_TEMP_REMOVE_LABEL] : db.invalid_id;
+    delete args[ARG_TEMP_ADD_LABEL];
+    delete args[ARG_TEMP_REMOVE_LABEL];
+
+    if (argLebelID_add != db.invalid_id) {
+        db.record_addTempLabel(userID, argLebelID_add, (error) => {
+            if (error) {
+                log.error(userID, `[createRecord] failed to add label to temp record (${error})`);
+                onTempRecordError(user, userData, args, callback);
+            } else {
+                createMenuData_createRecord_onLabelsUpdated(user, userData, args, callback);
+            }
+        });
+    } else if (argLebelID_remove != db.invalid_id) {
+        db.record_removeTempLabel(userID, argLebelID_remove, (error) => {
+            if (error) {
+                log.error(userID, `[createRecord] failed to remove label from temp record (${error})`);
+                onTempRecordError(user, userData, args, callback);
+            } else {
+                createMenuData_createRecord_onLabelsUpdated(user, userData, args, callback);
+            }
+        });
+    } else {
+        createMenuData_createRecord_onLabelsUpdated(user, userData, args, callback);
+    }
+}
+/**
+ * @type {menuBase.menu_create_func}
+ */
+function createMenuData_createRecord_onLabelsUpdated(user, userData, args, callback) {
+    const userID = user.id;
+    const argReset        = typeof args[ARG_TEMP_RESET] === 'boolean' ? args[ARG_TEMP_RESET] : false;
+    const argSrcAccountID = args[ARG_TEMP_SRC_ACCOUNT_ID];
+    const argSrcAmount    = args[ARG_TEMP_SRC_AMOUNT];
+    const argDstAccountID = args[ARG_TEMP_DST_ACCOUNT_ID];
+    const argDstAmount    = args[ARG_TEMP_DST_AMOUNT];
+    const argCategoryID   = args[ARG_TEMP_CATEGORY_ID];
+    const argDate         = args[ARG_TEMP_DATE];
+    const argTime         = args[ARG_TEMP_TIME];
     delete args[ARG_TEMP_RESET];
-    delete args[ARG_TEMP_ACCOUNT_ID];
-    delete args[ARG_TEMP_AMOUNT];
+    delete args[ARG_TEMP_SRC_ACCOUNT_ID];
+    delete args[ARG_TEMP_SRC_AMOUNT];
+    delete args[ARG_TEMP_DST_ACCOUNT_ID];
+    delete args[ARG_TEMP_DST_AMOUNT];
     delete args[ARG_TEMP_CATEGORY_ID];
     delete args[ARG_TEMP_DATE];
     delete args[ARG_TEMP_TIME];
-    delete args[ARG_TEMP_ADD_LABEL];
-    delete args[ARG_TEMP_REMOVE_LABEL];
-    if (shouldReset) {
-        db.record_editTemp(userID, { src_account_id: db.invalid_id, src_amount: 0, date: new Date(), category_id: db.invalid_id }, (error) => {
-            if (error) {
-                log.error(userID, `[createRecord] failed to reset temp record (${error})`);
-                onTempRecordError(user, userData, args, callback);
-            } else {
-                db.record_clearTempLabels(userID, (error) => {
-                    if (error) {
-                        log.error(userID, `[createRecord] failed to clear temp record labels (${error})`);
-                        onTempRecordError(user, userData, args, callback);
-                    } else {
-                        onTempRecordReady(user, userData, args, callback);
-                    }
-                });
-            }
-        });
-    } else if (typeof accountID === 'number') {
-        db.record_editTemp(userID, { src_account_id: accountID }, (error) => {
-            if (error) {
-                log.error(userID, `[createRecord] failed to change src account for temp record (${error})`);
-                onTempRecordError(user, userData, args, callback);
-            } else {
-                onTempRecordReady(user, userData, args, callback);
-            }
-        });
-    } else if (typeof categoryID === 'number') {
-        db.record_editTemp(userID, { category_id: categoryID }, (error) => {
-            if (error) {
-                log.error(userID, `[createRecord] failed to change category for temp record (${error})`);
-                onTempRecordError(user, userData, args, callback);
-            } else {
-                onTempRecordReady(user, userData, args, callback);
-            }
-        });
-    } else if ((typeof recordDate === 'number') || (typeof recordTime === 'number')) {
+
+    /** @type {{ src_account_id?: number, src_amount?: number, dst_account_id?: number, dst_amount?: number, category_id?: number, date?: Date }} */
+    var newTempRecordData = {};
+    var shouldUpdateTempRecord = false;
+    if (argReset) {
+        newTempRecordData = { src_account_id: db.invalid_id, src_amount: 0, dst_account_id: db.invalid_id, dst_amount: 0, category_id: db.invalid_id, date: new Date() };
+        shouldUpdateTempRecord = true;
+    }
+    if (typeof argSrcAccountID === 'number') {
+        newTempRecordData.src_account_id = argSrcAccountID; shouldUpdateTempRecord = true;
+    }
+    if (typeof argSrcAmount === 'number') {
+        newTempRecordData.src_amount = argSrcAmount; shouldUpdateTempRecord = true;
+    }
+    if (typeof argDstAccountID === 'number') {
+        newTempRecordData.dst_account_id = argDstAccountID; shouldUpdateTempRecord = true;
+    }
+    if (typeof argDstAmount === 'number') {
+        newTempRecordData.dst_amount = argDstAmount; shouldUpdateTempRecord = true;
+    }
+    if (typeof argCategoryID === 'number') {
+        newTempRecordData.category_id = argCategoryID; shouldUpdateTempRecord = true;
+    }
+    if ((typeof argDate === 'number') || (typeof argTime === 'number')) {
         db.record_getTemp(userID, (tempRecordData, error) => {
             if (error || !tempRecordData) {
                 log.error(userID, `[createRecord] failed to get temp record for updating date (${error})`);
                 onTempRecordError(user, userData, args, callback);
             } else {
                 var newRecordDateTime = dateFormat.timezone_date(tempRecordData.date, userData.timezone);
-                if (typeof recordDate === 'number') {
-                    const newRecordDate = menuBase.decodeDate(recordDate);
+                if (typeof argDate === 'number') {
+                    const newRecordDate = menuBase.decodeDate(argDate);
                     newRecordDateTime.setUTCFullYear(newRecordDate.getUTCFullYear(), newRecordDate.getUTCMonth(), newRecordDate.getUTCDate());
-                } else if (typeof recordTime === 'number') {
-                    const newRecordTime = menuBase.decodeTime(recordTime);
+                }
+                if (typeof argTime === 'number') {
+                    const newRecordTime = menuBase.decodeTime(argTime);
                     newRecordDateTime.setUTCHours(newRecordTime.getUTCHours(), newRecordTime.getUTCMinutes(), 0, 0);
                 }
-                db.record_editTemp(userID, { date: dateFormat.utc_date(newRecordDateTime, userData.timezone) }, (error) => {
+                newTempRecordData.date = dateFormat.utc_date(newRecordDateTime, userData.timezone);
+                db.record_editTemp(userID, newTempRecordData, (error) => {
                     if (error) {
-                        log.error(userID, `[createRecord] failed to edit date of temp record (${error})`);
+                        log.error(userID, `[createRecord] failed to edit temp record (${error})`);
                         onTempRecordError(user, userData, args, callback);
                     } else {
-                        onTempRecordReady(user, userData, args, callback);
+                        createMenuData_createRecord_onTempRecordUpdated(user, userData, args, callback);
                     }
                 });
             }
         });
-    } else if (typeof recordAmount === 'number') {
-        db.record_editTemp(userID, { src_amount: recordAmount }, (error) => {
+    } else if (shouldUpdateTempRecord) {
+        db.record_editTemp(userID, newTempRecordData, (error) => {
             if (error) {
-                log.error(userID, `[createRecord] failed to change src amount for temp record (${error})`);
+                log.error(userID, `[createRecord] failed to edit temp record (${error})`);
                 onTempRecordError(user, userData, args, callback);
             } else {
-                onTempRecordReady(user, userData, args, callback);
+                createMenuData_createRecord_onTempRecordUpdated(user, userData, args, callback);
             }
         });
-    } else if ((typeof lebelID_add === 'number') && (lebelID_add != db.invalid_id)) {
-        db.record_addTempLabel(userID, lebelID_add, (error) => {
-            if (error) {
-                log.error(userID, `[createRecord] failed to add label to temp record (${error})`);
-                onTempRecordError(user, userData, args, callback);
-            } else {
-                onTempRecordReady(user, userData, args, callback);
-            }
-        });
-    } else if (typeof lebelID_remove === 'number') {
-        if (lebelID_remove != db.invalid_id) {
-            db.record_removeTempLabel(userID, lebelID_remove, (error) => {
-                if (error) {
-                    log.error(userID, `[createRecord] failed to remove label from temp record (${error})`);
-                    onTempRecordError(user, userData, args, callback);
-                } else {
-                    onTempRecordReady(user, userData, args, callback);
-                }
-            });
-        } else {
-            log.error(userID, `[createRecord] empty temp label ID for remove`)
-            onTempRecordError(user, userData, args, callback);
-        }
     } else {
-        onTempRecordReady(user, userData, args, callback);
+        createMenuData_createRecord_onTempRecordUpdated(user, userData, args, callback);
+    }
+}
+/**
+ * @type {menuBase.menu_create_func}
+ */
+function createMenuData_createRecord_onTempRecordUpdated(user, userData, args, callback) {
+    const userID = user.id;
+    const argRecordType = typeof args[ARG_TEMP_RECORD_TYPE] === 'string' ? args[ARG_TEMP_RECORD_TYPE] : TEMP_RECORD_TYPE_EXPENSE;
+    switch (argRecordType) {
+    case TEMP_RECORD_TYPE_EXPENSE:
+        createMenuData_createRecord_expense(user, userData, args, callback);
+        break;
     }
 }
 /**
@@ -326,10 +376,11 @@ function onTempRecordError(user, userData, args, callback) {
         ]
     });
 }
+
 /**
  * @type {menuBase.menu_create_func}
  */
-function onTempRecordReady(user, userData, args, callback) {
+function createMenuData_createRecord_expense(user, userData, args, callback) {
     const userID = user.id;
     const prevPage = typeof args[ARG_PREV_PAGE] === 'number' ? args[ARG_PREV_PAGE] : 0;
     const prevFilterID = typeof args[ARG_PREV_FILTER_ID] === 'number' ? args[ARG_PREV_FILTER_ID] : null;
@@ -344,36 +395,42 @@ function onTempRecordReady(user, userData, args, callback) {
                     onTempRecordError(user, userData, args, callback);
                 } else {
                     const currentMenu = walletMenu.getShortName('createRecord');
-                    const currencySymbol = tempRecordData.src_currency && tempRecordData.src_currency.symbol ? tempRecordData.src_currency.symbol : (tempRecordData.src_account ? tempRecordData.src_account.currency_code : null);
+                    const currencySymbol = tempRecordData.src_currency && tempRecordData.src_currency.symbol ? tempRecordData.src_currency.symbol : (tempRecordData.src_account ? tempRecordData.src_account.currency_code : '');
                     const labelsAmount = Math.min(TEMP_RECORD_LABELS_MAX, labels.length);
                     const tempRecordValid = tempRecordData.src_account && (tempRecordData.src_amount != 0);
                     /** @type {bot.keyboard_button_inline_data[][]} */
                     var keyboard = [];
                     keyboard.push([{
                         text: `Account*: ` + (tempRecordData.src_account ? (walletCommon.getColorMarker(tempRecordData.src_account.color, ' ') + tempRecordData.src_account.name) : '--'),
-                        callback_data: menuBase.makeMenuButton('chooseAccount', { from: currentMenu, out: ARG_TEMP_ACCOUNT_ID, eID: tempRecordData.src_account_id })
+                        callback_data: menuBase.makeMenuButton('chooseAccount', { 
+                            ...args, 
+                            from: currentMenu, out: ARG_TEMP_SRC_ACCOUNT_ID, 
+                            eID: tempRecordData.src_account_id 
+                        })
                     }], [{
-                        text: `Amount*: ${tempRecordData.src_amount / 100} ${currencySymbol}`,
-                        callback_data: menuBase.makeActionButton('enterRecordAmount', { [ARG_PREV_PAGE]: prevPage, [ARG_PREV_FILTER_ID]: prevFilterID })
+                        text: `Amount*: ${tempRecordData.src_amount != 0 ? tempRecordData.src_amount / 100 : '--'} ${currencySymbol}`,
+                        callback_data: menuBase.makeActionButton('enterRecordAmount', { ...args })
                     }], [{
                         text: `Category: ` + (tempRecordData.category ? (walletCommon.getColorMarker(tempRecordData.category.color, ' ') + tempRecordData.category.name) : '--'),
-                        callback_data: menuBase.makeMenuButton('chooseCategory', { from: currentMenu, out: ARG_TEMP_CATEGORY_ID, pID: tempRecordData.category_id })
+                        callback_data: menuBase.makeMenuButton('chooseCategory', { 
+                            ...args, 
+                            from: currentMenu, out: ARG_TEMP_CATEGORY_ID, 
+                            pID: tempRecordData.category_id 
+                        })
                     }], [
                         {
                             text: dateFormat.to_readable_string(tempRecordData.date, { date: true, timezone: userData.timezone }),
                             callback_data: menuBase.makeMenuButton('pickDate', { 
-                                r: true, 
-                                from: currentMenu, 
-                                out: ARG_TEMP_DATE, 
+                                ...args, 
+                                req: true, from: currentMenu, out: ARG_TEMP_DATE, 
                                 _d: menuBase.encodeDate(dateFormat.timezone_date(tempRecordData.date, userData.timezone)) 
                             })
                         },
                         {
                             text: dateFormat.to_readable_string(tempRecordData.date, { time: true, timezone: userData.timezone }),
                             callback_data: menuBase.makeMenuButton('pickTime', { 
-                                r: true, 
-                                from: currentMenu, 
-                                out: ARG_TEMP_TIME, 
+                                ...args, 
+                                req: true, from: currentMenu, out: ARG_TEMP_TIME, 
                                 _t: menuBase.encodeTime(dateFormat.timezone_date(tempRecordData.date, userData.timezone))
                             })
                         }
@@ -387,20 +444,25 @@ function onTempRecordReady(user, userData, args, callback) {
                             },
                             {
                                 text: `✖️ Remove label`,
-                                callback_data: menuBase.makeMenuButton('createRecord', { [ARG_TEMP_REMOVE_LABEL]: labelData.id })
+                                callback_data: menuBase.makeMenuButton('createRecord', { 
+                                    ...args, [ARG_TEMP_REMOVE_LABEL]: labelData.id 
+                                })
                             }
                         ]);
                     }
                     if (labelsAmount < TEMP_RECORD_LABELS_MAX) {
                         keyboard.push([{
                             text: `➕ Add label`,
-                            callback_data: menuBase.makeMenuButton('chooseLabel', { from: currentMenu, out: ARG_TEMP_ADD_LABEL, r: true })
+                            callback_data: menuBase.makeMenuButton('chooseLabel', { 
+                                ...args, 
+                                req: true, from: currentMenu, out: ARG_TEMP_ADD_LABEL 
+                            })
                         }]);
                     }
                     if (tempRecordValid) {
                         keyboard.push([{
                             text: `Add record`,
-                            callback_data: menuBase.makeActionButton('createRecord', { [ARG_PREV_FILTER_ID]: prevFilterID })
+                            callback_data: menuBase.makeActionButton('createRecord', { [ARG_TEMP_RECORD_TYPE]: TEMP_RECORD_TYPE_EXPENSE, [ARG_PREV_FILTER_ID]: prevFilterID })
                         }]);
                     } else {
                         keyboard.push([{
@@ -413,7 +475,7 @@ function onTempRecordReady(user, userData, args, callback) {
                         callback_data: menuBase.makeMenuButton('records', { [ARG_PAGE]: prevPage, [ARG_FILTER_ID]: prevFilterID })
                     }]);
                     callback({
-                        text: `*Creating new record:*`, parseMode: 'MarkdownV2',
+                        text: `*Creating new record*\n*Type:* Expense`, parseMode: 'MarkdownV2',
                         keyboard: keyboard
                     });
                 }

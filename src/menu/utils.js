@@ -16,7 +16,7 @@ const log = {
 const MIN_YEAR = 1970;
 const MAX_YEAR = 2169;
 
-const ARG_REQUIRED = 'r';
+const ARG_REQUIRED = 'req';
 
 /**
  * @type {menuBase.menu_get_func}

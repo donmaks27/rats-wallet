@@ -258,12 +258,13 @@ function onChooseLabelReady(user, userData, labels, args, callback) {
     // @ts-ignore
     const fromMenu = typeof args.from === 'string' ? walletMenu.getNameByShortName(args.from) : 'main';
     const outArg = typeof args.out === 'string' ? args.out : 'id';
-    const requiredValidID = typeof args.r === 'boolean' ? args.r : false;
+    const requiredValidID = typeof args.req === 'boolean' ? args.req : false;
     const currentPage = typeof args._p === 'number' ? args._p : 0;
 
     var backButtonArgs = { ...args };
     delete backButtonArgs.from;
     delete backButtonArgs.out;
+    delete backButtonArgs.req;
     delete backButtonArgs._p;
 
     const firstCategoryIndex = labels.length <= CHOOSE_LABEL_PAGE_SIZE ? 0 : CHOOSE_LABEL_PAGE_SIZE * currentPage;

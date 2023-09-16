@@ -198,6 +198,10 @@ function handleMenuButton(callbackQuery) {
                     log.info(`[MENU BUTTON] starting action "${buttonRef[1]}" (args: ${JSON.stringify(buttonArgs)})...`);
                     walletActions.startUserAction(buttonRef[1], buttonArgs, callbackQuery.from, userData);
                     break;
+                case walletCommon.MENU_BUTTON_CANCEL:
+                    log.info(`[MENU BUTTON] canceling current action...`);
+                    walletActions.stopUserAction(callbackQuery.from, userData);
+                    break;
 
                 default:
                     log.error(`[MENU BUTTON] invalid button reference "${buttonRef[0]}"`);

@@ -44,18 +44,15 @@ module.exports.register = (stopCallback) => {
     };
 }
 
-const ARG_PREV_PAGE = 'pP';
-const ARG_PREV_FILTER_ID = 'pF';
-const ARG_RECORD_AMOUNT = 'rA';
+const ARG_OUTPUT_ARGUMENT = 'out';
 
 /**
  * @type {actionBase.action_start_func}
  */
 function startAction(user, userData, args, callback) {
     const userID = user.id;
-    const prevPage = typeof args[ARG_PREV_PAGE] === 'number' ? args[ARG_PREV_PAGE] : 0;
-    const prevFilterID = typeof args[ARG_PREV_FILTER_ID] === 'number' ? args[ARG_PREV_FILTER_ID] : null;
-
+    var cancelButtonArgs = { ...args };
+    delete cancelButtonArgs[ARG_OUTPUT_ARGUMENT];
     log.info(userID, `changing menu message...`);
     bot.editMessage({
         message: { chatID: userID, id: walletCommon.getUserMenuMessageID(userID) },
@@ -63,7 +60,7 @@ function startAction(user, userData, args, callback) {
         parseMode: 'MarkdownV2',
         inlineKeyboard: { inline_keyboard: [[{
             text: `Cancel`,
-            callback_data: menuBase.makeMenuButton('createRecord', { [ARG_PREV_PAGE]: prevPage, [ARG_PREV_FILTER_ID]: prevFilterID })
+            callback_data: menuBase.makeCancelButton()
         }]] }
     }, (message, error) => {
         if (error) {
@@ -80,6 +77,7 @@ function startAction(user, userData, args, callback) {
  */
 function onUserMessage(message, userData, args, callback) {
     const userID = message.from.id;
+    const outArg = typeof args[ARG_OUTPUT_ARGUMENT] === 'string' ? args[ARG_OUTPUT_ARGUMENT] : 'amount';
     if (!message.text || (message.text.length == 0)) {
         log.warning(userID, `empty message text`);
         callback(true);
@@ -95,9 +93,13 @@ function onUserMessage(message, userData, args, callback) {
             log.warning(userID, `invalid message text, number is 0`);
             bot.sendMessage({ chatID: userID, text: `Amount can't be 0. Let's try again` });
             callback(true);
+        } else if (amount < 0) {
+            log.warning(userID, `invalid message text, number is less then 0`);
+            bot.sendMessage({ chatID: userID, text: `Amount can't be less then 0. Let's try again` });
+            callback(true);
         } else {
             log.info(userID, bot.escapeMarkdown(`entered amount ${amount / 100}`));
-            args.amount = amount;
+            args[outArg] = amount;
             walletCommon.setUserActionArgs(userID, args);
             ActionStopCallback(message.from, userData, callback);
         }
@@ -108,19 +110,12 @@ function onUserMessage(message, userData, args, callback) {
  */
 function stopAction(user, userData, args, callback) {
     const userID = user.id;
-    const prevPage = typeof args[ARG_PREV_PAGE] === 'number' ? args[ARG_PREV_PAGE] : 0;
-    const prevFilterID = typeof args[ARG_PREV_FILTER_ID] === 'number' ? args[ARG_PREV_FILTER_ID] : null;
-    const amount = args.amount;
-
     const menuMessageID = walletCommon.getUserMenuMessageID(userID);
     if (menuMessageID > 0) {
         bot.deleteMessage({ chatID: userID, messageID: menuMessageID });
     }
-    var menuArgs = { [ARG_PREV_PAGE]: prevPage, [ARG_PREV_FILTER_ID]: prevFilterID };
-    if (typeof amount === 'number') {
-        menuArgs[ARG_RECORD_AMOUNT] = amount;
-    }
-    walletMenu.sendMenuMessage('createRecord', menuArgs, user, userData, (message, error) => {
+    delete args[ARG_OUTPUT_ARGUMENT];
+    walletMenu.sendMenuMessage('createRecord', { ...args }, user, userData, (message, error) => {
         if (error) {
             log.error(userID, `failed to return to create record menu (${error})`);
         } else {

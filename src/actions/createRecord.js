@@ -45,35 +45,51 @@ module.exports.register = (stopCallback) => {
 
 const ARG_RECORDS_FILTER_ID = 'fID';
 const ARG_PREV_FILTER_ID = 'pF';
+const ARG_TEMP_RECORD_TYPE = 't';
+
+const TEMP_RECORD_TYPE_EXPENSE = 'e';
+const TEMP_RECORD_TYPE_INCOME = 'i';
+const TEMP_RECORD_TYPE_TRANSFER = 't';
 
 /**
  * @type {actionBase.action_start_func}
  */
 function startAction(user, userData, args, callback) {
     const userID = user.id;
+    const tempRecordType = args[ARG_TEMP_RECORD_TYPE];
+    switch (tempRecordType) {
+    case TEMP_RECORD_TYPE_EXPENSE:
+    case TEMP_RECORD_TYPE_INCOME:
+    case TEMP_RECORD_TYPE_TRANSFER:
+        break;
+
+    default:
+        log.error(userID, `invalid temp record type "${tempRecordType}"`);
+        return;
+    }
+
     log.info(userID, `getting remp record data...`);
     db.record_getTemp(userID, (tempRecordData, error) => {
         if (error || !tempRecordData) {
             log.error(userID, `failed to get temp record data (${error})`);
             callback(false);
-        } else if (!tempRecordData.src_account) {
-            log.error(userID, `invalid src account of temp record data`);
-            callback(false);
         } else {
-            log.info(userID, `creating new record...`);
-            db.record_create({
-                src_account_id: tempRecordData.dst_account || (tempRecordData.src_amount < 0) ? tempRecordData.src_account_id : db.invalid_id,
-                src_amount:     tempRecordData.dst_account ? tempRecordData.src_amount : (tempRecordData.src_amount < 0 ? -tempRecordData.src_amount : 0),
-                dst_account_id: tempRecordData.dst_account ? tempRecordData.dst_account_id : (tempRecordData.src_amount >= 0 ? tempRecordData.src_account_id : db.invalid_id),
-                dst_amount:     tempRecordData.dst_account ? tempRecordData.dst_amount : (tempRecordData.src_amount >= 0 ? tempRecordData.src_amount : 0),
-                category_id:    tempRecordData.category_id,
-                date:           tempRecordData.date
-            }, (recordData, error) => {
+            /** @type {{ src_account_id?: number, src_amount?: number, dst_account_id?: number, dst_amount?: number, category_id?: number, date: Date }} */
+            var newRecordData = { category_id: tempRecordData.category_id, date: tempRecordData.date };
+            if (tempRecordType != TEMP_RECORD_TYPE_INCOME) {
+                newRecordData.src_account_id = tempRecordData.src_account_id;
+                newRecordData.src_amount = tempRecordData.src_amount;
+            }if (tempRecordType != TEMP_RECORD_TYPE_EXPENSE) {
+                newRecordData.dst_account_id = tempRecordData.dst_account_id;
+                newRecordData.dst_amount = tempRecordData.dst_amount;
+            }
+            db.record_create(newRecordData, (recordData, error) => {
                 if (error || !recordData) {
                     log.error(userID, `failed to create new record (${error})`);
                     callback(false);
                 } else {
                     log.info(userID, `new record created`);
+                    // TODO: Add all temp labels
                     ActionStopCallback(user, userData, callback);
                 }
             });
