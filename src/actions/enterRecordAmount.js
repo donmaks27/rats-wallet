@@ -78,6 +78,10 @@ function startAction(user, userData, args, callback) {
 function onUserMessage(message, userData, args, callback) {
     const userID = message.from.id;
     const outArg = typeof args[ARG_OUTPUT_ARGUMENT] === 'string' ? args[ARG_OUTPUT_ARGUMENT] : 'amount';
+
+    args.hadMessage = true;
+    walletCommon.setUserActionArgs(userID, args);
+
     if (!message.text || (message.text.length == 0)) {
         log.warning(userID, `empty message text`);
         callback(true);
@@ -110,12 +114,18 @@ function onUserMessage(message, userData, args, callback) {
  */
 function stopAction(user, userData, args, callback) {
     const userID = user.id;
-    const menuMessageID = walletCommon.getUserMenuMessageID(userID);
-    if (menuMessageID > 0) {
-        bot.deleteMessage({ chatID: userID, messageID: menuMessageID });
+
+    var menuMessageID = walletCommon.getUserMenuMessageID(userID);
+    if (args.hadMessage) {
+        if (menuMessageID != 0) {
+            bot.deleteMessage({ chatID: userID, messageID: menuMessageID });
+        }
+        menuMessageID = 0;
     }
+    delete args.hadMessage;
     delete args[ARG_OUTPUT_ARGUMENT];
-    walletMenu.sendMenuMessage('createRecord', { ...args }, user, userData, (message, error) => {
+
+    walletMenu.changeMenuMessage(menuMessageID, 'createRecord', { ...args }, user, userData, (message, error) => {
         if (error) {
             log.error(userID, `failed to return to create record menu (${error})`);
         } else {
