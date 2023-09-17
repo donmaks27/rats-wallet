@@ -27,6 +27,7 @@ module.exports.get = () => {
 const ARG_RECORDS_PAGE = 'page';
 const ARG_RECORDS_FILTER_ID = 'fID';
 const RECORDS_PAGE_SIZE = 10;
+const RECORDS_RECORD_BUTTONS_ROW_SIZE = 8;
 const TEMP_RECORD_LABELS_MAX = 5;
 
 const ARG_PREV_PAGE = 'pP';
@@ -166,8 +167,17 @@ function createMenuData_records(user, userData, args, callback) {
                         text: `${i + 1}`, 
                         callback_data: menuBase.makeMenuButton('record', { [ARG_PREV_PAGE]: currentPage, [ARG_PREV_FILTER_ID]: currentFilterID })
                     });
+                    if (keyboardRow.length >= RECORDS_RECORD_BUTTONS_ROW_SIZE) {
+                        keyboard.push(keyboardRow);
+                        keyboardRow = [];
+                    }
                 }
                 if (keyboardRow.length > 0) {
+                    while (keyboardRow.length < RECORDS_RECORD_BUTTONS_ROW_SIZE) {
+                        keyboardRow.push({
+                            text: ` `, callback_data: menuBase.makeDummyButton()
+                        });
+                    }
                     keyboard.push(keyboardRow);
                     keyboardRow = [];
                 }
