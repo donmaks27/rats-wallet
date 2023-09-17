@@ -165,7 +165,7 @@ function createMenuData_records(user, userData, args, callback) {
 
                     keyboardRow.push({
                         text: `${i + 1}`, 
-                        callback_data: menuBase.makeMenuButton('record', { [ARG_PREV_PAGE]: currentPage, [ARG_PREV_FILTER_ID]: currentFilterID })
+                        callback_data: menuBase.makeMenuButton('record', { [ARG_PREV_PAGE]: currentPage, [ARG_PREV_FILTER_ID]: currentFilterID, [ARG_RECORD_ID]: record.id })
                     });
                     if (keyboardRow.length >= RECORDS_RECORD_BUTTONS_ROW_SIZE) {
                         keyboard.push(keyboardRow);
