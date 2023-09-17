@@ -74,6 +74,7 @@ module.exports.record_getList = record_getList;
 module.exports.record_edit = record_edit;
 module.exports.record_delete = record_delete;
 module.exports.record_addLabel = record_addLabel;
+module.exports.record_getLabels = record_getLabels;
 module.exports.record_removeLabel = record_removeLabel;
 module.exports.record_clearLabels = record_clearLabels;
 
@@ -1315,6 +1316,24 @@ function record_addLabel(recordID, labelIDs, callback) {
     } : undefined);
 }
 /**
+ * @param {number} recordID 
+ * @param {(labels: label_data[], error?: string) => any} callback
+ */
+function record_getLabels(recordID, callback) {
+    db.all(query_getRecordLabels(recordID), (error, rows) => {
+        if (error) {
+            callback([], `failed to get labels for record ${recordID}: ` + error);
+        } else {
+            /** @type {label_data[]} */
+            var labels = [];
+            for (var i = 0; i < rows.length; i++) {
+                labels.push(parseLabelRow(rows[i]));
+            }
+            callback(labels);
+        }
+    });
+}
+/**
  * @param {number} record_id 
  * @param {number} label_id 
  * @param {(error?: string) => any} [callback] 
@@ -2106,6 +2125,15 @@ function query_createRecordLabel(record_id, labelIDs) {
         statements.push(`(${record_id}, ${labelIDs[i]}, ${date})`);
     }
     return `INSERT INTO record_labels(record_id, label_id, create_date) VALUES ${statements.join(', ')};`;
+}
+/**
+ * @param {number} recordID 
+ */
+function query_getRecordLabels(recordID) {
+    return `SELECT labels.*
+    FROM record_labels
+        INNER JOIN labels ON record_labels.label_id = labels.id
+    WHERE record_labels.record_id = ${recordID};`;
 }
 /**
  * @param {number} record_id 

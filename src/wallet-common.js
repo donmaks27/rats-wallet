@@ -18,7 +18,7 @@ var db = require('./database');
  *           'currencies'|'currency'|'deleteCurrency'|
  *           'labels'|'label'|'deleteLabel'|'makeLabelGlobal'|'chooseLabel'|
  *           'categories'|'category'|'deleteCategory'|'chooseCategory'|
- *           'records'|'filter'|'createRecord'
+ *           'records'|'record'|'filter'|'createRecord'
  *          } menu_type
  */
 

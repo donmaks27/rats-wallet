@@ -43,7 +43,9 @@ module.exports.register = (stopCallback) => {
     };
 }
 
+const ARG_RECORDS_PAGE = 'page';
 const ARG_RECORDS_FILTER_ID = 'fID';
+const ARG_PREV_PAGE = 'pP';
 const ARG_PREV_FILTER_ID = 'pF';
 const ARG_TEMP_RECORD_TYPE = 't';
 
@@ -120,9 +122,10 @@ function startAction(user, userData, args, callback) {
  */
 function stopAction(user, userData, args, callback) {
     const userID = user.id;
+    const prevPage = typeof args[ARG_PREV_PAGE] === 'number' ? args[ARG_PREV_PAGE] : 0;
     const prevFilterID = typeof args[ARG_PREV_FILTER_ID] === 'number' ? args[ARG_PREV_FILTER_ID] : db.invalid_id;
     log.info(userID, `updating menu...`);
-    walletMenu.changeMenuMessage(walletCommon.getUserMenuMessageID(userID), 'records', { [ARG_RECORDS_FILTER_ID]: prevFilterID }, user, userData, (message, error) => {
+    walletMenu.changeMenuMessage(walletCommon.getUserMenuMessageID(userID), 'records', { [ARG_RECORDS_PAGE]: prevPage, [ARG_RECORDS_FILTER_ID]: prevFilterID }, user, userData, (message, error) => {
         if (error) {
             log.error(userID, `failed to update menu message (${error})`);
         } else {

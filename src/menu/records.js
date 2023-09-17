@@ -19,12 +19,13 @@ const log = {
 module.exports.get = () => {
     return {
         records: createMenuData_records,
+        record: { shortName: 'r', handler: createMenuData_record },
         createRecord: { shortName: 'crR', handler: createMenuData_createRecord }
     };
 }
 
-const ARG_PAGE = 'page';
-const ARG_FILTER_ID = 'fID';
+const ARG_RECORDS_PAGE = 'page';
+const ARG_RECORDS_FILTER_ID = 'fID';
 const RECORDS_PAGE_SIZE = 10;
 const TEMP_RECORD_LABELS_MAX = 5;
 
@@ -47,15 +48,17 @@ const TEMP_RECORD_TYPE_EXPENSE = 'e';
 const TEMP_RECORD_TYPE_INCOME = 'i';
 const TEMP_RECORD_TYPE_TRANSFER = 't';
 
+const ARG_RECORD_ID = 'rID';
+
 /**
  * @type {menuBase.menu_create_func}
  */
 function createMenuData_records(user, userData, args, callback) {
     const userID = user.id;
     const pageSize = RECORDS_PAGE_SIZE;
-    const page = typeof args[ARG_PAGE] === 'number' ? args[ARG_PAGE] : 0;
-    const filterID = typeof args[ARG_FILTER_ID] === 'number' ? args[ARG_FILTER_ID] : db.invalid_id;
-    db.record_getAmount(userID, filterID, (recordsAmount, error) => {
+    const currentPage = typeof args[ARG_RECORDS_PAGE] === 'number' ? args[ARG_RECORDS_PAGE] : 0;
+    const currentFilterID = typeof args[ARG_RECORDS_FILTER_ID] === 'number' ? args[ARG_RECORDS_FILTER_ID] : db.invalid_id;
+    db.record_getAmount(userID, currentFilterID, (recordsAmount, error) => {
         if (error) {
             log.error(userID, `[records] failed to get amount of records (${error})`);
         }
@@ -71,9 +74,9 @@ function createMenuData_records(user, userData, args, callback) {
         }
 
         const pagesCount = Math.floor(recordsAmount / pageSize) + ( (recordsAmount % pageSize) != 0 ? 1 : 0 );
-        var recordParams = { recordsPerPage: pageSize, pageIndex: page };
-        if (filterID != db.invalid_id) {
-            recordParams.filterID = filterID;
+        var recordParams = { recordsPerPage: pageSize, pageIndex: currentPage };
+        if (currentFilterID != db.invalid_id) {
+            recordParams.filterID = currentFilterID;
         }
         db.record_getList(userID, recordParams, (records, error) => {
             if (error) {
@@ -104,6 +107,11 @@ function createMenuData_records(user, userData, args, callback) {
                     const ballance = ballances[accountIDs[i]];
                     accountBallances[accountIDs[i]] = ballance ? ballance : 0;
                 }
+
+                /** @type {bot.keyboard_button_inline_data[][]} */
+                var keyboard = [];
+                /** @type {bot.keyboard_button_inline_data[]} */
+                var keyboardRow = [];
 
                 var messageText = '*Records*\n\n';
                 for (var i = 0; i < records.length; i++) {
@@ -142,7 +150,7 @@ function createMenuData_records(user, userData, args, callback) {
                         for (var j = 0; j < record.labels.length; j++) {
                             labelsNames.push(`${walletCommon.getColorMarkerCircle(record.labels[j].color, ' ')}${bot.escapeMarkdown(record.labels[j].name)}`);
                         }
-                        messageText += `\`   \`_Labels_: ${labelsNames.join(', ')}\n`;
+                        messageText += `\`   \`_Labels: ${labelsNames.join(', ')}_\n`;
                     }
 
                     messageText += `\`   \`_Date_: __${bot.escapeMarkdown(dateFormat.to_readable_string(record.date, { date: true, time: true, timezone: userData.timezone }))}__\n`;
@@ -153,46 +161,59 @@ function createMenuData_records(user, userData, args, callback) {
                     if (record.dst_account) {
                         accountBallances[record.dst_account_id] -= record.dst_amount;
                     }
+
+                    keyboardRow.push({
+                        text: `${i + 1}`, 
+                        callback_data: menuBase.makeMenuButton('record', { [ARG_PREV_PAGE]: currentPage, [ARG_PREV_FILTER_ID]: currentFilterID })
+                    });
+                }
+                if (keyboardRow.length > 0) {
+                    keyboard.push(keyboardRow);
+                    keyboardRow = [];
                 }
                 messageText += `\nChoose what you want to do:`
-                const dummyButton = { text: ` `, callback_data: menuBase.makeDummyButton() };
-                /** @type {bot.keyboard_button_inline_data[]} */
-                var controlButtons = [
-                    page > 1 ? { 
-                        text: `<< 1`, 
-                        callback_data: menuBase.makeMenuButton('records', { page: 0, fID: filterID }) 
-                    } : dummyButton,
-                    page > 0 ? { 
-                        text: `< ${page}`, 
-                        callback_data: menuBase.makeMenuButton('records', { page: page - 1, fID: filterID }) 
-                    } : dummyButton,
-                    { 
-                        text: `${page + 1}`, 
-                        callback_data: menuBase.makeActionButton('changeRecordsPage', { page: page, maxPage: pagesCount, fID: filterID })
-                    },
-                    page < pagesCount - 1 ? { 
-                        text: `${page + 2} >`, 
-                        callback_data: menuBase.makeMenuButton('records', { page: page + 1, fID: filterID }) 
-                    } : dummyButton,
-                    page < pagesCount - 2 ? { 
-                        text: `${pagesCount} >>`, 
-                        callback_data: menuBase.makeMenuButton('records', { page: pagesCount - 1, fID: filterID }) 
-                    } : dummyButton
-                ];
+
+                if (pagesCount > 1) {
+                    const dummyButton = { text: ` `, callback_data: menuBase.makeDummyButton() };
+                    keyboard.push([
+                        currentPage > 1 ? { 
+                            text: `<< 1`, 
+                            callback_data: menuBase.makeMenuButton('records', { page: 0, fID: currentFilterID }) 
+                        } : dummyButton,
+                        currentPage > 0 ? { 
+                            text: `< ${currentPage}`, 
+                            callback_data: menuBase.makeMenuButton('records', { page: currentPage - 1, fID: currentFilterID }) 
+                        } : dummyButton,
+                        { 
+                            text: `${currentPage + 1}`, 
+                            callback_data: menuBase.makeActionButton('changeRecordsPage', { page: currentPage, maxPage: pagesCount, fID: currentFilterID })
+                        },
+                        currentPage < pagesCount - 1 ? { 
+                            text: `${currentPage + 2} >`, 
+                            callback_data: menuBase.makeMenuButton('records', { page: currentPage + 1, fID: currentFilterID }) 
+                        } : dummyButton,
+                        currentPage < pagesCount - 2 ? { 
+                            text: `${pagesCount} >>`, 
+                            callback_data: menuBase.makeMenuButton('records', { page: pagesCount - 1, fID: currentFilterID }) 
+                        } : dummyButton
+                    ]);
+                }
+
+                keyboard.push([{
+                    text: `Filter`,
+                    callback_data: menuBase.makeMenuButton('filter', { [ARG_PREV_PAGE]: currentPage, [ARG_PREV_FILTER_ID]: currentFilterID, reset: true })
+                }], [{
+                    text: 'Create new record',
+                    callback_data: menuBase.makeMenuButton('createRecord', { [ARG_PREV_PAGE]: currentPage, [ARG_PREV_FILTER_ID]: currentFilterID, [ARG_TEMP_RESET]: true, [ARG_TEMP_RECORD_TYPE]: TEMP_RECORD_TYPE_EXPENSE })
+                }], [{
+                    text: '<< Back to Wallet',
+                    callback_data: menuBase.makeMenuButton('wallet')
+                }]);
                 // TODO: Add buttons for every record
                 callback({
                     text: messageText, 
                     parseMode: 'MarkdownV2',
-                    keyboard: [ controlButtons, [{
-                        text: `Filter`,
-                        callback_data: menuBase.makeMenuButton('filter', { [ARG_PREV_PAGE]: page, [ARG_PREV_FILTER_ID]: filterID, reset: true })
-                    }], [{
-                        text: 'Create new record',
-                        callback_data: menuBase.makeMenuButton('createRecord', { [ARG_PREV_PAGE]: page, [ARG_PREV_FILTER_ID]: filterID, [ARG_TEMP_RESET]: true, [ARG_TEMP_RECORD_TYPE]: TEMP_RECORD_TYPE_EXPENSE })
-                    }], [{
-                        text: '<< Back to Wallet',
-                        callback_data: menuBase.makeMenuButton('wallet')
-                    }]]
+                    keyboard: keyboard
                 });
             });
         });
@@ -383,14 +404,14 @@ function createMenuData_createRecord_onTempRecordUpdated(user, userData, args, c
 function onTempRecordError(user, userData, args, callback) {
     const userID = user.id;
     const prevPage = typeof args[ARG_PREV_PAGE] === 'number' ? args[ARG_PREV_PAGE] : 0;
-    const prevFilterID = typeof args[ARG_PREV_FILTER_ID] === 'number' ? args[ARG_PREV_FILTER_ID] : null;
+    const prevFilterID = typeof args[ARG_PREV_FILTER_ID] === 'number' ? args[ARG_PREV_FILTER_ID] : db.invalid_id;
     callback({
         text: `_${bot.escapeMarkdown(`Hmm, something wrong...`)}_`, parseMode: 'MarkdownV2',
         keyboard: [
             [
                 { 
                     text: `<< Back to Records`, 
-                    callback_data: menuBase.makeMenuButton('records', { [ARG_PAGE]: prevPage, [ARG_FILTER_ID]: prevFilterID }) 
+                    callback_data: menuBase.makeMenuButton('records', { [ARG_RECORDS_PAGE]: prevPage, [ARG_RECORDS_FILTER_ID]: prevFilterID }) 
                 }
             ]
         ]
@@ -408,7 +429,7 @@ function onTempRecordError(user, userData, args, callback) {
 function createMenuData_createRecord_expense(user, userData, tempRecordData, tempRecordLabels, args, callback) {
     const userID = user.id;
     const prevPage = typeof args[ARG_PREV_PAGE] === 'number' ? args[ARG_PREV_PAGE] : 0;
-    const prevFilterID = typeof args[ARG_PREV_FILTER_ID] === 'number' ? args[ARG_PREV_FILTER_ID] : null;
+    const prevFilterID = typeof args[ARG_PREV_FILTER_ID] === 'number' ? args[ARG_PREV_FILTER_ID] : db.invalid_id;
 
     const currentMenu = walletMenu.getShortName('createRecord');
     const currencySymbol = tempRecordData.src_currency && tempRecordData.src_currency.symbol ? tempRecordData.src_currency.symbol : (tempRecordData.src_account ? tempRecordData.src_account.currency_code : '');
@@ -419,7 +440,7 @@ function createMenuData_createRecord_expense(user, userData, tempRecordData, tem
     var keyboard = [];
     keyboard.push([
         {
-            text: ` `,
+            text: `☑️ Expense`,
             callback_data: menuBase.makeDummyButton()
         },
         {
@@ -492,7 +513,7 @@ function createMenuData_createRecord_expense(user, userData, tempRecordData, tem
     if (tempRecordValid) {
         keyboard.push([{
             text: `Add record`,
-            callback_data: menuBase.makeActionButton('createRecord', { [ARG_TEMP_RECORD_TYPE]: TEMP_RECORD_TYPE_EXPENSE, [ARG_PREV_FILTER_ID]: prevFilterID })
+            callback_data: menuBase.makeActionButton('createRecord', { [ARG_PREV_PAGE]: prevPage, [ARG_TEMP_RECORD_TYPE]: TEMP_RECORD_TYPE_EXPENSE, [ARG_PREV_FILTER_ID]: prevFilterID })
         }]);
     } else {
         keyboard.push([{
@@ -502,7 +523,7 @@ function createMenuData_createRecord_expense(user, userData, tempRecordData, tem
     }
     keyboard.push([{
         text: `<< Back to Records`, 
-        callback_data: menuBase.makeMenuButton('records', { [ARG_PAGE]: prevPage, [ARG_FILTER_ID]: prevFilterID })
+        callback_data: menuBase.makeMenuButton('records', { [ARG_RECORDS_PAGE]: prevPage, [ARG_RECORDS_FILTER_ID]: prevFilterID })
     }]);
     callback({
         text: `*Creating new record*\n*Type:* Expense`, parseMode: 'MarkdownV2',
@@ -520,7 +541,7 @@ function createMenuData_createRecord_expense(user, userData, tempRecordData, tem
 function createMenuData_createRecord_income(user, userData, tempRecordData, tempRecordLabels, args, callback) {
     const userID = user.id;
     const prevPage = typeof args[ARG_PREV_PAGE] === 'number' ? args[ARG_PREV_PAGE] : 0;
-    const prevFilterID = typeof args[ARG_PREV_FILTER_ID] === 'number' ? args[ARG_PREV_FILTER_ID] : null;
+    const prevFilterID = typeof args[ARG_PREV_FILTER_ID] === 'number' ? args[ARG_PREV_FILTER_ID] : db.invalid_id;
 
     const currentMenu = walletMenu.getShortName('createRecord');
     const currencySymbol = tempRecordData.dst_currency && tempRecordData.dst_currency.symbol ? tempRecordData.dst_currency.symbol : (tempRecordData.dst_account ? tempRecordData.dst_account.currency_code : '');
@@ -535,7 +556,7 @@ function createMenuData_createRecord_income(user, userData, tempRecordData, temp
             callback_data: menuBase.makeMenuButton('createRecord', { [ARG_PREV_PAGE]: prevPage, [ARG_PREV_FILTER_ID]: prevFilterID, [ARG_TEMP_RECORD_TYPE]: TEMP_RECORD_TYPE_EXPENSE })
         },
         {
-            text: ` `,
+            text: `☑️ Income`,
             callback_data: menuBase.makeDummyButton()
         },
         {
@@ -604,7 +625,7 @@ function createMenuData_createRecord_income(user, userData, tempRecordData, temp
     if (tempRecordValid) {
         keyboard.push([{
             text: `Add record`,
-            callback_data: menuBase.makeActionButton('createRecord', { [ARG_TEMP_RECORD_TYPE]: TEMP_RECORD_TYPE_INCOME, [ARG_PREV_FILTER_ID]: prevFilterID })
+            callback_data: menuBase.makeActionButton('createRecord', { [ARG_PREV_PAGE]: prevPage, [ARG_TEMP_RECORD_TYPE]: TEMP_RECORD_TYPE_INCOME, [ARG_PREV_FILTER_ID]: prevFilterID })
         }]);
     } else {
         keyboard.push([{
@@ -614,7 +635,7 @@ function createMenuData_createRecord_income(user, userData, tempRecordData, temp
     }
     keyboard.push([{
         text: `<< Back to Records`, 
-        callback_data: menuBase.makeMenuButton('records', { [ARG_PAGE]: prevPage, [ARG_FILTER_ID]: prevFilterID })
+        callback_data: menuBase.makeMenuButton('records', { [ARG_RECORDS_PAGE]: prevPage, [ARG_RECORDS_FILTER_ID]: prevFilterID })
     }]);
     callback({
         text: `*Creating new record*\n*Type:* Income`, parseMode: 'MarkdownV2',
@@ -632,7 +653,7 @@ function createMenuData_createRecord_income(user, userData, tempRecordData, temp
 function createMenuData_createRecord_transfer(user, userData, tempRecordData, tempRecordLabels, args, callback) {
     const userID = user.id;
     const prevPage = typeof args[ARG_PREV_PAGE] === 'number' ? args[ARG_PREV_PAGE] : 0;
-    const prevFilterID = typeof args[ARG_PREV_FILTER_ID] === 'number' ? args[ARG_PREV_FILTER_ID] : null;
+    const prevFilterID = typeof args[ARG_PREV_FILTER_ID] === 'number' ? args[ARG_PREV_FILTER_ID] : db.invalid_id;
 
     const currentMenu = walletMenu.getShortName('createRecord');
     const srcCurrencySymbol = tempRecordData.src_currency && tempRecordData.src_currency.symbol ? tempRecordData.src_currency.symbol : (tempRecordData.src_account ? tempRecordData.src_account.currency_code : '');
@@ -653,7 +674,7 @@ function createMenuData_createRecord_transfer(user, userData, tempRecordData, te
             callback_data: menuBase.makeMenuButton('createRecord', { [ARG_PREV_PAGE]: prevPage, [ARG_PREV_FILTER_ID]: prevFilterID, [ARG_TEMP_RECORD_TYPE]: TEMP_RECORD_TYPE_INCOME })
         },
         {
-            text: ` `,
+            text: `☑️ Transfer`,
             callback_data: menuBase.makeDummyButton()
         }
     ]);
@@ -735,7 +756,7 @@ function createMenuData_createRecord_transfer(user, userData, tempRecordData, te
     if (tempRecordValid) {
         keyboard.push([{
             text: `Add record`,
-            callback_data: menuBase.makeActionButton('createRecord', { [ARG_TEMP_RECORD_TYPE]: TEMP_RECORD_TYPE_TRANSFER, [ARG_PREV_FILTER_ID]: prevFilterID })
+            callback_data: menuBase.makeActionButton('createRecord', { [ARG_PREV_PAGE]: prevPage, [ARG_TEMP_RECORD_TYPE]: TEMP_RECORD_TYPE_TRANSFER, [ARG_PREV_FILTER_ID]: prevFilterID })
         }]);
     } else {
         keyboard.push([{
@@ -745,10 +766,62 @@ function createMenuData_createRecord_transfer(user, userData, tempRecordData, te
     }
     keyboard.push([{
         text: `<< Back to Records`, 
-        callback_data: menuBase.makeMenuButton('records', { [ARG_PAGE]: prevPage, [ARG_FILTER_ID]: prevFilterID })
+        callback_data: menuBase.makeMenuButton('records', { [ARG_RECORDS_PAGE]: prevPage, [ARG_RECORDS_FILTER_ID]: prevFilterID })
     }]);
     callback({
         text: `*Creating new record*\n*Type:* Transfer`, parseMode: 'MarkdownV2',
         keyboard: keyboard
+    });
+}
+
+/**
+ * @type {menuBase.menu_create_func}
+ */
+function createMenuData_record(user, userData, args, callback) {
+    const userID = user.id;
+    const prevPage = typeof args[ARG_PREV_PAGE] === 'number' ? args[ARG_PREV_PAGE] : 0;
+    const prevFilterID = typeof args[ARG_PREV_FILTER_ID] === 'number' ? args[ARG_PREV_FILTER_ID] : db.invalid_id;
+    const recordID = typeof args[ARG_RECORD_ID] === 'number' ? args[ARG_RECORD_ID] : db.invalid_id;
+    db.record_get(recordID, (recordData, error) => {
+        if (error || !recordData) {
+            log.error(userID, `[record] failed to get data of record ${recordID} (${error})`);
+            onRecordMenuError(user, userData, args, callback);
+        } else {
+            db.record_getLabels(recordID, (labels, error) => {
+                if (error) {
+                    log.error(userID, `[record] failed to get labels for record ${recordID} (${error})`);
+                }
+                /** @type {bot.keyboard_button_inline_data[][]} */
+                var keyboard = [];
+                keyboard.push([{
+                    text: `<< Back to Records`, 
+                    callback_data: menuBase.makeMenuButton('records', { [ARG_RECORDS_PAGE]: prevPage, [ARG_RECORDS_FILTER_ID]: prevFilterID })
+                }]);
+                callback({
+                    text: `*Record*\nChoose what you want to do`,
+                    parseMode: 'MarkdownV2',
+                    keyboard: keyboard
+                });
+            });
+        }
+    });
+}
+/**
+ * @type {menuBase.menu_create_func}
+ */
+function onRecordMenuError(user, userData, args, callback) {
+    const userID = user.id;
+    const prevPage = typeof args[ARG_PREV_PAGE] === 'number' ? args[ARG_PREV_PAGE] : 0;
+    const prevFilterID = typeof args[ARG_PREV_FILTER_ID] === 'number' ? args[ARG_PREV_FILTER_ID] : db.invalid_id;
+    callback({
+        text: `_${bot.escapeMarkdown(`Hmm, something wrong...`)}_`, parseMode: 'MarkdownV2',
+        keyboard: [
+            [
+                { 
+                    text: `<< Back to Records`, 
+                    callback_data: menuBase.makeMenuButton('records', { [ARG_RECORDS_PAGE]: prevPage, [ARG_RECORDS_FILTER_ID]: prevFilterID }) 
+                }
+            ]
+        ]
     });
 }
