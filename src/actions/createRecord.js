@@ -81,8 +81,8 @@ function startAction(user, userData, args, callback) {
                     log.error(userID, `failed to get temp record labels data (${error})`);
                     callback(false);
                 } else {
-                    /** @type {{ src_account_id?: number, src_amount?: number, dst_account_id?: number, dst_amount?: number, category_id?: number, date: Date }} */
-                    var newRecordData = { category_id: tempRecordData.category_id, date: tempRecordData.date };
+                    /** @type {{ src_account_id?: number, src_amount?: number, dst_account_id?: number, dst_amount?: number, note?: string, category_id?: number, date: Date }} */
+                    var newRecordData = { note: tempRecordData.note, category_id: tempRecordData.category_id, date: tempRecordData.date };
                     if (tempRecordType != TEMP_RECORD_TYPE_INCOME) {
                         newRecordData.src_account_id = tempRecordData.src_account_id;
                         newRecordData.src_amount = tempRecordData.src_amount;

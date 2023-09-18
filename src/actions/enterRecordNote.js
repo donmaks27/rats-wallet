@@ -1,13 +1,14 @@
 // @ts-check
 
 var bot = require('../telegram-bot');
+var db  = require('../database');
 var walletCommon = require('../wallet-common');
 var menuBase = require('../menu/wallet-menu-base');
 var walletMenu = require('../wallet-menu');
 var actionBase = require('./wallet-action-base');
 
-const ACTION_NAME = 'enterRecordAmount';
-const ACTION_SHORT_NAME = 'eA';
+const ACTION_NAME = 'enterRecordNote';
+const ACTION_SHORT_NAME = 'eN';
 
 const log = {
     /**
@@ -44,8 +45,6 @@ module.exports.register = (stopCallback) => {
     };
 }
 
-const ARG_OUTPUT_ARGUMENT = 'out';
-
 /**
  * @type {actionBase.action_start_func}
  */
@@ -54,7 +53,7 @@ function startAction(user, userData, args, callback) {
     log.info(userID, `changing menu message...`);
     bot.editMessage({
         message: { chatID: userID, id: walletCommon.getUserMenuMessageID(userID) },
-        text: `*Record amount*\nPlease, enter the amount for the new record:`,
+        text: `*Record note*\nPlease, enter the note for the record:`,
         parseMode: 'MarkdownV2',
         inlineKeyboard: { inline_keyboard: [[{
             text: `Cancel`,
@@ -75,7 +74,6 @@ function startAction(user, userData, args, callback) {
  */
 function onUserMessage(message, userData, args, callback) {
     const userID = message.from.id;
-    const outArg = typeof args[ARG_OUTPUT_ARGUMENT] === 'string' ? args[ARG_OUTPUT_ARGUMENT] : 'amount';
 
     args.hadMessage = true;
     walletCommon.setUserActionArgs(userID, args);
@@ -83,28 +81,18 @@ function onUserMessage(message, userData, args, callback) {
     if (!message.text || (message.text.length == 0)) {
         log.warning(userID, `empty message text`);
         callback(true);
-        return;
-    }
-    if (message.text.match(/^(-|\+){0,1}([0-9]+|[0-9]*\.[0-9]+)$/g) == null) {
-        log.warning(userID, `invalid message text, it's not a number`);
-        bot.sendMessage({ chatID: userID, text: `It doesn't look like a number... Let's try again` });
-        callback(true);
     } else {
-        const amount = Math.floor(Number.parseFloat(message.text) * 100);
-        if (amount == 0) {
-            log.warning(userID, `invalid message text, number is 0`);
-            bot.sendMessage({ chatID: userID, text: `Amount can't be 0. Let's try again` });
-            callback(true);
-        } else if (amount < 0) {
-            log.warning(userID, `invalid message text, number is less then 0`);
-            bot.sendMessage({ chatID: userID, text: `Amount can't be less then 0. Let's try again` });
-            callback(true);
-        } else {
-            log.info(userID, `entered amount ${amount / 100}`);
-            args[outArg] = amount;
-            walletCommon.setUserActionArgs(userID, args);
-            ActionStopCallback(message.from, userData, callback);
-        }
+        log.info(userID, `entered note "${message.text}"`);
+        db.record_editTemp(userID, { note: message.text }, (error) => {
+            if (error) {
+                log.error(userID, `failed to change note of temp record (${error})`);
+                bot.sendMessage({ chatID: userID, text: `Failed to updated record's note` });
+                callback(false);
+            } else {
+                log.info(userID, `temp record's note updated`);
+                ActionStopCallback(message.from, userData, callback);
+            }
+        });
     }
 }
 /**
@@ -121,7 +109,6 @@ function stopAction(user, userData, args, callback) {
         menuMessageID = 0;
     }
     delete args.hadMessage;
-    delete args[ARG_OUTPUT_ARGUMENT];
 
     walletMenu.changeMenuMessage(menuMessageID, 'createRecord', { ...args }, user, userData, (message, error) => {
         if (error) {

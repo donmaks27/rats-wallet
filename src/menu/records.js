@@ -475,6 +475,9 @@ function createMenuData_createRecord_expense(user, userData, tempRecordData, tem
         text: `Amount*: ${tempRecordData.src_amount != 0 ? tempRecordData.src_amount / 100 : '--'} ${currencySymbol}`,
         callback_data: menuBase.makeActionButton('enterRecordAmount', { ...args, out: ARG_TEMP_SRC_AMOUNT })
     }], [{
+        text: `Edit note`,
+        callback_data: menuBase.makeActionButton('enterRecordNote', args)
+    }], [{
         text: `Category: ` + (tempRecordData.category ? (walletCommon.getColorMarker(tempRecordData.category.color, ' ') + tempRecordData.category.name) : '--'),
         callback_data: menuBase.makeMenuButton('chooseCategory', { 
             ...args, 
@@ -538,8 +541,12 @@ function createMenuData_createRecord_expense(user, userData, tempRecordData, tem
         text: `<< Back to Records`, 
         callback_data: menuBase.makeMenuButton('records', { [ARG_RECORDS_PAGE]: prevPage, [ARG_RECORDS_FILTER_ID]: prevFilterID })
     }]);
+    var menuText = `*Creating new record*\n*Type:* Expense`;
+    if (tempRecordData.note.length > 0) {
+        menuText += `\n_Note:_ "${bot.escapeMarkdown(tempRecordData.note)}"`;
+    }
     callback({
-        text: `*Creating new record*\n*Type:* Expense`, parseMode: 'MarkdownV2',
+        text: menuText, parseMode: 'MarkdownV2',
         keyboard: keyboard
     });
 }
@@ -650,8 +657,12 @@ function createMenuData_createRecord_income(user, userData, tempRecordData, temp
         text: `<< Back to Records`, 
         callback_data: menuBase.makeMenuButton('records', { [ARG_RECORDS_PAGE]: prevPage, [ARG_RECORDS_FILTER_ID]: prevFilterID })
     }]);
+    var menuText = `*Creating new record*\n*Type:* Income`;
+    if (tempRecordData.note.length > 0) {
+        menuText += `\n_Note:_ "${bot.escapeMarkdown(tempRecordData.note)}"`;
+    }
     callback({
-        text: `*Creating new record*\n*Type:* Income`, parseMode: 'MarkdownV2',
+        text: menuText, parseMode: 'MarkdownV2',
         keyboard: keyboard
     });
 }
@@ -781,8 +792,12 @@ function createMenuData_createRecord_transfer(user, userData, tempRecordData, te
         text: `<< Back to Records`, 
         callback_data: menuBase.makeMenuButton('records', { [ARG_RECORDS_PAGE]: prevPage, [ARG_RECORDS_FILTER_ID]: prevFilterID })
     }]);
+    var menuText = `*Creating new record*\n*Type:* Transfer`;
+    if (tempRecordData.note.length > 0) {
+        menuText += `\n_Note:_ "${bot.escapeMarkdown(tempRecordData.note)}"`;
+    }
     callback({
-        text: `*Creating new record*\n*Type:* Transfer`, parseMode: 'MarkdownV2',
+        text: menuText, parseMode: 'MarkdownV2',
         keyboard: keyboard
     });
 }
