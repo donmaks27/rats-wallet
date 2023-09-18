@@ -52,8 +52,8 @@ const WalletActionsHandlers = {
 
     ...require('./actions/changeRecordsPage').register(stopUserAction),
     ...require('./actions/applyTempFilter').register(stopUserAction),
-    ...require('./actions/enterRecordAmount').register(stopUserAction),
-    ...require('./actions/enterRecordNote').register(stopUserAction),
+    ...require('./actions/changeRecordAmount').register(stopUserAction),
+    ...require('./actions/changeRecordNote').register(stopUserAction),
     ...require('./actions/createRecord').register(stopUserAction),
 };
 const WalletActionsMap = makeWalletActionsMap(WalletActionsHandlers);

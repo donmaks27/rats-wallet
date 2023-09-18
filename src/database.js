@@ -1151,17 +1151,17 @@ function record_getList(userID, params, callback) {
     });
 }
 /**
- * @param {number} id 
+ * @param {number} recordID 
  * @param {{ src_account_id?: number, src_amount?: number, dst_account_id?: number, dst_amount?: number, note?: string, category_id?: number, date?: Date }} params 
  * @param {(data: record_data | null, error?: string) => any} [callback] 
  */
-function record_edit(id, params, callback) {
-    db.run(query_updateRecord(id, params), callback ? (error) => {
+function record_edit(recordID, params, callback) {
+    db.run(query_updateRecord(recordID, params), callback ? (error) => {
         if (error) {
-            callback(null, `failed to update record ${id}: ` + error);
+            callback(null, `failed to update record ${recordID}: ` + error);
         } else {
             //debug_log(`updated record ${id}: ` + JSON.stringify(params));
-            record_get(id, callback);
+            record_get(recordID, callback);
         }
     } : undefined);
 }

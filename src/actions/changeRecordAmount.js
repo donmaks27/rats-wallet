@@ -6,8 +6,8 @@ var menuBase = require('../menu/wallet-menu-base');
 var walletMenu = require('../wallet-menu');
 var actionBase = require('./wallet-action-base');
 
-const ACTION_NAME = 'enterRecordAmount';
-const ACTION_SHORT_NAME = 'eA';
+const ACTION_NAME = 'changeRecordAmount';
+const ACTION_SHORT_NAME = 'chRA';
 
 const log = {
     /**
@@ -44,6 +44,7 @@ module.exports.register = (stopCallback) => {
     };
 }
 
+const ARG_FROM_MENU = 'from';
 const ARG_OUTPUT_ARGUMENT = 'out';
 
 /**
@@ -54,7 +55,7 @@ function startAction(user, userData, args, callback) {
     log.info(userID, `changing menu message...`);
     bot.editMessage({
         message: { chatID: userID, id: walletCommon.getUserMenuMessageID(userID) },
-        text: `*Record amount*\nPlease, enter the amount for the new record:`,
+        text: `*Record amount*\nPlease, enter the amount for the record:`,
         parseMode: 'MarkdownV2',
         inlineKeyboard: { inline_keyboard: [[{
             text: `Cancel`,
@@ -112,6 +113,7 @@ function onUserMessage(message, userData, args, callback) {
  */
 function stopAction(user, userData, args, callback) {
     const userID = user.id;
+    const prevMenu = typeof args[ARG_FROM_MENU] === 'string' ? args[ARG_FROM_MENU] : 'main';
 
     var menuMessageID = walletCommon.getUserMenuMessageID(userID);
     if (args.hadMessage) {
@@ -122,8 +124,9 @@ function stopAction(user, userData, args, callback) {
     }
     delete args.hadMessage;
     delete args[ARG_OUTPUT_ARGUMENT];
+    delete args[ARG_FROM_MENU];
 
-    walletMenu.changeMenuMessage(menuMessageID, 'createRecord', { ...args }, user, userData, (message, error) => {
+    walletMenu.changeMenuMessage(menuMessageID, prevMenu, args, user, userData, (message, error) => {
         if (error) {
             log.error(userID, `failed to return to create record menu (${error})`);
         } else {

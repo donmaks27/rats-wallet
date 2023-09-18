@@ -318,11 +318,11 @@ function createMenuData_createRecord_onLabelsUpdated(user, userData, args, callb
     delete args[ARG_TEMP_DATE];
     delete args[ARG_TEMP_TIME];
 
-    /** @type {{ src_account_id?: number, src_amount?: number, dst_account_id?: number, dst_amount?: number, category_id?: number, date?: Date }} */
+    /** @type {{ src_account_id?: number, src_amount?: number, dst_account_id?: number, dst_amount?: number, note?: string, category_id?: number, date?: Date }} */
     var newTempRecordData = {};
     var shouldUpdateTempRecord = false;
     if (argReset) {
-        newTempRecordData = { src_account_id: db.invalid_id, src_amount: 0, dst_account_id: db.invalid_id, dst_amount: 0, category_id: db.invalid_id, date: new Date() };
+        newTempRecordData = { src_account_id: db.invalid_id, src_amount: 0, dst_account_id: db.invalid_id, dst_amount: 0, note: '', category_id: db.invalid_id, date: new Date() };
         shouldUpdateTempRecord = true;
     }
     if (typeof argSrcAccountID === 'number') {
@@ -473,11 +473,17 @@ function createMenuData_createRecord_expense(user, userData, tempRecordData, tem
         })
     }], [{
         text: `Amount*: ${tempRecordData.src_amount != 0 ? tempRecordData.src_amount / 100 : '--'} ${currencySymbol}`,
-        callback_data: menuBase.makeActionButton('enterRecordAmount', { ...args, out: ARG_TEMP_SRC_AMOUNT })
-    }], [{
-        text: `Edit note`,
-        callback_data: menuBase.makeActionButton('enterRecordNote', args)
-    }], [{
+        callback_data: menuBase.makeActionButton('changeRecordAmount', { ...args, from: walletMenu.getShortName('createRecord'), out: ARG_TEMP_SRC_AMOUNT })
+    }], [
+        {
+            text: `Clear note`,
+            callback_data: menuBase.makeActionButton('changeRecordNote', { ...args, cl: true })
+        },
+        {
+            text: `Edit note`,
+            callback_data: menuBase.makeActionButton('changeRecordNote', args)
+        }
+    ], [{
         text: `Category: ` + (tempRecordData.category ? (walletCommon.getColorMarker(tempRecordData.category.color, ' ') + tempRecordData.category.name) : '--'),
         callback_data: menuBase.makeMenuButton('chooseCategory', { 
             ...args, 
@@ -592,8 +598,17 @@ function createMenuData_createRecord_income(user, userData, tempRecordData, temp
         })
     }], [{
         text: `Amount*: ${tempRecordData.dst_amount != 0 ? tempRecordData.dst_amount / 100 : '--'} ${currencySymbol}`,
-        callback_data: menuBase.makeActionButton('enterRecordAmount', { ...args, out: ARG_TEMP_DST_AMOUNT })
-    }], [{
+        callback_data: menuBase.makeActionButton('changeRecordAmount', { ...args, from: walletMenu.getShortName('createRecord'), out: ARG_TEMP_DST_AMOUNT })
+    }], [
+        {
+            text: `Clear note`,
+            callback_data: menuBase.makeActionButton('changeRecordNote', { ...args, cl: true })
+        },
+        {
+            text: `Edit note`,
+            callback_data: menuBase.makeActionButton('changeRecordNote', args)
+        }
+    ], [{
         text: `Category: ` + (tempRecordData.category ? (walletCommon.getColorMarker(tempRecordData.category.color, ' ') + tempRecordData.category.name) : '--'),
         callback_data: menuBase.makeMenuButton('chooseCategory', { 
             ...args, 
@@ -722,11 +737,20 @@ function createMenuData_createRecord_transfer(user, userData, tempRecordData, te
     ], [
         {
             text: `Amount*: ${tempRecordData.src_amount != 0 ? tempRecordData.src_amount / 100 : '--'} ${srcCurrencySymbol}`,
-            callback_data: menuBase.makeActionButton('enterRecordAmount', { ...args, out: ARG_TEMP_SRC_AMOUNT })
+            callback_data: menuBase.makeActionButton('changeRecordAmount', { ...args, from: walletMenu.getShortName('createRecord'), out: ARG_TEMP_SRC_AMOUNT })
         },
         {
             text: `Amount*: ${tempRecordData.dst_amount != 0 ? tempRecordData.dst_amount / 100 : '--'} ${dstCurrencySymbol}`,
-            callback_data: menuBase.makeActionButton('enterRecordAmount', { ...args, out: ARG_TEMP_DST_AMOUNT })
+            callback_data: menuBase.makeActionButton('changeRecordAmount', { ...args, from: walletMenu.getShortName('createRecord'), out: ARG_TEMP_DST_AMOUNT })
+        }
+    ], [
+        {
+            text: `Clear note`,
+            callback_data: menuBase.makeActionButton('changeRecordNote', { ...args, cl: true })
+        },
+        {
+            text: `Edit note`,
+            callback_data: menuBase.makeActionButton('changeRecordNote', args)
         }
     ], [{
         text: `Category: ` + (tempRecordData.category ? (walletCommon.getColorMarker(tempRecordData.category.color, ' ') + tempRecordData.category.name) : '--'),
