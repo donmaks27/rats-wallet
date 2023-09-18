@@ -2077,7 +2077,7 @@ function query_updateTempRecord(userID, params) {
         statements.push(`dst_amount = ${params.dst_amount ? params.dst_amount : 0}`);
     }
     if (properties.includes('note')) {
-        statements.push(`note = '${params.note ? query_escape_string(params.note) : 0}'`);
+        statements.push(`note = '${params.note ? query_escape_string(params.note) : ''}'`);
     }
     if (properties.includes('category_id')) {
         if (params.category_id) {
