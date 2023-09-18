@@ -119,9 +119,9 @@ function createMenuData_records(user, userData, args, callback) {
                     const record = records[i];
 
                     if (i < 9) {
-                        messageText += `\`${bot.escapeMarkdown(`${i+1}.`)} \``;
+                        messageText += `${bot.escapeMarkdown(`${i+1}.`)}   `;
                     } else {
-                        messageText += `\`${bot.escapeMarkdown(`${i+1}.`)}\``;
+                        messageText += `${bot.escapeMarkdown(`${i+1}.`)} `;
                     }
 
                     if (record.src_account && record.dst_account) {
@@ -130,20 +130,23 @@ function createMenuData_records(user, userData, args, callback) {
                         
                         const src_symbol = record.src_currency?.symbol ? record.src_currency.symbol : record.src_account.currency_code;
                         const dst_symbol = record.dst_currency?.symbol ? record.dst_currency.symbol : record.dst_account.currency_code;
-                        messageText += `\`   \`*${bot.escapeMarkdown(`${record.src_amount / 100} ${src_symbol}`)}* ${bot.escapeMarkdown(`(${accountBallances[record.src_account_id] / 100} ${src_symbol})`)} ➤ ` +
-                                              `*${bot.escapeMarkdown(`${record.dst_amount / 100} ${dst_symbol}`)}* ${bot.escapeMarkdown(`(${accountBallances[record.dst_account_id] / 100} ${dst_symbol})`)}\n`;
+                        messageText += `      *${bot.escapeMarkdown(`${record.src_amount / 100} ${src_symbol}`)}* ${bot.escapeMarkdown(`(${accountBallances[record.src_account_id] / 100} ${src_symbol})`)} ➤ ` +
+                                             `*${bot.escapeMarkdown(`${record.dst_amount / 100} ${dst_symbol}`)}* ${bot.escapeMarkdown(`(${accountBallances[record.dst_account_id] / 100} ${dst_symbol})`)}\n`;
                     } else if (record.src_account) {
                         messageText += `${walletCommon.getColorMarker(record.src_account.color, ' ')}${bot.escapeMarkdown(record.src_account.name)}\n`;
                         const symbol = record.src_currency?.symbol ? record.src_currency.symbol : record.src_account.currency_code;
-                        messageText += `\`   \`*${bot.escapeMarkdown(`-${record.src_amount / 100} ${symbol}`)}* ${bot.escapeMarkdown(`(${accountBallances[record.src_account_id] / 100} ${symbol})`)}\n`;
+                        messageText += `      *${bot.escapeMarkdown(`-${record.src_amount / 100} ${symbol}`)}* ${bot.escapeMarkdown(`(${accountBallances[record.src_account_id] / 100} ${symbol})`)}\n`;
                     } else if (record.dst_account) {
                         messageText += `${walletCommon.getColorMarker(record.dst_account.color, ' ')}${bot.escapeMarkdown(record.dst_account.name)}\n`;
                         const symbol = record.dst_currency?.symbol ? record.dst_currency.symbol : record.dst_account.currency_code;
-                        messageText += `\`   \`*${bot.escapeMarkdown(`+${record.dst_amount / 100} ${symbol}`)}* ${bot.escapeMarkdown(`(${accountBallances[record.dst_account_id] / 100} ${symbol})`)}\n`;
+                        messageText += `      *${bot.escapeMarkdown(`+${record.dst_amount / 100} ${symbol}`)}* ${bot.escapeMarkdown(`(${accountBallances[record.dst_account_id] / 100} ${symbol})`)}\n`;
                     }
 
+                    if (record.note.length > 0) {
+                        messageText += `      _Note_: "${bot.escapeMarkdown(record.note)}"\n`;
+                    }
                     if (record.category) {
-                        messageText += `\`   \`_Category_: ${walletCommon.getColorMarkerCircle(record.category.color, ' ')}${bot.escapeMarkdown(record.category.name)}\n`;
+                        messageText += `      _Category_: ${walletCommon.getColorMarkerCircle(record.category.color, ' ')}${bot.escapeMarkdown(record.category.name)}\n`;
                     }
 
                     if (record.labels.length > 0) {
@@ -151,10 +154,10 @@ function createMenuData_records(user, userData, args, callback) {
                         for (var j = 0; j < record.labels.length; j++) {
                             labelsNames.push(`${walletCommon.getColorMarkerCircle(record.labels[j].color, ' ')}${bot.escapeMarkdown(record.labels[j].name)}`);
                         }
-                        messageText += `\`   \`_Labels: ${labelsNames.join(', ')}_\n`;
+                        messageText += `      _Labels: ${labelsNames.join(', ')}_\n`;
                     }
 
-                    messageText += `\`   \`_Date_: __${bot.escapeMarkdown(dateFormat.to_readable_string(record.date, { date: true, time: true, timezone: userData.timezone }))}__\n`;
+                    messageText += `      _Date_: __${bot.escapeMarkdown(dateFormat.to_readable_string(record.date, { date: true, time: true, timezone: userData.timezone }))}__\n`;
 
                     if (record.src_account) {
                         accountBallances[record.src_account_id] += record.src_amount;
