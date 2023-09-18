@@ -17,7 +17,7 @@ CREATE TABLE accounts(
     FOREIGN KEY (currency_code) REFERENCES currencies(code) ON UPDATE CASCADE ON DELETE CASCADE
 );
 CREATE TABLE records(
-    id INTEGER PRIMARY KEY, src_account_id INTEGER, src_amount INTEGER NOT NULL, dst_account_id INTEGER, dst_amount INTEGER NOT NULL, category_id INTEGER, date INTEGER NOT NULL, create_date INTEGER NOT NULL,
+    id INTEGER PRIMARY KEY, src_account_id INTEGER, src_amount INTEGER NOT NULL, dst_account_id INTEGER, dst_amount INTEGER NOT NULL, note TEXT NOT NULL, category_id INTEGER, date INTEGER NOT NULL, create_date INTEGER NOT NULL,
     FOREIGN KEY (src_account_id) REFERENCES accounts(id) ON UPDATE CASCADE ON DELETE SET NULL,
     FOREIGN KEY (dst_account_id) REFERENCES accounts(id) ON UPDATE CASCADE ON DELETE SET NULL,
     FOREIGN KEY (category_id) REFERENCES categories(id) ON UPDATE CASCADE ON DELETE SET NULL
@@ -40,7 +40,7 @@ CREATE TABLE filters(
 );
 
 CREATE TABLE temp_records(
-    user_id INTEGER NOT NULL, src_account_id INTEGER, src_amount INTEGER NOT NULL, dst_account_id INTEGER, dst_amount INTEGER NOT NULL, category_id INTEGER, date INTEGER NOT NULL,
+    user_id INTEGER NOT NULL, src_account_id INTEGER, src_amount INTEGER NOT NULL, dst_account_id INTEGER, dst_amount INTEGER NOT NULL, note TEXT NOT NULL, category_id INTEGER, date INTEGER NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE,
     FOREIGN KEY (src_account_id) REFERENCES accounts(id) ON UPDATE CASCADE ON DELETE SET NULL,
     FOREIGN KEY (dst_account_id) REFERENCES accounts(id) ON UPDATE CASCADE ON DELETE SET NULL,

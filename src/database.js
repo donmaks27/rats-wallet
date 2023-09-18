@@ -13,12 +13,12 @@ var log = require('./log');
  * @typedef {{ id: number, user_id: number, name: string, color: color_type, is_active: boolean, create_date: Date }} label_data
  * @typedef {{ id: number, user_id: number, parent_id: number, name: string, color: color_type, is_active: boolean, create_date: Date }} category_data
  * @typedef {{ id: number, user_id: number, currency_code: string, name: string, start_amount: number, color: color_type, is_active: boolean, create_date: Date }} account_data
- * @typedef {{ id: number, src_account_id: number, src_amount: number, dst_account_id: number, dst_amount: number, category_id: number, date: Date, create_date: Date }} record_data
+ * @typedef {{ id: number, src_account_id: number, src_amount: number, dst_account_id: number, dst_amount: number, note: string, category_id: number, date: Date, create_date: Date }} record_data
  * @typedef {{ record_id: number, label_id: number, create_date: Date }} record_label_data
  * @typedef {{ id: number, inviting_user_id: number, invite_date: Date, expire_date: Date }} user_invite_data
  * @typedef {{ id: number, user_id: number, filter_type: number, date_from: Date | null, date_until: Date | null }} filter_data
  * @typedef {{ date_from?: Date | null, date_until?: Date | null }} filter_params
- * @typedef {{ user_id: number, src_account_id: number, src_amount: number, dst_account_id: number, dst_amount: number, category_id: number, date: Date }} temp_record_data
+ * @typedef {{ user_id: number, src_account_id: number, src_amount: number, dst_account_id: number, dst_amount: number, note: string, category_id: number, date: Date }} temp_record_data
  */
 
 const db_filepath = "data/database.db";
@@ -367,6 +367,7 @@ function parseRecordRow(row, prefix) {
         src_amount: row[prefix + 'src_amount'],
         dst_account_id: row[prefix + 'dst_account_id'],
         dst_amount: row[prefix + 'dst_amount'],
+        note: row[prefix + 'note'],
         category_id: row[prefix + 'category_id'],
         date: new Date(row[prefix + 'date']),
         create_date: new Date(row[prefix + 'create_date'])
@@ -397,6 +398,7 @@ function parseTempRecordRow(row, prefix) {
         src_amount: row[prefix + 'src_amount'],
         dst_account_id: row[prefix + 'dst_account_id'],
         dst_amount: row[prefix + 'dst_amount'],
+        note: row[prefix + 'note'],
         category_id: row[prefix + 'category_id'],
         date: new Date(row[prefix + 'date'])
     };
@@ -1066,7 +1068,7 @@ function account_getBallance(accountIDs, params, callback) {
 }
 
 /**
- * @param {{ src_account_id?: number, src_amount?: number, dst_account_id?: number, dst_amount?: number, category_id?: number, date: Date }} params 
+ * @param {{ src_account_id?: number, src_amount?: number, dst_account_id?: number, dst_amount?: number, note?: string, category_id?: number, date: Date }} params 
  * @param {(data: record_data | null, error?: string) => any} [callback] 
  */
 function record_create(params, callback) {
@@ -1150,7 +1152,7 @@ function record_getList(userID, params, callback) {
 }
 /**
  * @param {number} id 
- * @param {{ src_account_id?: number, src_amount?: number, dst_account_id?: number, dst_amount?: number, category_id?: number, date?: Date }} params 
+ * @param {{ src_account_id?: number, src_amount?: number, dst_account_id?: number, dst_amount?: number, note?: string, category_id?: number, date?: Date }} params 
  * @param {(data: record_data | null, error?: string) => any} [callback] 
  */
 function record_edit(id, params, callback) {
@@ -1173,6 +1175,69 @@ function record_delete(id, callback) {
             callback(`failed to delete record ${id}: ` + error);
         } else {
             //debug_log(`deleted record ${id}`);
+            callback();
+        }
+    } : undefined);
+}
+
+/**
+ * @param {number} recordID 
+ * @param {number[]} labelIDs 
+ * @param {(error?: string) => any} [callback] 
+ */
+function record_addLabel(recordID, labelIDs, callback) {
+    db.run(query_createRecordLabel(recordID, labelIDs), callback ? (error) => {
+        if (error) {
+            callback(`failed to add label ${labelIDs} to record ${recordID}: ` + error);
+        } else {
+            //debug_log(`added label ${label_id} to record ${record_id}`);
+            callback();
+        }
+    } : undefined);
+}
+/**
+ * @param {number} recordID 
+ * @param {(labels: label_data[], error?: string) => any} callback
+ */
+function record_getLabels(recordID, callback) {
+    db.all(query_getRecordLabels(recordID), (error, rows) => {
+        if (error) {
+            callback([], `failed to get labels for record ${recordID}: ` + error);
+        } else {
+            /** @type {label_data[]} */
+            var labels = [];
+            for (var i = 0; i < rows.length; i++) {
+                labels.push(parseLabelRow(rows[i]));
+            }
+            callback(labels);
+        }
+    });
+}
+/**
+ * @param {number} record_id 
+ * @param {number} label_id 
+ * @param {(error?: string) => any} [callback] 
+ */
+function record_removeLabel(record_id, label_id, callback) {
+    db.run(query_deleteRecordLabel(record_id, label_id), callback ? (error) => {
+        if (error) {
+            callback(`failed to delete label ${label_id} from record ${record_id}: ` + error);
+        } else {
+            //debug_log(`deleted label ${label_id} from record ${record_id}`);
+            callback();
+        }
+    } : undefined);
+}
+/**
+ * @param {number} record_id 
+ * @param {(error?: string) => any} [callback] 
+ */
+function record_clearLabels(record_id, callback) {
+    db.run(query_deleteRecordLabels(record_id), callback ? (error) => {
+        if (error) {
+            callback(`failed to delete labels from record ${record_id}: ` + error);
+        } else {
+            //debug_log(`deleted labels from record ${record_id}`);
             callback();
         }
     } : undefined);
@@ -1228,7 +1293,7 @@ function record_getTemp(userID, callback) {
 }
 /**
  * @param {number} userID 
- * @param {{ src_account_id?: number, src_amount?: number, dst_account_id?: number, dst_amount?: number, category_id?: number, date?: Date }} params 
+ * @param {{ src_account_id?: number, src_amount?: number, dst_account_id?: number, dst_amount?: number, note?: string, category_id?: number, date?: Date }} params 
  * @param {(error?: string) => any} callback 
  */
 function record_editTemp(userID, params, callback) {
@@ -1298,69 +1363,6 @@ function record_clearTempLabels(userID, callback) {
             callback();
         }
     });
-}
-
-/**
- * @param {number} recordID 
- * @param {number[]} labelIDs 
- * @param {(error?: string) => any} [callback] 
- */
-function record_addLabel(recordID, labelIDs, callback) {
-    db.run(query_createRecordLabel(recordID, labelIDs), callback ? (error) => {
-        if (error) {
-            callback(`failed to add label ${labelIDs} to record ${recordID}: ` + error);
-        } else {
-            //debug_log(`added label ${label_id} to record ${record_id}`);
-            callback();
-        }
-    } : undefined);
-}
-/**
- * @param {number} recordID 
- * @param {(labels: label_data[], error?: string) => any} callback
- */
-function record_getLabels(recordID, callback) {
-    db.all(query_getRecordLabels(recordID), (error, rows) => {
-        if (error) {
-            callback([], `failed to get labels for record ${recordID}: ` + error);
-        } else {
-            /** @type {label_data[]} */
-            var labels = [];
-            for (var i = 0; i < rows.length; i++) {
-                labels.push(parseLabelRow(rows[i]));
-            }
-            callback(labels);
-        }
-    });
-}
-/**
- * @param {number} record_id 
- * @param {number} label_id 
- * @param {(error?: string) => any} [callback] 
- */
-function record_removeLabel(record_id, label_id, callback) {
-    db.run(query_deleteRecordLabel(record_id, label_id), callback ? (error) => {
-        if (error) {
-            callback(`failed to delete label ${label_id} from record ${record_id}: ` + error);
-        } else {
-            //debug_log(`deleted label ${label_id} from record ${record_id}`);
-            callback();
-        }
-    } : undefined);
-}
-/**
- * @param {number} record_id 
- * @param {(error?: string) => any} [callback] 
- */
-function record_clearLabels(record_id, callback) {
-    db.run(query_deleteRecordLabels(record_id), callback ? (error) => {
-        if (error) {
-            callback(`failed to delete labels from record ${record_id}: ` + error);
-        } else {
-            //debug_log(`deleted labels from record ${record_id}`);
-            callback();
-        }
-    } : undefined);
 }
 
 /**
@@ -1519,7 +1521,7 @@ function filter_get(filterID, callback) {
 /**
  * @param {string} [str] 
  */
-function query_handle_string(str) {
+function query_escape_string(str) {
     return str ? str.replace(/'/g, "''") : 'NULL';
 }
 function query_initialize() {
@@ -1572,7 +1574,7 @@ function query_getAllFilters() {
  * @param {{ id: number, name: string }} params
  */
 function query_createUser(params) {
-    return `INSERT INTO users(id, name, create_date) VALUES (${params.id}, '${query_handle_string(params.name)}', ${Date.now()});`;
+    return `INSERT INTO users(id, name, create_date) VALUES (${params.id}, '${query_escape_string(params.name)}', ${Date.now()});`;
 }
 /**
  * @param {number} id
@@ -1589,7 +1591,7 @@ function query_updateUser(userID, params) {
     var statements = [];
     const properties = Object.getOwnPropertyNames(params);
     if (properties.includes('name')) {
-        statements.push(`name = '${query_handle_string(params.name)}'`);
+        statements.push(`name = '${query_escape_string(params.name)}'`);
     }
     if (properties.includes('timezone')) {
         var checkedTimezone = params.timezone;
@@ -1602,7 +1604,7 @@ function query_updateUser(userID, params) {
             checkedTimezone = null;
         }
         if (checkedTimezone) {
-            statements.push(`timezone = '${query_handle_string(checkedTimezone)}'`);
+            statements.push(`timezone = '${query_escape_string(checkedTimezone)}'`);
         } else {
             statements.push(`timezone = NULL`);
         }
@@ -1614,15 +1616,15 @@ function query_updateUser(userID, params) {
  * @param {{ code: string, name?: string, symbol?: string }} params 
  */
 function query_createCurrency(params) {
-    return `INSERT INTO currencies(code, name, symbol, is_active, create_date) VALUES ('${query_handle_string(params.code)}', ${
-        params.name ? `'${query_handle_string(params.name)}'` : `NULL`
-    }, ${params.symbol ? `'${query_handle_string(params.symbol)}'` : `NULL`}, 1, ${Date.now()});`;
+    return `INSERT INTO currencies(code, name, symbol, is_active, create_date) VALUES ('${query_escape_string(params.code)}', ${
+        params.name ? `'${query_escape_string(params.name)}'` : `NULL`
+    }, ${params.symbol ? `'${query_escape_string(params.symbol)}'` : `NULL`}, 1, ${Date.now()});`;
 }
 /**
  * @param {string} code 
  */
 function query_getCurrency(code) {
-    return `SELECT * FROM currencies WHERE code = '${query_handle_string(code)}' LIMIT 1;`;
+    return `SELECT * FROM currencies WHERE code = '${query_escape_string(code)}' LIMIT 1;`;
 }
 /**
  * @param {number} userID 
@@ -1647,14 +1649,14 @@ function query_updateCurrency(code, params) {
     const properties = Object.getOwnPropertyNames(params);
     if (properties.includes('name')) {
         if (params.name) {
-            statements.push(`name = '${query_handle_string(params.name)}'`);
+            statements.push(`name = '${query_escape_string(params.name)}'`);
         } else {
             statements.push(`name = NULL`);
         }
     }
     if (properties.includes('symbol')) {
         if (params.symbol) {
-            statements.push(`symbol = '${query_handle_string(params.symbol)}'`);
+            statements.push(`symbol = '${query_escape_string(params.symbol)}'`);
         } else {
             statements.push(`symbol = NULL`);
         }
@@ -1662,13 +1664,13 @@ function query_updateCurrency(code, params) {
     if (properties.includes('is_active')) {
         statements.push(`is_active = ${params.is_active ? 1 : 0}`);
     }
-    return `UPDATE currencies SET ${statements.join(', ')} WHERE code = '${query_handle_string(code)}';`;
+    return `UPDATE currencies SET ${statements.join(', ')} WHERE code = '${query_escape_string(code)}';`;
 }
 /**
  * @param {string} code 
  */
 function query_deleteCurrency(code) {
-    return `DELETE FROM currencies WHERE code = '${query_handle_string(code)}';`;
+    return `DELETE FROM currencies WHERE code = '${query_escape_string(code)}';`;
 }
 
 /**
@@ -1676,7 +1678,7 @@ function query_deleteCurrency(code) {
  */
 function query_createLabel(params) {
     return `INSERT INTO labels(user_id, name, color, is_active, create_date) VALUES (
-        ${params.user_id ? params.user_id : 'NULL'}, '${query_handle_string(params.name)}', ${params.color ? `'${params.color}'` : 'NULL'}, 1, ${Date.now()}
+        ${params.user_id ? params.user_id : 'NULL'}, '${query_escape_string(params.name)}', ${params.color ? `'${params.color}'` : 'NULL'}, 1, ${Date.now()}
     );`;
 }
 /**
@@ -1704,7 +1706,7 @@ function query_updateLabel(id, params) {
     var statements = [];
     const properties = Object.getOwnPropertyNames(params);
     if (properties.includes('name')) {
-        statements.push(`name = '${query_handle_string(params.name)}'`);
+        statements.push(`name = '${query_escape_string(params.name)}'`);
     }
     if (properties.includes('color')) {
         if (params.color) {
@@ -1733,7 +1735,7 @@ function query_deleteLabel(id) {
  */
 function query_createCategory(params) {
     return `INSERT INTO categories(user_id, parent_id, name, color, is_active, create_date) VALUES (
-        ${params.user_id ? params.user_id : 'NULL'}, ${params.parent_id ? params.parent_id : 'NULL'}, '${query_handle_string(params.name)}', ${params.color ? `'${params.color}'` : 'NULL'}, 1, ${Date.now()}
+        ${params.user_id ? params.user_id : 'NULL'}, ${params.parent_id ? params.parent_id : 'NULL'}, '${query_escape_string(params.name)}', ${params.color ? `'${params.color}'` : 'NULL'}, 1, ${Date.now()}
     );`;
 }
 /**
@@ -1767,7 +1769,7 @@ function query_updateCategory(id, params) {
         statements.push(`parent_id = ${params.parent_id ? params.parent_id : 'NULL'}`);
     }
     if (properties.includes('name')) {
-        statements.push(`name = '${query_handle_string(params.name)}'`);
+        statements.push(`name = '${query_escape_string(params.name)}'`);
     }
     if (properties.includes('color')) {
         if (params.color) {
@@ -1796,7 +1798,7 @@ function query_deleteCategory(id) {
  */
 function query_createAccount(params) {
     return `INSERT INTO accounts(user_id, currency_code, name, start_amount, color, is_active, create_date) VALUES (
-        ${params.user_id}, '${query_handle_string(params.currency_code)}', '${query_handle_string(params.name)}', ${params.start_amount ? params.start_amount : 0}, ${params.color ? `'${params.color}'` : 'NULL'}, 1, ${Date.now()}
+        ${params.user_id}, '${query_escape_string(params.currency_code)}', '${query_escape_string(params.name)}', ${params.start_amount ? params.start_amount : 0}, ${params.color ? `'${params.color}'` : 'NULL'}, 1, ${Date.now()}
     );`;
 }
 /**
@@ -1813,7 +1815,7 @@ function query_updateAccount(id, params) {
     var statements = [];
     const properties = Object.getOwnPropertyNames(params);
     if (properties.includes('name')) {
-        statements.push(`name = '${query_handle_string(params.name)}'`);
+        statements.push(`name = '${query_escape_string(params.name)}'`);
     }
     if (properties.includes('start_amount')) {
         statements.push(`start_amount = ${params.start_amount ? params.start_amount : 0}`);
@@ -1874,12 +1876,13 @@ function query_getAccountBallance(accountIDs, params) {
 }
 
 /**
- * @param {{ src_account_id?: number, src_amount?: number, dst_account_id?: number, dst_amount?: number, category_id?: number, date: Date }} params
+ * @param {{ src_account_id?: number, src_amount?: number, dst_account_id?: number, dst_amount?: number, note?: string, category_id?: number, date: Date }} params
  */
 function query_createRecord(params) {
-    return `INSERT INTO records(src_account_id, src_amount, dst_account_id, dst_amount, category_id, date, create_date) VALUES (
+    return `INSERT INTO records(src_account_id, src_amount, dst_account_id, dst_amount, note, category_id, date, create_date) VALUES (
         ${params.src_account_id ? params.src_account_id : 'NULL'}, ${params.src_amount ? params.src_amount : 0},
         ${params.dst_account_id ? params.dst_account_id : 'NULL'}, ${params.dst_amount ? params.dst_amount : 0},
+        '${params.note ? query_escape_string(params.note) : ''}',
         ${params.category_id ? params.category_id : 'NULL'}, ${params.date.valueOf()}, ${Date.now()}
     );`;
 }
@@ -1953,7 +1956,7 @@ function query_getRecordsList(userID, params) {
 }
 /**
  * @param {number} id 
- * @param {{ src_account_id?: number, src_amount?: number, dst_account_id?: number, dst_amount?: number, category_id?: number, date?: Date }} params 
+ * @param {{ src_account_id?: number, src_amount?: number, dst_account_id?: number, dst_amount?: number, note?: string, category_id?: number, date?: Date }} params 
  */
 function query_updateRecord(id, params) {
     var statements = [];
@@ -1978,6 +1981,9 @@ function query_updateRecord(id, params) {
     if (properties.includes('dst_amount')) {
         statements.push(`dst_amount = ${params.dst_amount ? params.dst_amount : 0}`);
     }
+    if (properties.includes('note')) {
+        statements.push(`note = '${params.note ? query_escape_string(params.note) : ''}'`);
+    }
     if (properties.includes('category_id')) {
         if (params.category_id) {
             statements.push(`category_id = ${params.category_id}`);
@@ -2001,8 +2007,8 @@ function query_deleteRecord(id) {
  * @param {number} userID 
  */
 function query_createTempRecord(userID) {
-    return `INSERT INTO temp_records(user_id, src_account_id, src_amount, dst_account_id, dst_amount, category_id, date)
-    VALUES (${userID}, NULL, 0, NULL, 0, NULL, ${(new Date()).valueOf()});`;
+    return `INSERT INTO temp_records(user_id, src_account_id, src_amount, dst_account_id, dst_amount, note, category_id, date)
+    VALUES (${userID}, NULL, 0, NULL, 0, '', NULL, ${(new Date()).valueOf()});`;
 }
 /**
  * @param {number} userID 
@@ -2045,7 +2051,7 @@ function query_getTempRecord(userID) {
 }
 /**
  * @param {number} userID 
- * @param {{ src_account_id?: number, src_amount?: number, dst_account_id?: number, dst_amount?: number, category_id?: number, date?: Date }} params 
+ * @param {{ src_account_id?: number, src_amount?: number, dst_account_id?: number, dst_amount?: number, note?: string, category_id?: number, date?: Date }} params 
  */
 function query_updateTempRecord(userID, params) {
     var statements = [];
@@ -2069,6 +2075,9 @@ function query_updateTempRecord(userID, params) {
     }
     if (properties.includes('dst_amount')) {
         statements.push(`dst_amount = ${params.dst_amount ? params.dst_amount : 0}`);
+    }
+    if (properties.includes('note')) {
+        statements.push(`note = '${params.note ? query_escape_string(params.note) : 0}'`);
     }
     if (properties.includes('category_id')) {
         if (params.category_id) {
