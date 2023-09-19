@@ -113,7 +113,7 @@ function onUserMessage(message, userData, args, callback) {
  */
 function stopAction(user, userData, args, callback) {
     const userID = user.id;
-    const prevMenu = typeof args[ARG_FROM_MENU] === 'string' ? args[ARG_FROM_MENU] : 'main';
+    const prevMenu = typeof args[ARG_FROM_MENU] === 'string' ? walletMenu.getNameByShortName(args[ARG_FROM_MENU]) : 'main';
 
     var menuMessageID = walletCommon.getUserMenuMessageID(userID);
     if (args.hadMessage) {
