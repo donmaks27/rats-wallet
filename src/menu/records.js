@@ -842,7 +842,6 @@ function createMenuData_createRecord_transfer(user, userData, tempRecordData, te
 function createMenuData_record(user, userData, args, callback) {
     const userID = user.id;
     const recordID = typeof args[ARG_RECORD_ID] === 'number' ? args[ARG_RECORD_ID] : db.invalid_id;
-    delete args[ARG_RECORD_ID];
     db.record_get(recordID, (recordData, error) => {
         if (error || !recordData) {
             log.error(userID, `[record] failed to get data of record ${recordID} (${error})`);
