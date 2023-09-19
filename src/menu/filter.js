@@ -136,7 +136,7 @@ function onTempFilterUpdated(user, userData, args, tempFilterData, callback) {
                     text: `From: ${tempFilterData.date_from ? dateFormat.to_readable_string(tempFilterData.date_from, { date: true, timezone: userData.timezone }) : '--'}`,
                     callback_data: menuBase.makeMenuButton('pickDate', { 
                         ...args, 
-                        from: walletMenu.getShortName('filter'), 
+                        fr: walletMenu.getShortName('filter'), 
                         out: ARG_DATE_FROM, 
                         max: tempFilterData.date_until ? menuBase.encodeDate(dateFormat.timezone_date(tempFilterData.date_until, userData.timezone)) : null,
                         _d: menuBase.encodeDate(dateFormat.timezone_date(tempFilterData.date_from ? tempFilterData.date_from : new Date(), userData.timezone))
@@ -147,7 +147,7 @@ function onTempFilterUpdated(user, userData, args, tempFilterData, callback) {
                     text: `Until: ${tempFilterData.date_until ? dateFormat.to_readable_string(tempFilterData.date_until, { date: true, timezone: userData.timezone }) : '--'}`,
                     callback_data: menuBase.makeMenuButton('pickDate', { 
                         ...args, 
-                        from: walletMenu.getShortName('filter'), 
+                        fr: walletMenu.getShortName('filter'), 
                         out: ARG_DATE_UNTIL, 
                         min: tempFilterData.date_from ? menuBase.encodeDate(dateFormat.timezone_date(tempFilterData.date_from, userData.timezone)) : null,
                         _d: menuBase.encodeDate(dateFormat.timezone_date(tempFilterData.date_until ? tempFilterData.date_until : new Date(), userData.timezone))

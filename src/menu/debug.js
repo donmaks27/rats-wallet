@@ -93,7 +93,7 @@ function createMenuData_debugPickDate(user, userData, args, callback) {
             [
                 {
                     text: `Pick date`,
-                    callback_data: menuBase.makeMenuButton('pickDate', { ...args, from: walletMenu.getShortName('debugPickDate'), out: 'd' })
+                    callback_data: menuBase.makeMenuButton('pickDate', { ...args, fr: walletMenu.getShortName('debugPickDate'), out: 'd' })
                 }
             ],
             [
@@ -125,7 +125,7 @@ function createMenuData_debugPickTime(user, userData, args, callback) {
             [
                 {
                     text: `Pick time`,
-                    callback_data: menuBase.makeMenuButton('pickTime', { ...args, from: walletMenu.getShortName('debugPickTime'), out: 't' })
+                    callback_data: menuBase.makeMenuButton('pickTime', { ...args, fr: walletMenu.getShortName('debugPickTime'), out: 't' })
                 }
             ],
             [

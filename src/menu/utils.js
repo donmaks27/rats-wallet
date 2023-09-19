@@ -127,7 +127,7 @@ function createMenuData_pickDate(user, userData, args, callback) {
 function createMenuData_pickDate_day(user, userData, args, callback) {
     /** @type {walletCommon.menu_type} */
     // @ts-ignore
-    const prevMenu = typeof args.from === 'string' ? walletMenu.getNameByShortName(args.from) : 'main';
+    const prevMenu = typeof args.fr === 'string' ? walletMenu.getNameByShortName(args.fr) : 'main';
     const outArg = typeof args.out === 'string' ? args.out : 'date';
     const fromDate = typeof args.min === 'number' ? menuBase.decodeDate(args.min) : getMinDate();
     const required = args[ARG_REQUIRED] ? true : false;
@@ -139,7 +139,7 @@ function createMenuData_pickDate_day(user, userData, args, callback) {
     var returnButtonArgs = { ...args };
     delete returnButtonArgs._s;
     delete returnButtonArgs._d;
-    delete returnButtonArgs.from;
+    delete returnButtonArgs.fr;
     delete returnButtonArgs.out;
     delete returnButtonArgs.min;
     delete returnButtonArgs.max;
@@ -270,7 +270,7 @@ function createMenuData_pickDate_day(user, userData, args, callback) {
 function createMenuData_pickDate_month(user, userData, args, callback) {
     /** @type {walletCommon.menu_type} */
     // @ts-ignore
-    const prevMenu = typeof args.from === 'string' ? walletMenu.getNameByShortName(args.from) : 'main';
+    const prevMenu = typeof args.fr === 'string' ? walletMenu.getNameByShortName(args.fr) : 'main';
     const outArg = typeof args.out === 'string' ? args.out : 'date';
     const fromDate = typeof args.min === 'number' ? menuBase.decodeDate(args.min) : getMinDate();
     const required = args[ARG_REQUIRED] ? true : false;
@@ -282,7 +282,7 @@ function createMenuData_pickDate_month(user, userData, args, callback) {
     var returnButtonArgs = { ...args };
     delete returnButtonArgs._s;
     delete returnButtonArgs._d;
-    delete returnButtonArgs.from;
+    delete returnButtonArgs.fr;
     delete returnButtonArgs.out;
     delete returnButtonArgs.min;
     delete returnButtonArgs.max;
@@ -391,7 +391,7 @@ function createMenuData_pickDate_month(user, userData, args, callback) {
 function createMenuData_pickDate_year(user, userData, args, callback) {
     /** @type {walletCommon.menu_type} */
     // @ts-ignore
-    const prevMenu = typeof args.from === 'string' ? walletMenu.getNameByShortName(args.from) : 'main';
+    const prevMenu = typeof args.fr === 'string' ? walletMenu.getNameByShortName(args.fr) : 'main';
     const outArg = typeof args.out === 'string' ? args.out : 'date';
     const fromDate = typeof args.min === 'number' ? menuBase.decodeDate(args.min) : getMinDate();
     const required = args[ARG_REQUIRED] ? true : false;
@@ -403,7 +403,7 @@ function createMenuData_pickDate_year(user, userData, args, callback) {
     var returnButtonArgs = { ...args };
     delete returnButtonArgs._s;
     delete returnButtonArgs._d;
-    delete returnButtonArgs.from;
+    delete returnButtonArgs.fr;
     delete returnButtonArgs.out;
     delete returnButtonArgs.min;
     delete returnButtonArgs.max;
@@ -501,13 +501,13 @@ function createMenuData_pickDate_year(user, userData, args, callback) {
 function createMenuData_pickTime(user, userData, args, callback) {
     /** @type {walletCommon.menu_type} */
     // @ts-ignore
-    const prevMenu = typeof args.from === 'string' ? walletMenu.getNameByShortName(args.from) : 'main';
+    const prevMenu = typeof args.fr === 'string' ? walletMenu.getNameByShortName(args.fr) : 'main';
     const outArg = typeof args.out === 'string' ? args.out : 'time';
     const required = args[ARG_REQUIRED] ? true : false;
     var returnButtonArgs = { ...args };
     delete returnButtonArgs._c;
     delete returnButtonArgs._t;
-    delete returnButtonArgs.from;
+    delete returnButtonArgs.fr;
     delete returnButtonArgs.out;
     delete returnButtonArgs[ARG_REQUIRED];
 
