@@ -30,6 +30,9 @@ const ARG_ACCOUNTS_PAGE = 'p';
 
 const ARG_ACCOUNT_ACCOUNT_ID = 'id';
 
+const ARG_CHOOSE_EXCLUDE_ID = 'eID';
+const ARG_CHOOSE_REQUIRED = 'req';
+
 const ACCOUNT_ROW_SIZE = 2;
 const ACCOUNT_MAX_ROWS = 10;
 const ACCOUNT_PAGE_SIZE = ACCOUNT_ROW_SIZE * ACCOUNT_MAX_ROWS;
@@ -275,12 +278,14 @@ function createMenuData_chooseAccount(user, userData, args, callback) {
     // @ts-ignore
     const fromMenu = typeof args.from ==='string' ? walletMenu.getNameByShortName(args.from) : 'main';
     const outArg = typeof args.out === 'string' ? args.out : 'id';
-    const excludeID = typeof args.eID === 'number' ? args.eID : db.invalid_id;
+    const excludeID = typeof args[ARG_CHOOSE_EXCLUDE_ID] === 'number' ? args[ARG_CHOOSE_EXCLUDE_ID] : db.invalid_id;
+    const requiredAccount = args[ARG_CHOOSE_REQUIRED] ? true : false;
     const currentPage = typeof args._p === 'number' ? args._p : 0;
     var backButtonArgs = { ...args };
     delete backButtonArgs.from;
     delete backButtonArgs.out;
-    delete backButtonArgs.eID;
+    delete backButtonArgs[ARG_CHOOSE_EXCLUDE_ID];
+    delete args[ARG_CHOOSE_REQUIRED];
     db.account_getAll(userID, (accounts, error) => {
         if (error) {
             log.error(userID, `[chooseAccount] failed to get list of accounts (${error})`);
@@ -332,10 +337,13 @@ function createMenuData_chooseAccount(user, userData, args, callback) {
             }
             keyboard.push(controlKeyboardRow);
         }
+        if (!requiredAccount) {
+            keyboard.push([{
+                text: 'NONE',
+                callback_data: menuBase.makeMenuButton(fromMenu, { ...backButtonArgs, [outArg]: db.invalid_id })
+            }]);
+        }
         keyboard.push([{
-            text: 'NONE',
-            callback_data: menuBase.makeMenuButton(fromMenu, { ...backButtonArgs, [outArg]: db.invalid_id })
-        }], [{
             text: `<< Back`,
             callback_data: menuBase.makeMenuButton(fromMenu, backButtonArgs)
         }]);

@@ -28,7 +28,7 @@ const ARG_RECORDS_PAGE = 'page';
 const ARG_RECORDS_FILTER_ID = 'fID';
 const RECORDS_PAGE_SIZE = 10;
 const RECORDS_RECORD_BUTTONS_ROW_SIZE = 8;
-const TEMP_RECORD_LABELS_MAX = 5;
+const RECORD_LABELS_MAX = 5;
 
 const ARG_PREV_PAGE = 'pP';
 const ARG_PREV_FILTER_ID = 'pF';
@@ -45,9 +45,19 @@ const ARG_TEMP_TIME = 'rT';
 const ARG_TEMP_ADD_LABEL = 'lIDa';
 const ARG_TEMP_REMOVE_LABEL = 'lIDr';
 
-const TEMP_RECORD_TYPE_EXPENSE = 'e';
-const TEMP_RECORD_TYPE_INCOME = 'i';
-const TEMP_RECORD_TYPE_TRANSFER = 't';
+const ARG_RECORD_SRC_ACCOUNT_ID = 'srcID';
+const ARG_RECORD_SRC_AMOUNT = 'srcA';
+const ARG_RECORD_DST_ACCOUNT_ID = 'dstID';
+const ARG_RECORD_DST_AMOUNT = 'dstA';
+const ARG_RECORD_CATEGORY_ID = 'cID';
+const ARG_RECORD_DATE = 'rD';
+const ARG_RECORD_TIME = 'rT';
+const ARG_RECORD_ADD_LABEL = 'lIDa';
+const ARG_RECORD_REMOVE_LABEL = 'lIDr';
+
+const RECORD_TYPE_EXPENSE = 'e';
+const RECORD_TYPE_INCOME = 'i';
+const RECORD_TYPE_TRANSFER = 't';
 
 const ARG_RECORD_ID = 'rID';
 
@@ -217,7 +227,7 @@ function createMenuData_records(user, userData, args, callback) {
                     callback_data: menuBase.makeMenuButton('filter', { [ARG_PREV_PAGE]: currentPage, [ARG_PREV_FILTER_ID]: currentFilterID, reset: true })
                 }], [{
                     text: 'Create new record',
-                    callback_data: menuBase.makeMenuButton('createRecord', { [ARG_PREV_PAGE]: currentPage, [ARG_PREV_FILTER_ID]: currentFilterID, [ARG_TEMP_RESET]: true, [ARG_TEMP_RECORD_TYPE]: TEMP_RECORD_TYPE_EXPENSE })
+                    callback_data: menuBase.makeMenuButton('createRecord', { [ARG_PREV_PAGE]: currentPage, [ARG_PREV_FILTER_ID]: currentFilterID, [ARG_TEMP_RESET]: true, [ARG_TEMP_RECORD_TYPE]: RECORD_TYPE_EXPENSE })
                 }], [{
                     text: '<< Back to Wallet',
                     callback_data: menuBase.makeMenuButton('wallet')
@@ -241,9 +251,9 @@ function createMenuData_createRecord(user, userData, args, callback) {
     const argRecordType = typeof args[ARG_TEMP_RECORD_TYPE] === 'string' ? args[ARG_TEMP_RECORD_TYPE] : '';
     const argReset = typeof args[ARG_TEMP_RESET] === 'boolean' ? args[ARG_TEMP_RESET] : false;
     switch (argRecordType) {
-    case TEMP_RECORD_TYPE_EXPENSE:
-    case TEMP_RECORD_TYPE_INCOME:
-    case TEMP_RECORD_TYPE_TRANSFER:
+    case RECORD_TYPE_EXPENSE:
+    case RECORD_TYPE_INCOME:
+    case RECORD_TYPE_TRANSFER:
         break;
     default: 
         log.error(userID, `[createRecord] invalid record type "${argRecordType}"`);
@@ -384,7 +394,7 @@ function createMenuData_createRecord_onLabelsUpdated(user, userData, args, callb
  */
 function createMenuData_createRecord_onTempRecordUpdated(user, userData, args, callback) {
     const userID = user.id;
-    const argRecordType = typeof args[ARG_TEMP_RECORD_TYPE] === 'string' ? args[ARG_TEMP_RECORD_TYPE] : TEMP_RECORD_TYPE_EXPENSE;
+    const argRecordType = typeof args[ARG_TEMP_RECORD_TYPE] === 'string' ? args[ARG_TEMP_RECORD_TYPE] : RECORD_TYPE_EXPENSE;
     db.record_getTemp(userID, (tempRecordData, error) => {
         if (error || !tempRecordData) {
             log.error(userID, `[createRecord] failed to get temp record data (${error})`);
@@ -396,13 +406,13 @@ function createMenuData_createRecord_onTempRecordUpdated(user, userData, args, c
                     onTempRecordError(user, userData, args, callback);
                 } else {
                     switch (argRecordType) {
-                    case TEMP_RECORD_TYPE_EXPENSE:
+                    case RECORD_TYPE_EXPENSE:
                         createMenuData_createRecord_expense(user, userData, tempRecordData, labels, args, callback);
                         break;
-                    case TEMP_RECORD_TYPE_INCOME:
+                    case RECORD_TYPE_INCOME:
                         createMenuData_createRecord_income(user, userData, tempRecordData, labels, args, callback);
                         break;
-                    case TEMP_RECORD_TYPE_TRANSFER:
+                    case RECORD_TYPE_TRANSFER:
                         createMenuData_createRecord_transfer(user, userData, tempRecordData, labels, args, callback);
                         break;
                     }
@@ -446,7 +456,7 @@ function createMenuData_createRecord_expense(user, userData, tempRecordData, tem
 
     const currentMenu = walletMenu.getShortName('createRecord');
     const currencySymbol = tempRecordData.src_currency && tempRecordData.src_currency.symbol ? tempRecordData.src_currency.symbol : (tempRecordData.src_account ? tempRecordData.src_account.currency_code : '');
-    const labelsAmount = Math.min(TEMP_RECORD_LABELS_MAX, tempRecordLabels.length);
+    const labelsAmount = Math.min(RECORD_LABELS_MAX, tempRecordLabels.length);
     const tempRecordValid = tempRecordData.src_account && (tempRecordData.src_amount != 0);
 
     /** @type {bot.keyboard_button_inline_data[][]} */
@@ -458,11 +468,11 @@ function createMenuData_createRecord_expense(user, userData, tempRecordData, tem
         },
         {
             text: `Income`,
-            callback_data: menuBase.makeMenuButton('createRecord', { [ARG_PREV_PAGE]: prevPage, [ARG_PREV_FILTER_ID]: prevFilterID, [ARG_TEMP_RECORD_TYPE]: TEMP_RECORD_TYPE_INCOME })
+            callback_data: menuBase.makeMenuButton('createRecord', { [ARG_PREV_PAGE]: prevPage, [ARG_PREV_FILTER_ID]: prevFilterID, [ARG_TEMP_RECORD_TYPE]: RECORD_TYPE_INCOME })
         },
         {
             text: `Transfer`,
-            callback_data: menuBase.makeMenuButton('createRecord', { [ARG_PREV_PAGE]: prevPage, [ARG_PREV_FILTER_ID]: prevFilterID, [ARG_TEMP_RECORD_TYPE]: TEMP_RECORD_TYPE_TRANSFER })
+            callback_data: menuBase.makeMenuButton('createRecord', { [ARG_PREV_PAGE]: prevPage, [ARG_PREV_FILTER_ID]: prevFilterID, [ARG_TEMP_RECORD_TYPE]: RECORD_TYPE_TRANSFER })
         }
     ]);
     keyboard.push([{
@@ -523,7 +533,7 @@ function createMenuData_createRecord_expense(user, userData, tempRecordData, tem
             }
         ]);
     }
-    if (labelsAmount < TEMP_RECORD_LABELS_MAX) {
+    if (labelsAmount < RECORD_LABELS_MAX) {
         keyboard.push([{
             text: `➕ Add label`,
             callback_data: menuBase.makeMenuButton('chooseLabel', { 
@@ -535,7 +545,7 @@ function createMenuData_createRecord_expense(user, userData, tempRecordData, tem
     if (tempRecordValid) {
         keyboard.push([{
             text: `Add record`,
-            callback_data: menuBase.makeActionButton('createRecord', { [ARG_PREV_PAGE]: prevPage, [ARG_TEMP_RECORD_TYPE]: TEMP_RECORD_TYPE_EXPENSE, [ARG_PREV_FILTER_ID]: prevFilterID })
+            callback_data: menuBase.makeActionButton('createRecord', { [ARG_PREV_PAGE]: prevPage, [ARG_TEMP_RECORD_TYPE]: RECORD_TYPE_EXPENSE, [ARG_PREV_FILTER_ID]: prevFilterID })
         }]);
     } else {
         keyboard.push([{
@@ -571,7 +581,7 @@ function createMenuData_createRecord_income(user, userData, tempRecordData, temp
 
     const currentMenu = walletMenu.getShortName('createRecord');
     const currencySymbol = tempRecordData.dst_currency && tempRecordData.dst_currency.symbol ? tempRecordData.dst_currency.symbol : (tempRecordData.dst_account ? tempRecordData.dst_account.currency_code : '');
-    const labelsAmount = Math.min(TEMP_RECORD_LABELS_MAX, tempRecordLabels.length);
+    const labelsAmount = Math.min(RECORD_LABELS_MAX, tempRecordLabels.length);
     const tempRecordValid = tempRecordData.dst_account && (tempRecordData.dst_amount != 0);
 
     /** @type {bot.keyboard_button_inline_data[][]} */
@@ -579,7 +589,7 @@ function createMenuData_createRecord_income(user, userData, tempRecordData, temp
     keyboard.push([
         {
             text: `Expense`,
-            callback_data: menuBase.makeMenuButton('createRecord', { [ARG_PREV_PAGE]: prevPage, [ARG_PREV_FILTER_ID]: prevFilterID, [ARG_TEMP_RECORD_TYPE]: TEMP_RECORD_TYPE_EXPENSE })
+            callback_data: menuBase.makeMenuButton('createRecord', { [ARG_PREV_PAGE]: prevPage, [ARG_PREV_FILTER_ID]: prevFilterID, [ARG_TEMP_RECORD_TYPE]: RECORD_TYPE_EXPENSE })
         },
         {
             text: `☑️ Income`,
@@ -587,7 +597,7 @@ function createMenuData_createRecord_income(user, userData, tempRecordData, temp
         },
         {
             text: `Transfer`,
-            callback_data: menuBase.makeMenuButton('createRecord', { [ARG_PREV_PAGE]: prevPage, [ARG_PREV_FILTER_ID]: prevFilterID, [ARG_TEMP_RECORD_TYPE]: TEMP_RECORD_TYPE_TRANSFER })
+            callback_data: menuBase.makeMenuButton('createRecord', { [ARG_PREV_PAGE]: prevPage, [ARG_PREV_FILTER_ID]: prevFilterID, [ARG_TEMP_RECORD_TYPE]: RECORD_TYPE_TRANSFER })
         }
     ]);
     keyboard.push([{
@@ -648,7 +658,7 @@ function createMenuData_createRecord_income(user, userData, tempRecordData, temp
             }
         ]);
     }
-    if (labelsAmount < TEMP_RECORD_LABELS_MAX) {
+    if (labelsAmount < RECORD_LABELS_MAX) {
         keyboard.push([{
             text: `➕ Add label`,
             callback_data: menuBase.makeMenuButton('chooseLabel', { 
@@ -660,7 +670,7 @@ function createMenuData_createRecord_income(user, userData, tempRecordData, temp
     if (tempRecordValid) {
         keyboard.push([{
             text: `Add record`,
-            callback_data: menuBase.makeActionButton('createRecord', { [ARG_PREV_PAGE]: prevPage, [ARG_TEMP_RECORD_TYPE]: TEMP_RECORD_TYPE_INCOME, [ARG_PREV_FILTER_ID]: prevFilterID })
+            callback_data: menuBase.makeActionButton('createRecord', { [ARG_PREV_PAGE]: prevPage, [ARG_TEMP_RECORD_TYPE]: RECORD_TYPE_INCOME, [ARG_PREV_FILTER_ID]: prevFilterID })
         }]);
     } else {
         keyboard.push([{
@@ -697,7 +707,7 @@ function createMenuData_createRecord_transfer(user, userData, tempRecordData, te
     const currentMenu = walletMenu.getShortName('createRecord');
     const srcCurrencySymbol = tempRecordData.src_currency && tempRecordData.src_currency.symbol ? tempRecordData.src_currency.symbol : (tempRecordData.src_account ? tempRecordData.src_account.currency_code : '');
     const dstCurrencySymbol = tempRecordData.dst_currency && tempRecordData.dst_currency.symbol ? tempRecordData.dst_currency.symbol : (tempRecordData.dst_account ? tempRecordData.dst_account.currency_code : '');
-    const labelsAmount = Math.min(TEMP_RECORD_LABELS_MAX, tempRecordLabels.length);
+    const labelsAmount = Math.min(RECORD_LABELS_MAX, tempRecordLabels.length);
     const tempRecordValid = tempRecordData.src_account && tempRecordData.dst_account && (tempRecordData.src_account.id != tempRecordData.dst_account.id) && 
         (tempRecordData.src_amount != 0) && (tempRecordData.dst_amount != 0);
 
@@ -706,11 +716,11 @@ function createMenuData_createRecord_transfer(user, userData, tempRecordData, te
     keyboard.push([
         {
             text: `Expense`,
-            callback_data: menuBase.makeMenuButton('createRecord', { [ARG_PREV_PAGE]: prevPage, [ARG_PREV_FILTER_ID]: prevFilterID, [ARG_TEMP_RECORD_TYPE]: TEMP_RECORD_TYPE_EXPENSE })
+            callback_data: menuBase.makeMenuButton('createRecord', { [ARG_PREV_PAGE]: prevPage, [ARG_PREV_FILTER_ID]: prevFilterID, [ARG_TEMP_RECORD_TYPE]: RECORD_TYPE_EXPENSE })
         },
         {
             text: `Income`,
-            callback_data: menuBase.makeMenuButton('createRecord', { [ARG_PREV_PAGE]: prevPage, [ARG_PREV_FILTER_ID]: prevFilterID, [ARG_TEMP_RECORD_TYPE]: TEMP_RECORD_TYPE_INCOME })
+            callback_data: menuBase.makeMenuButton('createRecord', { [ARG_PREV_PAGE]: prevPage, [ARG_PREV_FILTER_ID]: prevFilterID, [ARG_TEMP_RECORD_TYPE]: RECORD_TYPE_INCOME })
         },
         {
             text: `☑️ Transfer`,
@@ -792,7 +802,7 @@ function createMenuData_createRecord_transfer(user, userData, tempRecordData, te
             }
         ]);
     }
-    if (labelsAmount < TEMP_RECORD_LABELS_MAX) {
+    if (labelsAmount < RECORD_LABELS_MAX) {
         keyboard.push([{
             text: `➕ Add label`,
             callback_data: menuBase.makeMenuButton('chooseLabel', { 
@@ -804,7 +814,7 @@ function createMenuData_createRecord_transfer(user, userData, tempRecordData, te
     if (tempRecordValid) {
         keyboard.push([{
             text: `Add record`,
-            callback_data: menuBase.makeActionButton('createRecord', { [ARG_PREV_PAGE]: prevPage, [ARG_TEMP_RECORD_TYPE]: TEMP_RECORD_TYPE_TRANSFER, [ARG_PREV_FILTER_ID]: prevFilterID })
+            callback_data: menuBase.makeActionButton('createRecord', { [ARG_PREV_PAGE]: prevPage, [ARG_TEMP_RECORD_TYPE]: RECORD_TYPE_TRANSFER, [ARG_PREV_FILTER_ID]: prevFilterID })
         }]);
     } else {
         keyboard.push([{
@@ -818,7 +828,7 @@ function createMenuData_createRecord_transfer(user, userData, tempRecordData, te
     }]);
     var menuText = `*Creating new record*\n*Type:* Transfer`;
     if (tempRecordData.note.length > 0) {
-        menuText += `\n_Note:_ "${bot.escapeMarkdown(tempRecordData.note)}"`;
+        menuText += `\n*Note:* "${bot.escapeMarkdown(tempRecordData.note)}"`;
     }
     callback({
         text: menuText, parseMode: 'MarkdownV2',
@@ -832,6 +842,7 @@ function createMenuData_createRecord_transfer(user, userData, tempRecordData, te
 function createMenuData_record(user, userData, args, callback) {
     const userID = user.id;
     const recordID = typeof args[ARG_RECORD_ID] === 'number' ? args[ARG_RECORD_ID] : db.invalid_id;
+    delete args[ARG_RECORD_ID];
     db.record_get(recordID, (recordData, error) => {
         if (error || !recordData) {
             log.error(userID, `[record] failed to get data of record ${recordID} (${error})`);
@@ -871,15 +882,139 @@ function createMenuData_record_recordReady(user, userData, recordData, args, cal
     const userID = user.id;
     const prevPage = typeof args[ARG_PREV_PAGE] === 'number' ? args[ARG_PREV_PAGE] : 0;
     const prevFilterID = typeof args[ARG_PREV_FILTER_ID] === 'number' ? args[ARG_PREV_FILTER_ID] : db.invalid_id;
-    const recordID = typeof args[ARG_RECORD_ID] === 'number' ? args[ARG_RECORD_ID] : db.invalid_id;
+
+    const currentMenu = walletMenu.getShortName('record');
+    const recordType = !recordData.dst_account ? RECORD_TYPE_EXPENSE : (!recordData.src_account ? RECORD_TYPE_INCOME : RECORD_TYPE_TRANSFER);
+    const srcCurrencySymbol = recordData.src_currency && recordData.src_currency.symbol ? recordData.src_currency.symbol : (recordData.src_account ? recordData.src_account.currency_code : '');
+    const dstCurrencySymbol = recordData.dst_currency && recordData.dst_currency.symbol ? recordData.dst_currency.symbol : (recordData.dst_account ? recordData.dst_account.currency_code : '');
+    const labelsAmount = Math.min(RECORD_LABELS_MAX, recordData.labels.length);
+
+    var menuText = `*Record*\n*Type:* `;
+    switch (recordType) {
+    case RECORD_TYPE_EXPENSE:  menuText += `Expense`;  break;
+    case RECORD_TYPE_INCOME:   menuText += `Income`;   break;
+    case RECORD_TYPE_TRANSFER: menuText += `Transfer`; break;
+    }
+    if (recordData.note) {
+        menuText += `\n*Note:* "${recordData.note}"`;
+    }
+    menuText += `\nChoose what you want to do:`;
+
     /** @type {bot.keyboard_button_inline_data[][]} */
     var keyboard = [];
+    switch (recordType) {
+    case RECORD_TYPE_EXPENSE:
+        keyboard.push([{
+            text: `Account: ` + (recordData.src_account ? (walletCommon.getColorMarker(recordData.src_account.color, ' ') + recordData.src_account.name) : '--'),
+            callback_data: menuBase.makeMenuButton('chooseAccount', { ...args, from: currentMenu, out: ARG_RECORD_SRC_ACCOUNT_ID, req: true })
+        }], [{
+            text: `Amount: ${recordData.src_amount != 0 ? recordData.src_amount / 100 : '--'} ${srcCurrencySymbol}`,
+            callback_data: menuBase.makeActionButton('changeRecordAmount', { ...args, from: currentMenu, out: ARG_RECORD_SRC_AMOUNT })
+        }]);
+        break;
+    case RECORD_TYPE_INCOME:
+        keyboard.push([{
+            text: `Account: ` + (recordData.dst_account ? (walletCommon.getColorMarker(recordData.dst_account.color, ' ') + recordData.dst_account.name) : '--'),
+            callback_data: menuBase.makeMenuButton('chooseAccount', { ...args, from: currentMenu, out: ARG_RECORD_DST_ACCOUNT_ID, req: true })
+        }], [{
+            text: `Amount: ${recordData.dst_amount != 0 ? recordData.dst_amount / 100 : '--'} ${dstCurrencySymbol}`,
+            callback_data: menuBase.makeActionButton('changeRecordAmount', { ...args, from: currentMenu, out: ARG_RECORD_DST_AMOUNT })
+        }]);
+        break;
+    case RECORD_TYPE_TRANSFER:
+        keyboard.push([
+            {
+                text: `From: ` + (recordData.src_account ? (walletCommon.getColorMarker(recordData.src_account.color, ' ') + recordData.src_account.name) : '--'),
+                callback_data: menuBase.makeMenuButton('chooseAccount', { 
+                    ...args, from: currentMenu, out: ARG_RECORD_SRC_ACCOUNT_ID, req: true, eID: recordData.dst_account_id
+                })
+            },
+            {
+                text: `To: ` + (recordData.dst_account ? (walletCommon.getColorMarker(recordData.dst_account.color, ' ') + recordData.dst_account.name) : '--'),
+                callback_data: menuBase.makeMenuButton('chooseAccount', { 
+                    ...args, from: currentMenu, out: ARG_RECORD_DST_ACCOUNT_ID, req: true, eID: recordData.src_account_id
+                })
+            }
+        ], [
+            {
+                text: `Amount: ${recordData.src_amount != 0 ? recordData.src_amount / 100 : '--'} ${srcCurrencySymbol}`,
+                callback_data: menuBase.makeActionButton('changeRecordAmount', { ...args, from: currentMenu, out: ARG_RECORD_SRC_AMOUNT })
+            },
+            {
+                text: `Amount: ${recordData.dst_amount != 0 ? recordData.dst_amount / 100 : '--'} ${dstCurrencySymbol}`,
+                callback_data: menuBase.makeActionButton('changeRecordAmount', { ...args, from: currentMenu, out: ARG_RECORD_DST_AMOUNT })
+            }
+        ]);
+        break;
+    }
+    keyboard.push([
+        {
+            text: `Clear note`,
+            callback_data: menuBase.makeActionButton('changeRecordNote', { ...args, cl: true })
+        },
+        {
+            text: `Edit note`,
+            callback_data: menuBase.makeActionButton('changeRecordNote', args)
+        }
+    ], [{
+        text: `Category: ` + (recordData.category ? (walletCommon.getColorMarker(recordData.category.color, ' ') + recordData.category.name) : '--'),
+        callback_data: menuBase.makeMenuButton('chooseCategory', { 
+            ...args, 
+            from: currentMenu, out: ARG_RECORD_CATEGORY_ID, 
+            pID: recordData.category_id 
+        })
+    }], [
+        {
+            text: dateFormat.to_readable_string(recordData.date, { date: true, timezone: userData.timezone }),
+            callback_data: menuBase.makeMenuButton('pickDate', { 
+                ...args, 
+                req: true, from: currentMenu, out: ARG_RECORD_DATE, 
+                _d: menuBase.encodeDate(dateFormat.timezone_date(recordData.date, userData.timezone)) 
+            })
+        },
+        {
+            text: dateFormat.to_readable_string(recordData.date, { time: true, timezone: userData.timezone }),
+            callback_data: menuBase.makeMenuButton('pickTime', { 
+                ...args, 
+                req: true, from: currentMenu, out: ARG_RECORD_TIME, 
+                _t: menuBase.encodeTime(dateFormat.timezone_date(recordData.date, userData.timezone))
+            })
+        }
+    ]);
+    for (var i = 0; i < labelsAmount; i++) {
+        const labelData = recordData.labels[i];
+        keyboard.push([
+            {
+                text: walletCommon.getColorMarker(labelData.color, ' ') + labelData.name,
+                callback_data: menuBase.makeDummyButton()
+            },
+            {
+                text: `✖️ Remove label`,
+                callback_data: menuBase.makeMenuButton('record', { 
+                    ...args, [ARG_RECORD_REMOVE_LABEL]: labelData.id 
+                })
+            }
+        ]);
+    }
+    if (labelsAmount < RECORD_LABELS_MAX) {
+        keyboard.push([{
+            text: `➕ Add label`,
+            callback_data: menuBase.makeMenuButton('chooseLabel', { 
+                ...args, 
+                req: true, from: currentMenu, out: ARG_RECORD_ADD_LABEL 
+            })
+        }]);
+    }
     keyboard.push([{
+        text: `Delete record`,
+        callback_data: menuBase.makeDummyButton()
+    }], [{
         text: `<< Back to Records`, 
         callback_data: menuBase.makeMenuButton('records', { [ARG_RECORDS_PAGE]: prevPage, [ARG_RECORDS_FILTER_ID]: prevFilterID })
     }]);
+
     callback({
-        text: `*Record*\nChoose what you want to do`,
+        text: menuText,
         parseMode: 'MarkdownV2',
         keyboard: keyboard
     });
