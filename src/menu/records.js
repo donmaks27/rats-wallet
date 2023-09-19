@@ -35,31 +35,31 @@ const ARG_PREV_FILTER_ID = 'pF';
 
 const ARG_TEMP_RESET = 'r';
 const ARG_TEMP_RECORD_TYPE = 't';
-const ARG_TEMP_SRC_ACCOUNT_ID = 'srcID';
-const ARG_TEMP_SRC_AMOUNT = 'srcA';
-const ARG_TEMP_DST_ACCOUNT_ID = 'dstID';
-const ARG_TEMP_DST_AMOUNT = 'dstA';
+const ARG_TEMP_SRC_ACCOUNT_ID = 'sID';
+const ARG_TEMP_SRC_AMOUNT = 'sA';
+const ARG_TEMP_DST_ACCOUNT_ID = 'dID';
+const ARG_TEMP_DST_AMOUNT = 'dA';
 const ARG_TEMP_CATEGORY_ID = 'cID';
 const ARG_TEMP_DATE = 'rD';
 const ARG_TEMP_TIME = 'rT';
-const ARG_TEMP_ADD_LABEL = 'lIDa';
-const ARG_TEMP_REMOVE_LABEL = 'lIDr';
+const ARG_TEMP_ADD_LABEL = 'la';
+const ARG_TEMP_REMOVE_LABEL = 'lr';
 
-const ARG_RECORD_SRC_ACCOUNT_ID = 'srcID';
-const ARG_RECORD_SRC_AMOUNT = 'srcA';
-const ARG_RECORD_DST_ACCOUNT_ID = 'dstID';
-const ARG_RECORD_DST_AMOUNT = 'dstA';
+const ARG_RECORD_ID = 'id';
+const ARG_RECORD_SRC_ACCOUNT_ID = 'sID';
+const ARG_RECORD_SRC_AMOUNT = 'sA';
+const ARG_RECORD_DST_ACCOUNT_ID = 'dID';
+const ARG_RECORD_DST_AMOUNT = 'dA';
 const ARG_RECORD_CATEGORY_ID = 'cID';
 const ARG_RECORD_DATE = 'rD';
 const ARG_RECORD_TIME = 'rT';
-const ARG_RECORD_ADD_LABEL = 'lIDa';
-const ARG_RECORD_REMOVE_LABEL = 'lIDr';
+const ARG_RECORD_ADD_LABEL = 'la';
+const ARG_RECORD_REMOVE_LABEL = 'lr';
 
 const RECORD_TYPE_EXPENSE = 'e';
 const RECORD_TYPE_INCOME = 'i';
 const RECORD_TYPE_TRANSFER = 't';
 
-const ARG_RECORD_ID = 'rID';
 
 /**
  * @type {menuBase.menu_create_func}
