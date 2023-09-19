@@ -831,37 +831,20 @@ function createMenuData_createRecord_transfer(user, userData, tempRecordData, te
  */
 function createMenuData_record(user, userData, args, callback) {
     const userID = user.id;
-    const prevPage = typeof args[ARG_PREV_PAGE] === 'number' ? args[ARG_PREV_PAGE] : 0;
-    const prevFilterID = typeof args[ARG_PREV_FILTER_ID] === 'number' ? args[ARG_PREV_FILTER_ID] : db.invalid_id;
     const recordID = typeof args[ARG_RECORD_ID] === 'number' ? args[ARG_RECORD_ID] : db.invalid_id;
     db.record_get(recordID, (recordData, error) => {
         if (error || !recordData) {
             log.error(userID, `[record] failed to get data of record ${recordID} (${error})`);
-            onRecordMenuError(user, userData, args, callback);
+            createMenuData_record_error(user, userData, args, callback);
         } else {
-            db.record_getLabels(recordID, (labels, error) => {
-                if (error) {
-                    log.error(userID, `[record] failed to get labels for record ${recordID} (${error})`);
-                }
-                /** @type {bot.keyboard_button_inline_data[][]} */
-                var keyboard = [];
-                keyboard.push([{
-                    text: `<< Back to Records`, 
-                    callback_data: menuBase.makeMenuButton('records', { [ARG_RECORDS_PAGE]: prevPage, [ARG_RECORDS_FILTER_ID]: prevFilterID })
-                }]);
-                callback({
-                    text: `*Record*\nChoose what you want to do`,
-                    parseMode: 'MarkdownV2',
-                    keyboard: keyboard
-                });
-            });
+            createMenuData_record_recordReady(user, userData, recordData, args, callback);
         }
     });
 }
 /**
  * @type {menuBase.menu_create_func}
  */
-function onRecordMenuError(user, userData, args, callback) {
+function createMenuData_record_error(user, userData, args, callback) {
     const userID = user.id;
     const prevPage = typeof args[ARG_PREV_PAGE] === 'number' ? args[ARG_PREV_PAGE] : 0;
     const prevFilterID = typeof args[ARG_PREV_FILTER_ID] === 'number' ? args[ARG_PREV_FILTER_ID] : db.invalid_id;
@@ -875,5 +858,29 @@ function onRecordMenuError(user, userData, args, callback) {
                 }
             ]
         ]
+    });
+}
+/**
+ * @param {bot.user_data} user 
+ * @param {db.user_data} userData 
+ * @param {(db.record_data & { src_account?: db.account_data, dst_account?: db.account_data, src_currency?: db.currency_data, dst_currency?: db.currency_data, category?: db.category_data, labels: db.label_data[] })} recordData 
+ * @param {walletCommon.args_data} args 
+ * @param {(menuData: menuBase.menu_data) => any} callback 
+ */
+function createMenuData_record_recordReady(user, userData, recordData, args, callback) {
+    const userID = user.id;
+    const prevPage = typeof args[ARG_PREV_PAGE] === 'number' ? args[ARG_PREV_PAGE] : 0;
+    const prevFilterID = typeof args[ARG_PREV_FILTER_ID] === 'number' ? args[ARG_PREV_FILTER_ID] : db.invalid_id;
+    const recordID = typeof args[ARG_RECORD_ID] === 'number' ? args[ARG_RECORD_ID] : db.invalid_id;
+    /** @type {bot.keyboard_button_inline_data[][]} */
+    var keyboard = [];
+    keyboard.push([{
+        text: `<< Back to Records`, 
+        callback_data: menuBase.makeMenuButton('records', { [ARG_RECORDS_PAGE]: prevPage, [ARG_RECORDS_FILTER_ID]: prevFilterID })
+    }]);
+    callback({
+        text: `*Record*\nChoose what you want to do`,
+        parseMode: 'MarkdownV2',
+        keyboard: keyboard
     });
 }
