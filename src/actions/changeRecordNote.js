@@ -45,7 +45,7 @@ module.exports.register = (stopCallback) => {
     };
 }
 
-const ARG_RECORD_ID = 'rID';
+const ARG_RECORD_ID = 'id';
 const ARG_CLEAR = 'cl';
 
 /**
