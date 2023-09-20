@@ -9,7 +9,7 @@ var db = require('./database');
  *           'renameCurrency'|'archiveCurrency'|'createCurrency'|'deleteCurrency'|
  *           'renameLabel'|'archiveLabel'|'createLabel'|'deleteLabel'|'makeLabelGlobal'|
  *           'renameCategory'|'archiveCategory'|'createCategory'|'deleteCategory'|'makeCategoryGlobal'|
- *           'changeRecordsPage'|'applyTempFilter'|'changeRecordAmount'|'changeRecordNote'|'createRecord'
+ *           'changeRecordsPage'|'applyTempFilter'|'changeRecordAmount'|'changeRecordNote'|'createRecord'|'deleteRecord'
  *          } action_type
  * @typedef {'debug'|'debugPickDate'|'debugPickTime'|'debugNumpad'|'debugChooseAccount'|'debugChooseCategory'|'debugChooseLabel'|
  *           'pickDate'|'pickTime'|'enterNumber'|
@@ -18,7 +18,7 @@ var db = require('./database');
  *           'currencies'|'currency'|'deleteCurrency'|
  *           'labels'|'label'|'deleteLabel'|'makeLabelGlobal'|'chooseLabel'|
  *           'categories'|'category'|'deleteCategory'|'chooseCategory'|
- *           'records'|'record'|'filter'|'createRecord'
+ *           'records'|'record'|'filter'|'createRecord'|'deleteRecord'
  *          } menu_type
  */
 

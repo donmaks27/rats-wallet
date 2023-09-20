@@ -20,7 +20,8 @@ module.exports.get = () => {
     return {
         records: createMenuData_records,
         record: { shortName: 'r', handler: createMenuData_record },
-        createRecord: { shortName: 'crR', handler: createMenuData_createRecord }
+        createRecord: { shortName: 'crR', handler: createMenuData_createRecord },
+        deleteRecord: { shortName: 'dR', handler: createMenuData_deleteRecord }
     };
 }
 
@@ -1126,7 +1127,7 @@ function createMenuData_record_recordReady(user, userData, recordData, args, cal
     }
     keyboard.push([{
         text: `Delete record`,
-        callback_data: menuBase.makeDummyButton()
+        callback_data: menuBase.makeMenuButton('deleteRecord', args)
     }], [{
         text: `<< Back to Records`, 
         callback_data: menuBase.makeMenuButton('records', { [ARG_RECORDS_PAGE]: prevPage, [ARG_RECORDS_FILTER_ID]: prevFilterID })
@@ -1136,5 +1137,31 @@ function createMenuData_record_recordReady(user, userData, recordData, args, cal
         text: menuText,
         parseMode: 'MarkdownV2',
         keyboard: keyboard
+    });
+}
+
+/**
+ * @type {menuBase.menu_create_func}
+ */
+function createMenuData_deleteRecord(user, userData, args, callback) {
+    const userID = user.id;
+    const recordID = typeof args[ARG_RECORD_ID] === 'number' ? args[ARG_RECORD_ID] : db.invalid_id;
+    const prevPage = typeof args[ARG_PREV_PAGE] === 'number' ? args[ARG_PREV_PAGE] : 0;
+    const prevFilterID = typeof args[ARG_PREV_FILTER_ID] === 'number' ? args[ARG_PREV_FILTER_ID] : db.invalid_id;
+    callback({
+        text: `You are going to delete this record\n*Are you sure?*`,
+        parseMode: 'MarkdownV2',
+        keyboard: [
+            [
+                {
+                    text: `No`,
+                    callback_data: menuBase.makeMenuButton('record', args)
+                },
+                {
+                    text: `Yes`,
+                    callback_data: menuBase.makeActionButton('deleteRecord', { [ARG_RECORD_ID]: recordID, [ARG_RECORDS_PAGE]: prevPage, [ARG_RECORDS_FILTER_ID]: prevFilterID })
+                }
+            ]
+        ]
     });
 }

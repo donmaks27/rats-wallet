@@ -55,6 +55,7 @@ const WalletActionsHandlers = {
     ...require('./actions/changeRecordAmount').register(stopUserAction),
     ...require('./actions/changeRecordNote').register(stopUserAction),
     ...require('./actions/createRecord').register(stopUserAction),
+    ...require('./actions/deleteRecord').register(stopUserAction),
 };
 const WalletActionsMap = makeWalletActionsMap(WalletActionsHandlers);
 

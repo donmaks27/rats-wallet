@@ -1185,13 +1185,13 @@ function record_edit(recordID, params, callback) {
     } : undefined);
 }
 /**
- * @param {number} id 
+ * @param {number} recordID 
  * @param {(error?: string) => any} [callback] 
  */
-function record_delete(id, callback) {
-    db.run(query_deleteRecord(id), callback ? (error) => {
+function record_delete(recordID, callback) {
+    db.run(query_deleteRecord(recordID), callback ? (error) => {
         if (error) {
-            callback(`failed to delete record ${id}: ` + error);
+            callback(`failed to delete record ${recordID}: ` + error);
         } else {
             //debug_log(`deleted record ${id}`);
             callback();
