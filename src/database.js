@@ -2007,10 +2007,10 @@ function query_getRecordsList(userID, params) {
     LIMIT ${pageIndex * recordsPerPage}, ${recordsPerPage};`;
 }
 /**
- * @param {number} id 
+ * @param {number} recordID 
  * @param {{ src_account_id?: number, src_amount?: number, dst_account_id?: number, dst_amount?: number, note?: string, category_id?: number, date?: Date }} params 
  */
-function query_updateRecord(id, params) {
+function query_updateRecord(recordID, params) {
     var statements = [];
     const properties = Object.getOwnPropertyNames(params);
     if (properties.includes('src_account_id')) {
@@ -2046,7 +2046,7 @@ function query_updateRecord(id, params) {
     if (properties.includes('date')) {
         statements.push(`date = ${params.date ? params.date.valueOf() : 0}`);
     }
-    return `UPDATE records SET ${statements.join(', ')} WHERE id = ${id};`;
+    return `UPDATE records SET ${statements.join(', ')} WHERE id = ${recordID};`;
 }
 /**
  * @param {number} id 

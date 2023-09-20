@@ -861,18 +861,23 @@ function createMenuData_record(user, userData, args, callback) {
     var newRecordData = {};
     var shouldUpdateRecord = false;
     if (typeof argSrcAccountID === 'number') {
+        log.info(userID, `[record] changing src account to ${argSrcAccountID}`);
         newRecordData.src_account_id = argSrcAccountID; shouldUpdateRecord = true;
     }
     if (typeof argSrcAmount === 'number') {
+        log.info(userID, `[record] changing src amount to ${argSrcAmount}`);
         newRecordData.src_amount = argSrcAmount; shouldUpdateRecord = true;
     }
     if (typeof argDstAccountID === 'number') {
+        log.info(userID, `[record] changing dst account to ${argDstAccountID}`);
         newRecordData.dst_account_id = argDstAccountID; shouldUpdateRecord = true;
     }
     if (typeof argDstAmount === 'number') {
+        log.info(userID, `[record] changing dst amount to ${argDstAmount}`);
         newRecordData.dst_amount = argDstAmount; shouldUpdateRecord = true;
     }
     if (typeof argCategoryID === 'number') {
+        log.info(userID, `[record] changing category to ${argCategoryID}`);
         newRecordData.category_id = argCategoryID; shouldUpdateRecord = true;
     }
     if ((typeof argDate === 'number') || (typeof argTime === 'number')) {
@@ -883,19 +888,22 @@ function createMenuData_record(user, userData, args, callback) {
             } else {
                 var newRecordDateTime = dateFormat.timezone_date(recordData.date, userData.timezone);
                 if (typeof argDate === 'number') {
+                    log.info(userID, `[record] changing date`);
                     const newRecordDate = menuBase.decodeDate(argDate);
                     newRecordDateTime.setUTCFullYear(newRecordDate.getUTCFullYear(), newRecordDate.getUTCMonth(), newRecordDate.getUTCDate());
                 }
                 if (typeof argTime === 'number') {
+                    log.info(userID, `[record] changing time`);
                     const newRecordTime = menuBase.decodeTime(argTime);
                     newRecordDateTime.setUTCHours(newRecordTime.getUTCHours(), newRecordTime.getUTCMinutes(), 0, 0);
                 }
                 newRecordData.date = dateFormat.utc_date(newRecordDateTime, userData.timezone);
                 db.record_edit(recordID, newRecordData, ( error) => {
                     if (error) {
-                        log.error(userID, `[createRecord] failed to edit record ${recordID} (${error})`);
+                        log.error(userID, `[record] failed to edit record ${recordID} (${error})`);
                         createMenuData_record_error(user, userData, args, callback);
                     } else {
+                        log.info(userID, `[record] record ${recordID} updated`);
                         createMenuData_record_recordUpdated(user, userData, args, callback);
                     }
                 });
@@ -907,6 +915,7 @@ function createMenuData_record(user, userData, args, callback) {
                 log.error(userID, `[record] failed to edit record ${recordID} (${error})`);
                 createMenuData_record_error(user, userData, args, callback);
             } else {
+                log.info(userID, `[record] record ${recordID} updated`);
                 createMenuData_record_recordUpdated(user, userData, args, callback);
             }
         });
@@ -924,7 +933,7 @@ function createMenuData_record_recordUpdated(user, userData, args, callback) {
     const argLebelID_remove = typeof args[ARG_RECORD_REMOVE_LABEL] === 'number' ? args[ARG_RECORD_REMOVE_LABEL] : db.invalid_id;
     delete args[ARG_RECORD_ADD_LABEL];
     delete args[ARG_RECORD_REMOVE_LABEL];
-    
+
     if (argLebelID_add != db.invalid_id) {
         db.record_addLabel(recordID, [ argLebelID_add ], (error) => {
             if (error) {
