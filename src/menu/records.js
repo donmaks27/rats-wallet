@@ -898,7 +898,7 @@ function createMenuData_record(user, userData, args, callback) {
                     newRecordDateTime.setUTCHours(newRecordTime.getUTCHours(), newRecordTime.getUTCMinutes(), 0, 0);
                 }
                 newRecordData.date = dateFormat.utc_date(newRecordDateTime, userData.timezone);
-                db.record_edit(recordID, newRecordData, ( error) => {
+                db.record_edit(recordID, newRecordData, (error) => {
                     if (error) {
                         log.error(userID, `[record] failed to edit record ${recordID} (${error})`);
                         createMenuData_record_error(user, userData, args, callback);

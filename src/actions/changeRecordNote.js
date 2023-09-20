@@ -68,8 +68,8 @@ function startAction(user, userData, args, callback) {
                 ActionStopCallback(user, userData, callback);
             });
         } else {
-            db.record_edit(recordID, { note: '' }, (recordData, error) => {
-                if (error || !recordData) {
+            db.record_edit(recordID, { note: '' }, (error) => {
+                if (error) {
                     log.error(userID, `failed to clear note of record ${recordID} (${error})`);
                 } else {
                     log.info(userID, `cleared note of record ${recordID}`);
@@ -126,8 +126,8 @@ function onUserMessage(message, userData, args, callback) {
                 }
             });
         } else {
-            db.record_edit(recordID, { note: message.text }, (recordData, error) => {
-                if (error || !recordData) {
+            db.record_edit(recordID, { note: message.text }, (error) => {
+                if (error) {
                     log.error(userID, `failed to change note of record ${recordID} (${error})`);
                     bot.sendMessage({ chatID: userID, text: `Failed to updated record's note` });
                     callback(false);
