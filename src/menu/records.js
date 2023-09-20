@@ -842,6 +842,117 @@ function createMenuData_createRecord_transfer(user, userData, tempRecordData, te
 function createMenuData_record(user, userData, args, callback) {
     const userID = user.id;
     const recordID = typeof args[ARG_RECORD_ID] === 'number' ? args[ARG_RECORD_ID] : db.invalid_id;
+    const argSrcAccountID = args[ARG_RECORD_SRC_ACCOUNT_ID];
+    const argSrcAmount    = args[ARG_RECORD_SRC_AMOUNT];
+    const argDstAccountID = args[ARG_RECORD_DST_ACCOUNT_ID];
+    const argDstAmount    = args[ARG_RECORD_DST_AMOUNT];
+    const argCategoryID   = args[ARG_RECORD_CATEGORY_ID];
+    const argDate         = args[ARG_RECORD_DATE];
+    const argTime         = args[ARG_RECORD_TIME];
+    delete args[ARG_RECORD_SRC_ACCOUNT_ID];
+    delete args[ARG_RECORD_SRC_AMOUNT];
+    delete args[ARG_RECORD_DST_ACCOUNT_ID];
+    delete args[ARG_RECORD_DST_AMOUNT];
+    delete args[ARG_RECORD_CATEGORY_ID];
+    delete args[ARG_RECORD_DATE];
+    delete args[ARG_RECORD_TIME];
+
+    /** @type {{ src_account_id?: number, src_amount?: number, dst_account_id?: number, dst_amount?: number, note?: string, category_id?: number, date?: Date }} */
+    var newRecordData = {};
+    var shouldUpdateRecord = false;
+    if (typeof argSrcAccountID === 'number') {
+        newRecordData.src_account_id = argSrcAccountID; shouldUpdateRecord = true;
+    }
+    if (typeof argSrcAmount === 'number') {
+        newRecordData.src_amount = argSrcAmount; shouldUpdateRecord = true;
+    }
+    if (typeof argDstAccountID === 'number') {
+        newRecordData.dst_account_id = argDstAccountID; shouldUpdateRecord = true;
+    }
+    if (typeof argDstAmount === 'number') {
+        newRecordData.dst_amount = argDstAmount; shouldUpdateRecord = true;
+    }
+    if (typeof argCategoryID === 'number') {
+        newRecordData.category_id = argCategoryID; shouldUpdateRecord = true;
+    }
+    if ((typeof argDate === 'number') || (typeof argTime === 'number')) {
+        db.record_get(recordID, (recordData, error) => {
+            if (error || !recordData) {
+                log.error(userID, `[record] failed to get record data ${recordID} (${error})`);
+                createMenuData_record_error(user, userData, args, callback);
+            } else {
+                var newRecordDateTime = dateFormat.timezone_date(recordData.date, userData.timezone);
+                if (typeof argDate === 'number') {
+                    const newRecordDate = menuBase.decodeDate(argDate);
+                    newRecordDateTime.setUTCFullYear(newRecordDate.getUTCFullYear(), newRecordDate.getUTCMonth(), newRecordDate.getUTCDate());
+                }
+                if (typeof argTime === 'number') {
+                    const newRecordTime = menuBase.decodeTime(argTime);
+                    newRecordDateTime.setUTCHours(newRecordTime.getUTCHours(), newRecordTime.getUTCMinutes(), 0, 0);
+                }
+                newRecordData.date = dateFormat.utc_date(newRecordDateTime, userData.timezone);
+                db.record_edit(recordID, newRecordData, ( error) => {
+                    if (error) {
+                        log.error(userID, `[createRecord] failed to edit record ${recordID} (${error})`);
+                        createMenuData_record_error(user, userData, args, callback);
+                    } else {
+                        createMenuData_record_recordUpdated(user, userData, args, callback);
+                    }
+                });
+            }
+        });
+    } else if (shouldUpdateRecord) {
+        db.record_edit(userID, newRecordData, (error) => {
+            if (error) {
+                log.error(userID, `[record] failed to edit record ${recordID} (${error})`);
+                createMenuData_record_error(user, userData, args, callback);
+            } else {
+                createMenuData_record_recordUpdated(user, userData, args, callback);
+            }
+        });
+    } else {
+        createMenuData_record_recordUpdated(user, userData, args, callback);
+    }
+}
+/**
+ * @type {menuBase.menu_create_func}
+ */
+function createMenuData_record_recordUpdated(user, userData, args, callback) {
+    const userID = user.id;
+    const recordID          = typeof args[ARG_RECORD_ID] === 'number' ? args[ARG_RECORD_ID] : db.invalid_id;
+    const argLebelID_add    = typeof args[ARG_RECORD_ADD_LABEL] === 'number' ? args[ARG_RECORD_ADD_LABEL] : db.invalid_id;
+    const argLebelID_remove = typeof args[ARG_RECORD_REMOVE_LABEL] === 'number' ? args[ARG_RECORD_REMOVE_LABEL] : db.invalid_id;
+    delete args[ARG_RECORD_ADD_LABEL];
+    delete args[ARG_RECORD_REMOVE_LABEL];
+    
+    if (argLebelID_add != db.invalid_id) {
+        db.record_addLabel(recordID, [ argLebelID_add ], (error) => {
+            if (error) {
+                log.error(userID, `[record] failed to add label to record ${recordID} (${error})`);
+                createMenuData_record_error(user, userData, args, callback);
+            } else {
+                createMenuData_record_labelsUpdated(user, userData, args, callback);
+            }
+        });
+    } else if (argLebelID_remove != db.invalid_id) {
+        db.record_removeLabel(recordID, argLebelID_remove, (error) => {
+            if (error) {
+                log.error(userID, `[record] failed to remove label from record ${recordID} (${error})`);
+                createMenuData_record_error(user, userData, args, callback);
+            } else {
+                createMenuData_record_labelsUpdated(user, userData, args, callback);
+            }
+        });
+    } else {
+        createMenuData_record_labelsUpdated(user, userData, args, callback);
+    }
+}
+/**
+ * @type {menuBase.menu_create_func}
+ */
+function createMenuData_record_labelsUpdated(user, userData, args, callback) {
+    const userID = user.id;
+    const recordID = typeof args[ARG_RECORD_ID] === 'number' ? args[ARG_RECORD_ID] : db.invalid_id;
     db.record_get(recordID, (recordData, error) => {
         if (error || !recordData) {
             log.error(userID, `[record] failed to get data of record ${recordID} (${error})`);

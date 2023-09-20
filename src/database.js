@@ -1082,15 +1082,15 @@ function record_create(params, callback) {
     } : undefined);
 }
 /**
- * @param {number} id 
+ * @param {number} recordID 
  * @param {(data: (record_data & { src_account?: account_data, dst_account?: account_data, src_currency?: currency_data, dst_currency?: currency_data, category?: category_data, labels: label_data[] }) | null, error?: string) => any} callback 
  */
-function record_get(id, callback) {
-    db.get(query_getRecord(id), (error, row) => {
+function record_get(recordID, callback) {
+    db.get(query_getRecord(recordID), (error, row) => {
         if (error) {
-            callback(null, `failed to get data of record ${id}: ` + error);
+            callback(null, `failed to get data of record ${recordID}: ` + error);
         } else if (!row) {
-            callback(null, `can't find data of record ${id}`);
+            callback(null, `can't find data of record ${recordID}`);
         } else {
             /** @type {(record_data & { src_account?: account_data, dst_account?: account_data, src_currency?: currency_data, dst_currency?: currency_data, category?: category_data, labels: label_data[] })} */
             var rowData = { ...parseRecordRow(row), labels: [] };
@@ -1172,15 +1172,15 @@ function record_getList(userID, params, callback) {
 /**
  * @param {number} recordID 
  * @param {{ src_account_id?: number, src_amount?: number, dst_account_id?: number, dst_amount?: number, note?: string, category_id?: number, date?: Date }} params 
- * @param {(data: record_data | null, error?: string) => any} [callback] 
+ * @param {(error?: string) => any} [callback] 
  */
 function record_edit(recordID, params, callback) {
     db.run(query_updateRecord(recordID, params), callback ? (error) => {
         if (error) {
-            callback(null, `failed to update record ${recordID}: ` + error);
+            callback(`failed to update record ${recordID}: ` + error);
         } else {
             //debug_log(`updated record ${id}: ` + JSON.stringify(params));
-            record_get(recordID, callback);
+            callback();
         }
     } : undefined);
 }
