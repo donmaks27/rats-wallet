@@ -910,7 +910,7 @@ function createMenuData_record(user, userData, args, callback) {
             }
         });
     } else if (shouldUpdateRecord) {
-        db.record_edit(userID, newRecordData, (error) => {
+        db.record_edit(recordID, newRecordData, (error) => {
             if (error) {
                 log.error(userID, `[record] failed to edit record ${recordID} (${error})`);
                 createMenuData_record_error(user, userData, args, callback);

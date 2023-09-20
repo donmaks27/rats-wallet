@@ -2201,7 +2201,7 @@ function query_getRecordLabels(recordID) {
  * @param {number} label_id 
  */
 function query_deleteRecordLabel(record_id, label_id) {
-    return `DELETE FROM record_labels WHERE record_id = ${record_id} AND ${label_id};`;
+    return `DELETE FROM record_labels WHERE (record_id = ${record_id}) AND (label_id = ${label_id});`;
 }
 /**
  * @param {number} record_id 
